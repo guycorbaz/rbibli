@@ -1,2 +1,113 @@
-# rbibli
-Personal library management
+# rbibli - Personal Library Management System
+
+A modern, high-performance personal library management system built with Rust.
+
+## Overview
+
+rbibli is a comprehensive web application for managing a personal book collection. It provides features for tracking volumes, authors, series, and loans with a modern, responsive interface and barcode scanning capabilities.
+
+## Features
+
+- **Volume Management**: Track books with detailed metadata, conditions, and physical locations
+- **Author Management**: Maintain author information with bibliographies and relationships
+- **Series Organization**: Group books into series with reading order and completion tracking
+- **Loan System**: Manage borrowers, track loans, and receive overdue notifications
+- **Barcode Integration**: Generate and scan barcodes for efficient library management
+- **Advanced Search**: Find books by multiple criteria with filters and full-text search
+- **Dewey Classification**: Organize books using standard library classification
+- **Multilingual Support**: Interface available in multiple languages
+
+## Technology Stack
+
+### Backend
+- **Language**: Rust
+- **Web Framework**: Axum (async, performant, type-safe)
+- **Database**: MariaDB/PostgreSQL/MySQL with SQLx
+- **Authentication**: JWT
+- **Validation**: validator crate
+- **Logging**: tracing + tracing-subscriber
+
+### Frontend
+- **Framework**: Leptos (Rust compiled to WebAssembly)
+- **CSS**: Tailwind CSS
+- **State Management**: Leptos signals and context
+- **Build Tool**: Trunk for WASM bundling
+- **HTTP Client**: reqwest-wasm
+
+### Infrastructure
+- **Containerization**: Docker + Docker Compose
+- **Reverse Proxy**: Nginx
+- **Cache**: Redis
+- **File Storage**: Local filesystem or S3-compatible
+
+## Project Status
+
+rbibli is in the early stages of development. The project has comprehensive documentation and planning, but implementation is just beginning. Currently, only the basic project structure and initial frontend setup have been completed.
+
+## Getting Started
+
+### Prerequisites
+- Rust (latest stable)
+- Node.js and npm (for Tailwind CSS)
+- MariaDB, PostgreSQL, or MySQL
+
+### Setup
+1. Clone the repository
+   ```
+   git clone https://github.com/yourusername/rbibli.git
+   cd rbibli
+   ```
+
+2. Install dependencies
+   ```
+   cargo build
+   ```
+
+3. Run the frontend development server
+   ```
+   cd frontend
+   trunk serve
+   ```
+
+## Project Structure
+```
+rbibli/
+├── backend/           # Rust backend API
+│   └── src/           # Backend source code
+├── frontend/          # Leptos frontend
+│   ├── src/           # Frontend source code
+│   ├── Trunk.toml     # Trunk configuration
+│   └── index.html     # HTML template
+├── documentation/     # Project documentation
+└── Cargo.toml         # Workspace configuration
+```
+
+## Roadmap
+
+### Phase 1: Foundations
+- Basic volume management
+- Simple database integration
+- Core API endpoints
+- Basic frontend components
+
+### Phase 2: Core Features
+- Barcode generation
+- Loan system
+- Author management
+- Search functionality
+
+### Phase 3: Advanced Features
+- Dewey classification
+- Series management
+- Statistics and reporting
+- Internationalization
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- The Rust community for excellent libraries and tools
+- Leptos framework for enabling Rust on the frontend
+- All contributors to this project
