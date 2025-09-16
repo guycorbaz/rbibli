@@ -229,11 +229,11 @@ pub fn VolumesList() -> impl IntoView {
 
 ## 3. Data Model
 
-### 3.1 Main entities
+### 3.1 Main entities - Title/Volume Hierarchy
 ```rust
-// models/volume.rs
+// models/title.rs
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
-pub struct Volume {
+pub struct Title {
     pub id: Uuid,
     pub title: String,
     pub subtitle: Option<String>,
@@ -247,9 +247,21 @@ pub struct Volume {
     pub genre: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
-    pub location: Option<String>,
-    pub condition: VolumeCondition,
-    pub barcode: String,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+// models/volume.rs
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Volume {
+    pub id: Uuid,
+    pub title_id: Uuid,                    // Foreign key to Title
+    pub copy_number: i32,                  // Copy number (1, 2, 3...)
+    pub barcode: String,                   // Unique barcode VOL-000001
+    pub condition: VolumeCondition,        // Physical condition
+    pub location: Option<String>,          // Physical location
+    pub loan_status: LoanStatus,           // Loan status
+    pub individual_notes: Option<String>,  // Notes specific to this copy
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -261,11 +273,31 @@ pub enum VolumeCondition {
     Good,
     Fair,
     Poor,
+    Damaged,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "loan_status", rename_all = "lowercase")]
+pub enum LoanStatus {
+    Available,
+    Loaned,
+    Overdue,
     Lost,
+    Reserved,
+}
+
+// models/title_with_volumes.rs (for queries)
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TitleWithVolumes {
+    pub title: Title,
+    pub volumes: Vec<Volume>,
+    pub authors: Vec<Author>,
+    pub total_volumes: i32,
+    pub available_volumes: i32,
 }
 ```
 
-### 3.2 Relations
+### 3.2 Relations and Additional Entities
 ```rust
 // models/author.rs
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -279,6 +311,26 @@ pub struct Author {
     pub nationality: Option<String>,
     pub biography: Option<String>,
     pub photo_url: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+// models/title_author.rs (Many-to-many relationship)
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct TitleAuthor {
+    pub title_id: Uuid,
+    pub author_id: Uuid,
+    pub role: AuthorRole,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "author_role", rename_all = "lowercase")]
+pub enum AuthorRole {
+    MainAuthor,
+    CoAuthor,
+    Illustrator,
+    Translator,
+    Editor,
 }
 
 // models/series.rs
@@ -288,19 +340,102 @@ pub struct Series {
     pub name: String,
     pub description: Option<String>,
     pub status: SeriesStatus,
-    pub total_volumes: Option<i32>,
+    pub total_titles: Option<i32>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 // models/loan.rs
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Loan {
     pub id: Uuid,
-    pub volume_id: Uuid,
+    pub title_id: Uuid,                    // Reference to title (not specific volume)
+    pub volume_id: Uuid,                   // Specific volume selected by system
     pub borrower_id: Uuid,
     pub loan_date: DateTime<Utc>,
     pub due_date: DateTime<Utc>,
     pub return_date: Option<DateTime<Utc>>,
     pub status: LoanStatus,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+// models/borrower.rs (Simplified for personal use)
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct Borrower {
+    pub id: Uuid,
+    pub name: String,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+// models/wishlist.rs (Simple wishlist instead of complex reservations)
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct WishlistItem {
+    pub id: Uuid,
+    pub title_id: Uuid,
+    pub borrower_id: Uuid,
+    pub added_date: DateTime<Utc>,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+// models/duplicate.rs (For duplicate detection)
+#[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
+pub struct DuplicateCandidate {
+    pub id: Uuid,
+    pub title_id_1: Uuid,
+    pub title_id_2: Uuid,
+    pub confidence_score: f32,
+    pub detection_type: DuplicateType,
+    pub status: DuplicateStatus,
+    pub created_at: DateTime<Utc>,
+    pub reviewed_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "duplicate_type", rename_all = "lowercase")]
+pub enum DuplicateType {
+    IdenticalIsbn,
+    TitleAuthorMatch,
+    FuzzyMatch,
+}
+
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "duplicate_status", rename_all = "lowercase")]
+pub enum DuplicateStatus {
+    Pending,
+    Confirmed,
+    Ignored,
+    Merged,
+}
+
+// models/title_type.rs (For loan duration rules)
+#[derive(Debug, Serialize, Deserialize, sqlx::Type)]
+#[sqlx(type_name = "title_type", rename_all = "lowercase")]
+pub enum TitleType {
+    Fiction,
+    NonFiction,
+    Reference,
+    Magazine,
+    RareBook,
+    Custom,
+}
+
+impl TitleType {
+    pub fn default_loan_days(&self) -> i32 {
+        match self {
+            TitleType::Fiction => 21,
+            TitleType::NonFiction => 14,
+            TitleType::Reference => 7,
+            TitleType::Magazine => 3,
+            TitleType::RareBook => 7,
+            TitleType::Custom => 14,
+        }
+    }
 }
 ```
 
@@ -324,71 +459,492 @@ pub async fn get_volumes(
 }
 ```
 
-### 4.2 Main routes
+### 4.2 Basic API Routes for Personal Use
+```rust
+// handlers/titles.rs
+pub async fn create_title(
+    State(app_state): State<AppState>,
+    Json(payload): Json<CreateTitleRequest>,
+) -> Result<Json<TitleWithVolumes>, AppError> {
+    // Create title and optionally first volume
+}
+
+pub async fn get_titles(
+    State(app_state): State<AppState>,
+    Query(params): Query<TitleQueryParams>,
+) -> Result<Json<PaginatedResponse<TitleWithVolumes>>, AppError> {
+    // Get titles with volume counts and availability
+}
+
+pub async fn add_volume_to_title(
+    State(app_state): State<AppState>,
+    Path(title_id): Path<Uuid>,
+    Json(payload): Json<CreateVolumeRequest>,
+) -> Result<Json<Volume>, AppError> {
+    // Add new volume copy to existing title
+}
+
+// handlers/duplicates.rs
+pub async fn get_duplicate_candidates(
+    State(app_state): State<AppState>,
+    Query(params): Query<DuplicateQueryParams>,
+) -> Result<Json<Vec<DuplicateCandidate>>, AppError> {
+    // Get potential duplicates for review
+}
+
+pub async fn merge_titles(
+    State(app_state): State<AppState>,
+    Json(payload): Json<MergeTitlesRequest>,
+) -> Result<Json<TitleWithVolumes>, AppError> {
+    // Merge two duplicate titles
+}
 ```
-GET    /api/v1/volumes              - Paginated list of volumes
-POST   /api/v1/volumes              - Create a volume
-GET    /api/v1/volumes/{id}         - Volume details
-PUT    /api/v1/volumes/{id}         - Update a volume
-DELETE /api/v1/volumes/{id}         - Delete a volume
 
-GET    /api/v1/authors              - List of authors
-POST   /api/v1/authors              - Create an author
-GET    /api/v1/authors/{id}/volumes - Volumes by an author
+### 4.3 Simplified API Endpoints (Personal Use)
+```
+# Essential Title Management
+GET    /api/v1/titles                    - List titles with basic information
+POST   /api/v1/titles                    - Create a title
+GET    /api/v1/titles/{id}               - Title details with volumes
+PUT    /api/v1/titles/{id}               - Update title
+DELETE /api/v1/titles/{id}               - Delete title
+GET    /api/v1/titles/wishlist           - Titles with 0 volumes
 
-GET    /api/v1/series               - List of series
-POST   /api/v1/series               - Create a series
-GET    /api/v1/series/{id}/volumes  - Volumes in a series
+# Volume Management
+POST   /api/v1/titles/{id}/volumes       - Add volume to title
+PUT    /api/v1/volumes/{id}              - Update volume
+DELETE /api/v1/volumes/{id}              - Delete volume
 
-POST   /api/v1/loans                - Create a loan
-PUT    /api/v1/loans/{id}/return    - Return a volume
-GET    /api/v1/loans/overdue        - Overdue loans
+# Basic Loan Operations
+POST   /api/v1/loans                     - Create loan
+PUT    /api/v1/loans/{id}/return         - Return volume
+GET    /api/v1/loans/active              - Active loans
 
-GET    /api/v1/scan/{barcode}       - Search by barcode
-POST   /api/v1/scan/loan            - Loan via scan
-POST   /api/v1/scan/return          - Return via scan
+# Scanner Support (Dual Barcode)
+GET    /api/v1/scan/volume/{barcode}     - Find volume by Code 128 barcode
+GET    /api/v1/scan/isbn/{isbn}          - Find title by EAN-13 ISBN barcode
+POST   /api/v1/scan/loan                 - Loan via volume barcode scan
+POST   /api/v1/scan/return               - Return via volume barcode scan
+POST   /api/v1/scan/add-title            - Add title via ISBN barcode scan
 
-GET    /api/v1/stats/dashboard      - General statistics
-GET    /api/v1/reports/inventory    - Inventory report
+# Simple Wishlist (instead of complex reservations)
+GET    /api/v1/wishlist/{borrower_id}    - Get borrower's wishlist
+POST   /api/v1/wishlist                  - Add title to wishlist
+DELETE /api/v1/wishlist/{id}             - Remove from wishlist
+
+# Duplicate Management
+GET    /api/v1/duplicates                - List potential duplicates
+POST   /api/v1/duplicates/merge          - Merge two titles
+POST   /api/v1/duplicates/ignore         - Mark as non-duplicate
+GET    /api/v1/duplicates/suggestions/{title-id} - Get suggestions for title
+
+# Basic Search
+GET    /api/v1/search/titles             - Search titles
+GET    /api/v1/search/volumes            - Search volumes
+
+# Simple Reports
+GET    /api/v1/reports/basic             - Basic collection statistics
+GET    /api/v1/reports/loans             - Simple loan reports
 ```
 
 ## 5. Services and Business Logic
 
-### 5.1 Service structure
+### 5.1 Title/Volume Service Architecture
 ```rust
-// services/volume_service.rs
-pub struct VolumeService {
+// services/title_service.rs
+pub struct TitleService {
+    title_repo: Arc<dyn TitleRepository>,
     volume_repo: Arc<dyn VolumeRepository>,
     author_repo: Arc<dyn AuthorRepository>,
     barcode_generator: Arc<dyn BarcodeGenerator>,
+    duplicate_service: Arc<DuplicateService>,
 }
 
-impl VolumeService {
-    pub async fn create_volume(
+impl TitleService {
+    pub async fn create_title_with_volume(
         &self,
-        request: CreateVolumeRequest,
-    ) -> Result<Volume, ServiceError> {
-        // Validation
-        // Generate unique barcode
-        // Fetch external metadata (ISBN)
-        // Save to database
+        request: CreateTitleRequest,
+    ) -> Result<TitleWithVolumes, ServiceError> {
+        // 1. Check for duplicates before creating
+        let duplicates = self.duplicate_service
+            .detect_duplicates_for_new_title(&request)
+            .await?;
+        
+        if !duplicates.is_empty() && !request.force_create {
+            return Err(ServiceError::PotentialDuplicates(duplicates));
+        }
+        
+        // 2. Create the title
+        let mut title_data = request.into();
+        // Set title type for loan duration rules
+        if title_data.title_type.is_none() {
+            title_data.title_type = Some(self.infer_title_type(&title_data));
+        }
+        
+        let title = self.title_repo.create(title_data).await?;
+        
+        // 3. Create first volume automatically if requested
+        if request.create_first_volume {
+            let volume_request = CreateVolumeRequest {
+                title_id: title.id,
+                copy_number: 1,
+                condition: VolumeCondition::Good,
+                location: request.initial_location,
+            };
+            
+            let volume = self.volume_repo.create(volume_request).await?;
+            
+            Ok(TitleWithVolumes {
+                title,
+                volumes: vec![volume],
+                authors: vec![],
+                total_volumes: 1,
+                available_volumes: 1,
+            })
+        } else {
+            // Wishlist title with 0 volumes
+            Ok(TitleWithVolumes {
+                title,
+                volumes: vec![],
+                authors: vec![],
+                total_volumes: 0,
+                available_volumes: 0,
+            })
+        }
     }
 
-    pub async fn search_volumes(
+    fn infer_title_type(&self, title_data: &CreateTitleData) -> TitleType {
+        // Simple inference based on genre or Dewey code
+        if let Some(dewey) = &title_data.dewey_code {
+            match dewey.chars().next() {
+                Some('0'..='1') => TitleType::Reference,
+                Some('8') => TitleType::Fiction,
+                _ => TitleType::NonFiction,
+            }
+        } else if let Some(genre) = &title_data.genre {
+            match genre.to_lowercase().as_str() {
+                "fiction" | "novel" | "fantasy" | "sci-fi" => TitleType::Fiction,
+                "magazine" | "periodical" => TitleType::Magazine,
+                "reference" | "dictionary" | "encyclopedia" => TitleType::Reference,
+                _ => TitleType::NonFiction,
+            }
+        } else {
+            TitleType::NonFiction
+        }
+    }
+
+    pub async fn add_volume_copy(
         &self,
-        criteria: SearchCriteria,
-    ) -> Result<PaginatedResponse<Volume>, ServiceError> {
-        // Advanced search logic
+        title_id: Uuid,
+        request: AddVolumeCopyRequest,
+    ) -> Result<Volume, ServiceError> {
+        // Find the next copy number
+        let next_copy_number = self.volume_repo
+            .get_next_copy_number(title_id)
+            .await?;
+        
+        let volume_request = CreateVolumeRequest {
+            title_id,
+            copy_number: next_copy_number,
+            condition: request.condition,
+            location: request.location,
+        };
+        
+        self.volume_repo.create(volume_request).await
+    }
+
+    pub async fn get_title_with_volumes(
+        &self,
+        title_id: Uuid,
+    ) -> Result<TitleWithVolumes, ServiceError> {
+        let title = self.title_repo.find_by_id(title_id).await?
+            .ok_or(ServiceError::NotFound)?;
+        
+        let volumes = self.volume_repo.find_by_title_id(title_id).await?;
+        let authors = self.author_repo.find_by_title_id(title_id).await?;
+        
+        let available_volumes = volumes.iter()
+            .filter(|v| v.loan_status == LoanStatus::Available)
+            .count() as i32;
+        
+        Ok(TitleWithVolumes {
+            title,
+            volumes: volumes.clone(),
+            authors,
+            total_volumes: volumes.len() as i32,
+            available_volumes,
+        })
+    }
+}
+
+// services/loan_service.rs (Simplified for personal use)
+pub struct LoanService {
+    loan_repo: Arc<dyn LoanRepository>,
+    volume_repo: Arc<dyn VolumeRepository>,
+    title_repo: Arc<dyn TitleRepository>,
+    wishlist_repo: Arc<dyn WishlistRepository>,
+}
+
+impl LoanService {
+    pub async fn create_loan(
+        &self,
+        title_id: Uuid,
+        borrower_id: Uuid,
+    ) -> Result<Loan, ServiceError> {
+        // 1. Find best available volume
+        let volume = self.select_best_available_volume(title_id).await?
+            .ok_or(ServiceError::NoVolumeAvailable)?;
+        
+        // 2. Get title to determine loan duration
+        let title = self.title_repo.find_by_id(title_id).await?
+            .ok_or(ServiceError::NotFound)?;
+        
+        let loan_days = title.title_type
+            .map(|t| t.default_loan_days())
+            .unwrap_or(14);
+        
+        // 3. Create loan
+        let loan_request = CreateLoanRequest {
+            title_id,
+            volume_id: volume.id,
+            borrower_id,
+            due_date: Utc::now() + Duration::days(loan_days as i64),
+        };
+        
+        let loan = self.loan_repo.create(loan_request).await?;
+        
+        // 4. Update volume status
+        self.volume_repo.update_loan_status(volume.id, LoanStatus::Loaned).await?;
+        
+        // 5. Check if anyone has this title on wishlist
+        self.notify_wishlist_users(title_id).await?;
+        
+        Ok(loan)
+    }
+
+    async fn select_best_available_volume(
+        &self,
+        title_id: Uuid,
+    ) -> Result<Option<Volume>, ServiceError> {
+        let available_volumes = self.volume_repo
+            .find_available_by_title_id(title_id)
+            .await?;
+        
+        if available_volumes.is_empty() {
+            return Ok(None);
+        }
+        
+        // Selection priority:
+        // 1. Best physical condition
+        // 2. Lowest copy number (FIFO)
+        let best_volume = available_volumes
+            .into_iter()
+            .min_by(|a, b| {
+                let condition_order = |c: &VolumeCondition| match c {
+                    VolumeCondition::Excellent => 0,
+                    VolumeCondition::Good => 1,
+                    VolumeCondition::Fair => 2,
+                    VolumeCondition::Poor => 3,
+                    VolumeCondition::Damaged => 4,
+                };
+                
+                condition_order(&a.condition)
+                    .cmp(&condition_order(&b.condition))
+                    .then_with(|| a.copy_number.cmp(&b.copy_number))
+            });
+        
+        Ok(best_volume)
+    }
+
+    async fn notify_wishlist_users(&self, title_id: Uuid) -> Result<(), ServiceError> {
+        // Simple notification for wishlist users when title becomes available
+        let wishlist_items = self.wishlist_repo.find_by_title_id(title_id).await?;
+        
+        for item in wishlist_items {
+            // Send basic email notification if configured
+            // This is optional and simple
+        }
+        
+        Ok(())
+    }
+}
+
+// services/duplicate_service.rs (New service for duplicate management)
+pub struct DuplicateService {
+    duplicate_repo: Arc<dyn DuplicateRepository>,
+    title_repo: Arc<dyn TitleRepository>,
+}
+
+impl DuplicateService {
+    pub async fn detect_duplicates_for_new_title(
+        &self,
+        request: &CreateTitleRequest,
+    ) -> Result<Vec<DuplicateCandidate>, ServiceError> {
+        let mut candidates = Vec::new();
+        
+        // 1. Check for identical ISBN
+        if let Some(isbn) = &request.isbn {
+            if let Some(existing) = self.title_repo.find_by_isbn(isbn).await? {
+                candidates.push(DuplicateCandidate {
+                    id: Uuid::new_v4(),
+                    title_id_1: Uuid::new_v4(), // Would be the new title's ID
+                    title_id_2: existing.id,
+                    confidence_score: 1.0,
+                    detection_type: DuplicateType::IdenticalIsbn,
+                    status: DuplicateStatus::Pending,
+                    created_at: Utc::now(),
+                    reviewed_at: None,
+                });
+            }
+        }
+        
+        // 2. Check for title + author matches
+        let similar_titles = self.title_repo
+            .find_similar_titles(&request.title, &request.authors)
+            .await?;
+        
+        for similar in similar_titles {
+            let confidence = self.calculate_similarity_score(&request.title, &similar.title);
+            if confidence > 0.85 {
+                candidates.push(DuplicateCandidate {
+                    id: Uuid::new_v4(),
+                    title_id_1: Uuid::new_v4(),
+                    title_id_2: similar.id,
+                    confidence_score: confidence,
+                    detection_type: if confidence > 0.95 {
+                        DuplicateType::TitleAuthorMatch
+                    } else {
+                        DuplicateType::FuzzyMatch
+                    },
+                    status: DuplicateStatus::Pending,
+                    created_at: Utc::now(),
+                    reviewed_at: None,
+                });
+            }
+        }
+        
+        Ok(candidates)
+    }
+
+    pub async fn merge_titles(
+        &self,
+        primary_id: Uuid,
+        secondary_id: Uuid,
+    ) -> Result<TitleWithVolumes, ServiceError> {
+        // 1. Get both titles
+        let primary = self.title_repo.find_by_id(primary_id).await?
+            .ok_or(ServiceError::NotFound)?;
+        let secondary = self.title_repo.find_by_id(secondary_id).await?
+            .ok_or(ServiceError::NotFound)?;
+        
+        // 2. Merge metadata (keep primary, add secondary info as needed)
+        let mut merged_title = primary;
+        if merged_title.isbn.is_none() && secondary.isbn.is_some() {
+            merged_title.isbn = secondary.isbn;
+        }
+        if merged_title.cover_url.is_none() && secondary.cover_url.is_some() {
+            merged_title.cover_url = secondary.cover_url;
+        }
+        
+        // 3. Move all volumes from secondary to primary
+        self.title_repo.move_volumes_to_title(secondary_id, primary_id).await?;
+        
+        // 4. Update copy numbers sequentially
+        self.title_repo.renumber_volumes(primary_id).await?;
+        
+        // 5. Delete secondary title
+        self.title_repo.delete(secondary_id).await?;
+        
+        // 6. Mark duplicate as merged
+        self.duplicate_repo.mark_as_merged(primary_id, secondary_id).await?;
+        
+        // 7. Return merged result
+        let volumes = self.title_repo.get_volumes_for_title(primary_id).await?;
+        let authors = self.title_repo.get_authors_for_title(primary_id).await?;
+        
+        Ok(TitleWithVolumes {
+            title: merged_title,
+            volumes: volumes.clone(),
+            authors,
+            total_volumes: volumes.len() as i32,
+            available_volumes: volumes.iter()
+                .filter(|v| v.loan_status == LoanStatus::Available)
+                .count() as i32,
+        })
+    }
+
+    fn calculate_similarity_score(&self, title1: &str, title2: &str) -> f32 {
+        // Simple Levenshtein distance implementation
+        let title1_normalized = self.normalize_string(title1);
+        let title2_normalized = self.normalize_string(title2);
+        
+        let distance = levenshtein_distance(&title1_normalized, &title2_normalized);
+        let max_len = title1_normalized.len().max(title2_normalized.len());
+        
+        if max_len == 0 {
+            1.0
+        } else {
+            1.0 - (distance as f32 / max_len as f32)
+        }
+    }
+
+    fn normalize_string(&self, s: &str) -> String {
+        s.to_lowercase()
+            .chars()
+            .filter(|c| c.is_alphanumeric() || c.is_whitespace())
+            .collect::<String>()
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join(" ")
+    }
+}
+
+// services/wishlist_service.rs (Simple wishlist instead of complex reservations)
+pub struct WishlistService {
+    wishlist_repo: Arc<dyn WishlistRepository>,
+    title_repo: Arc<dyn TitleRepository>,
+}
+
+impl WishlistService {
+    pub async fn add_to_wishlist(
+        &self,
+        title_id: Uuid,
+        borrower_id: Uuid,
+        notes: Option<String>,
+    ) -> Result<WishlistItem, ServiceError> {
+        // Check if title exists
+        self.title_repo.find_by_id(title_id).await?
+            .ok_or(ServiceError::NotFound)?;
+        
+        let wishlist_item = WishlistItem {
+            id: Uuid::new_v4(),
+            title_id,
+            borrower_id,
+            added_date: Utc::now(),
+            notes,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        };
+        
+        self.wishlist_repo.create(wishlist_item).await
+    }
+
+    pub async fn get_borrower_wishlist(
+        &self,
+        borrower_id: Uuid,
+    ) -> Result<Vec<WishlistItemWithTitle>, ServiceError> {
+        self.wishlist_repo.find_by_borrower_with_titles(borrower_id).await
     }
 }
 ```
 
-### 5.2 Barcode management
+### 5.2 Barcode and Scanner Services
 ```rust
 // services/barcode_service.rs
 pub trait BarcodeGenerator: Send + Sync {
     async fn generate_unique_barcode(&self) -> Result<String, BarcodeError>;
-    fn validate_barcode(&self, barcode: &str) -> bool;
+    fn validate_volume_barcode(&self, barcode: &str) -> bool;
+    fn validate_isbn_barcode(&self, isbn: &str) -> bool;
 }
 
 pub struct SequentialBarcodeGenerator {
@@ -398,8 +954,107 @@ pub struct SequentialBarcodeGenerator {
 impl BarcodeGenerator for SequentialBarcodeGenerator {
     async fn generate_unique_barcode(&self) -> Result<String, BarcodeError> {
         let next_id = self.repo.get_next_sequence().await?;
-        Ok(format!("LIB-{:06}", next_id))
+        Ok(format!("VOL-{:06}", next_id)) // Code 128 format
     }
+    
+    fn validate_volume_barcode(&self, barcode: &str) -> bool {
+        // Validate VOL-XXXXXX format (Code 128)
+        let re = regex::Regex::new(r"^VOL-\d{6}$").unwrap();
+        re.is_match(barcode)
+    }
+    
+    fn validate_isbn_barcode(&self, isbn: &str) -> bool {
+        // Validate EAN-13 format for ISBN
+        let re = regex::Regex::new(r"^\d{13}$").unwrap();
+        re.is_match(isbn) && self.validate_isbn_checksum(isbn)
+    }
+    
+    fn validate_isbn_checksum(&self, isbn: &str) -> bool {
+        // EAN-13 checksum validation
+        let digits: Vec<u32> = isbn.chars()
+            .filter_map(|c| c.to_digit(10))
+            .collect();
+        
+        if digits.len() != 13 {
+            return false;
+        }
+        
+        let sum: u32 = digits[..12].iter()
+            .enumerate()
+            .map(|(i, &digit)| if i % 2 == 0 { digit } else { digit * 3 })
+            .sum();
+        
+        let check_digit = (10 - (sum % 10)) % 10;
+        check_digit == digits[12]
+    }
+}
+
+// services/scanner_service.rs (Enhanced for dual barcode support)
+pub struct ScannerService {
+    volume_repo: Arc<dyn VolumeRepository>,
+    title_repo: Arc<dyn TitleRepository>,
+    barcode_generator: Arc<dyn BarcodeGenerator>,
+    external_api: Arc<dyn ExternalMetadataService>,
+}
+
+impl ScannerService {
+    pub async fn scan_barcode(&self, barcode: &str) -> Result<ScanResult, ServiceError> {
+        // Determine barcode type and handle accordingly
+        if self.barcode_generator.validate_volume_barcode(barcode) {
+            self.scan_volume_barcode(barcode).await
+        } else if self.barcode_generator.validate_isbn_barcode(barcode) {
+            self.scan_isbn_barcode(barcode).await
+        } else {
+            Err(ServiceError::InvalidBarcode)
+        }
+    }
+    
+    async fn scan_volume_barcode(&self, barcode: &str) -> Result<ScanResult, ServiceError> {
+        let volume_with_context = self.volume_repo
+            .find_with_title_context(barcode)
+            .await?
+            .ok_or(ServiceError::VolumeNotFound)?;
+        
+        Ok(ScanResult::Volume(volume_with_context))
+    }
+    
+    async fn scan_isbn_barcode(&self, isbn: &str) -> Result<ScanResult, ServiceError> {
+        // First check if we have this title in our collection
+        if let Some(title) = self.title_repo.find_by_isbn(isbn).await? {
+            let volumes = self.volume_repo.find_by_title_id(title.id).await?;
+            Ok(ScanResult::ExistingTitle(TitleWithVolumes {
+                title,
+                volumes: volumes.clone(),
+                authors: vec![], // Would be populated in real implementation
+                total_volumes: volumes.len() as i32,
+                available_volumes: volumes.iter()
+                    .filter(|v| v.loan_status == LoanStatus::Available)
+                    .count() as i32,
+            }))
+        } else {
+            // Try to fetch metadata from external API
+            match self.external_api.get_metadata_by_isbn(isbn).await {
+                Ok(metadata) => Ok(ScanResult::NewTitleMetadata(metadata)),
+                Err(_) => Ok(ScanResult::UnknownIsbn(isbn.to_string())),
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum ScanResult {
+    Volume(VolumeWithTitleContext),
+    ExistingTitle(TitleWithVolumes),
+    NewTitleMetadata(ExternalMetadata),
+    UnknownIsbn(String),
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct VolumeWithTitleContext {
+    pub volume: Volume,
+    pub title: Title,
+    pub other_copies: Vec<Volume>,
+    pub authors: Vec<Author>,
 }
 ```
 
@@ -442,18 +1097,91 @@ impl DatabaseFactory {
 }
 ```
 
-### 6.2 Repositories
+### 6.2 Simplified Repositories for Personal Use
 ```rust
+// repositories/title_repository.rs
+#[async_trait]
+pub trait TitleRepository: Send + Sync {
+    async fn create(&self, title: CreateTitleRequest) -> Result<Title, RepoError>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Title>, RepoError>;
+    async fn find_by_isbn(&self, isbn: &str) -> Result<Option<Title>, RepoError>;
+    async fn find_similar_titles(&self, title: &str, authors: &[String]) -> Result<Vec<Title>, RepoError>;
+    async fn search(&self, criteria: TitleSearchCriteria) -> Result<Vec<Title>, RepoError>;
+    async fn update(&self, id: Uuid, title: UpdateTitleRequest) -> Result<Title, RepoError>;
+    async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
+    async fn find_wishlist(&self) -> Result<Vec<Title>, RepoError>;
+    async fn get_titles_with_volumes(&self, params: TitleQueryParams) -> Result<PaginatedResponse<TitleWithVolumes>, RepoError>;
+    // For duplicate management
+    async fn move_volumes_to_title(&self, from_title_id: Uuid, to_title_id: Uuid) -> Result<(), RepoError>;
+    async fn renumber_volumes(&self, title_id: Uuid) -> Result<(), RepoError>;
+    async fn get_volumes_for_title(&self, title_id: Uuid) -> Result<Vec<Volume>, RepoError>;
+    async fn get_authors_for_title(&self, title_id: Uuid) -> Result<Vec<Author>, RepoError>;
+}
+
 // repositories/volume_repository.rs
 #[async_trait]
 pub trait VolumeRepository: Send + Sync {
     async fn create(&self, volume: CreateVolumeRequest) -> Result<Volume, RepoError>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Volume>, RepoError>;
     async fn find_by_barcode(&self, barcode: &str) -> Result<Option<Volume>, RepoError>;
-    async fn search(&self, criteria: SearchCriteria) -> Result<Vec<Volume>, RepoError>;
+    async fn find_by_title_id(&self, title_id: Uuid) -> Result<Vec<Volume>, RepoError>;
+    async fn find_available_by_title_id(&self, title_id: Uuid) -> Result<Vec<Volume>, RepoError>;
+    async fn get_next_copy_number(&self, title_id: Uuid) -> Result<i32, RepoError>;
+    async fn update_loan_status(&self, id: Uuid, status: LoanStatus) -> Result<(), RepoError>;
+    async fn search(&self, criteria: VolumeSearchCriteria) -> Result<Vec<Volume>, RepoError>;
     async fn update(&self, id: Uuid, volume: UpdateVolumeRequest) -> Result<Volume, RepoError>;
     async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
+    // Enhanced scanner support
+    async fn find_with_title_context(&self, barcode: &str) -> Result<Option<VolumeWithTitleContext>, RepoError>;
 }
+
+// repositories/borrower_repository.rs (Simplified)
+#[async_trait]
+pub trait BorrowerRepository: Send + Sync {
+    async fn create(&self, borrower: CreateBorrowerRequest) -> Result<Borrower, RepoError>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Borrower>, RepoError>;
+    async fn find_by_email(&self, email: &str) -> Result<Option<Borrower>, RepoError>;
+    async fn search(&self, query: &str) -> Result<Vec<Borrower>, RepoError>;
+    async fn update(&self, id: Uuid, borrower: UpdateBorrowerRequest) -> Result<Borrower, RepoError>;
+    async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
+}
+
+// repositories/wishlist_repository.rs (Simple wishlist instead of reservations)
+#[async_trait]
+pub trait WishlistRepository: Send + Sync {
+    async fn create(&self, item: WishlistItem) -> Result<WishlistItem, RepoError>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<WishlistItem>, RepoError>;
+    async fn find_by_borrower_id(&self, borrower_id: Uuid) -> Result<Vec<WishlistItem>, RepoError>;
+    async fn find_by_title_id(&self, title_id: Uuid) -> Result<Vec<WishlistItem>, RepoError>;
+    async fn find_by_borrower_with_titles(&self, borrower_id: Uuid) -> Result<Vec<WishlistItemWithTitle>, RepoError>;
+    async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
+}
+
+// repositories/duplicate_repository.rs (New for duplicate management)
+#[async_trait]
+pub trait DuplicateRepository: Send + Sync {
+    async fn create(&self, candidate: DuplicateCandidate) -> Result<DuplicateCandidate, RepoError>;
+    async fn find_pending(&self) -> Result<Vec<DuplicateCandidate>, RepoError>;
+    async fn find_by_title_id(&self, title_id: Uuid) -> Result<Vec<DuplicateCandidate>, RepoError>;
+    async fn update_status(&self, id: Uuid, status: DuplicateStatus) -> Result<(), RepoError>;
+    async fn mark_as_merged(&self, primary_id: Uuid, secondary_id: Uuid) -> Result<(), RepoError>;
+    async fn mark_as_ignored(&self, id: Uuid) -> Result<(), RepoError>;
+    async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
+}
+
+// repositories/loan_repository.rs (Simplified)
+#[async_trait]
+pub trait LoanRepository: Send + Sync {
+    async fn create(&self, loan: CreateLoanRequest) -> Result<Loan, RepoError>;
+    async fn find_by_id(&self, id: Uuid) -> Result<Option<Loan>, RepoError>;
+    async fn find_active(&self) -> Result<Vec<Loan>, RepoError>;
+    async fn find_overdue(&self) -> Result<Vec<Loan>, RepoError>;
+    async fn find_by_borrower_id(&self, borrower_id: Uuid) -> Result<Vec<Loan>, RepoError>;
+    async fn find_by_volume_id(&self, volume_id: Uuid) -> Result<Option<Loan>, RepoError>;
+    async fn return_loan(&self, id: Uuid) -> Result<Loan, RepoError>;
+    async fn extend_loan(&self, id: Uuid, new_due_date: DateTime<Utc>) -> Result<Loan, RepoError>;
+}
+```
 
 // PostgreSQL implementation
 pub struct PostgresVolumeRepository {
@@ -547,12 +1275,17 @@ impl MigrationRunner {
 ```
 
 ```sql
--- migrations/postgresql/001_initial.sql
+-- migrations/postgresql/001_initial_title_volume.sql
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE volume_condition AS ENUM ('excellent', 'good', 'fair', 'poor', 'lost');
-CREATE TYPE loan_status AS ENUM ('active', 'returned', 'overdue', 'lost');
+-- Enums
+CREATE TYPE volume_condition AS ENUM ('excellent', 'good', 'fair', 'poor', 'damaged');
+CREATE TYPE loan_status AS ENUM ('available', 'loaned', 'overdue', 'lost', 'reserved');
+CREATE TYPE author_role AS ENUM ('main_author', 'co_author', 'illustrator', 'translator', 'editor');
+CREATE TYPE reservation_status AS ENUM ('active', 'fulfilled', 'expired', 'cancelled');
+CREATE TYPE location_type AS ENUM ('building', 'room', 'shelf', 'section');
 
+-- Authors table
 CREATE TABLE authors (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     first_name VARCHAR(255),
@@ -567,7 +1300,8 @@ CREATE TABLE authors (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE volumes (
+-- Titles table (main metadata)
+CREATE TABLE titles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     title VARCHAR(500) NOT NULL,
     subtitle VARCHAR(500),
@@ -581,16 +1315,143 @@ CREATE TABLE volumes (
     genre VARCHAR(100),
     summary TEXT,
     cover_url VARCHAR(500),
-    location VARCHAR(255),
-    condition volume_condition DEFAULT 'good',
-    barcode VARCHAR(50) UNIQUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Locations table (hierarchical)
+CREATE TABLE locations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    code VARCHAR(50) UNIQUE NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    parent_id UUID REFERENCES locations(id) ON DELETE CASCADE,
+    location_type location_type NOT NULL,
+    capacity INTEGER,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Volumes table (physical copies)
+CREATE TABLE volumes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title_id UUID NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+    copy_number INTEGER NOT NULL,
+    barcode VARCHAR(50) UNIQUE NOT NULL,
+    condition volume_condition DEFAULT 'good',
+    location_id UUID REFERENCES locations(id),
+    loan_status loan_status DEFAULT 'available',
+    individual_notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(title_id, copy_number)
+);
+
+-- Title-Author relationship (many-to-many)
+CREATE TABLE title_authors (
+    title_id UUID NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+    author_id UUID NOT NULL REFERENCES authors(id) ON DELETE CASCADE,
+    role author_role DEFAULT 'main_author',
+    PRIMARY KEY (title_id, author_id, role)
+);
+
+-- Series table
+CREATE TABLE series (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    total_titles INTEGER,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Title-Series relationship
+CREATE TABLE title_series (
+    title_id UUID NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+    series_id UUID NOT NULL REFERENCES series(id) ON DELETE CASCADE,
+    series_number INTEGER,
+    PRIMARY KEY (title_id, series_id)
+);
+
+-- Borrowers table
+CREATE TABLE borrowers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    address TEXT,
+    max_loans INTEGER DEFAULT 5,
+    is_suspended BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Simplified borrowers table (no complex restrictions)
+CREATE TABLE borrowers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Simple wishlist instead of complex reservations
+CREATE TABLE wishlist_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title_id UUID NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+    borrower_id UUID NOT NULL REFERENCES borrowers(id) ON DELETE CASCADE,
+    added_date TIMESTAMPTZ DEFAULT NOW(),
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    UNIQUE(title_id, borrower_id)
+);
+
+-- Duplicate detection table
+CREATE TABLE duplicate_candidates (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title_id_1 UUID NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+    title_id_2 UUID NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+    confidence_score REAL NOT NULL,
+    detection_type duplicate_type NOT NULL,
+    status duplicate_status DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    reviewed_at TIMESTAMPTZ,
+    
+    UNIQUE(title_id_1, title_id_2)
+);
+
+-- Loans table (simplified)
+CREATE TABLE loans (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title_id UUID NOT NULL REFERENCES titles(id),
+    volume_id UUID NOT NULL REFERENCES volumes(id),
+    borrower_id UUID NOT NULL REFERENCES borrowers(id),
+    loan_date TIMESTAMPTZ DEFAULT NOW(),
+    due_date TIMESTAMPTZ NOT NULL,
+    return_date TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for performance
+CREATE INDEX idx_volumes_title_id ON volumes(title_id);
 CREATE INDEX idx_volumes_barcode ON volumes(barcode);
-CREATE INDEX idx_volumes_isbn ON volumes(isbn);
-CREATE INDEX idx_volumes_title ON volumes USING gin(to_tsvector('english', title));
+CREATE INDEX idx_volumes_loan_status ON volumes(loan_status);
+CREATE INDEX idx_titles_isbn ON titles(isbn);
+CREATE INDEX idx_titles_title ON titles USING gin(to_tsvector('english', title));
+CREATE INDEX idx_titles_title_type ON titles(title_type);
+CREATE INDEX idx_title_authors_title_id ON title_authors(title_id);
+CREATE INDEX idx_title_authors_author_id ON title_authors(author_id);
+CREATE INDEX idx_loans_volume_id ON loans(volume_id);
+CREATE INDEX idx_loans_borrower_id ON loans(borrower_id);
+CREATE INDEX idx_loans_due_date ON loans(due_date);
+CREATE INDEX idx_wishlist_items_title_id ON wishlist_items(title_id);
+CREATE INDEX idx_wishlist_items_borrower_id ON wishlist_items(borrower_id);
+CREATE INDEX idx_duplicate_candidates_status ON duplicate_candidates(status);
+CREATE INDEX idx_duplicate_candidates_confidence ON duplicate_candidates(confidence_score);
 ```
 
 ```sql
@@ -769,7 +1630,7 @@ impl ApiClient {
 }
 ```
 
-### 8.4 Frontend - Global state management
+### 8.4 Frontend - Simplified Global State for Personal Use
 ```rust
 // frontend/src/services/state.rs
 use leptos::*;
@@ -777,20 +1638,26 @@ use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
 pub struct AppState {
-    pub volumes: RwSignal<Vec<Volume>>,
+    pub titles: RwSignal<Vec<TitleWithVolumes>>,
+    pub current_title: RwSignal<Option<TitleWithVolumes>>,
     pub current_user: RwSignal<Option<User>>,
     pub loading: RwSignal<bool>,
     pub notifications: RwSignal<Vec<Notification>>,
+    pub wishlist: RwSignal<Vec<WishlistItem>>,
+    pub duplicates: RwSignal<Vec<DuplicateCandidate>>,
     pub i18n: RwSignal<HashMap<String, String>>,
 }
 
 impl AppState {
     pub fn new() -> Self {
         Self {
-            volumes: create_rw_signal(Vec::new()),
+            titles: create_rw_signal(Vec::new()),
+            current_title: create_rw_signal(None),
             current_user: create_rw_signal(None),
             loading: create_rw_signal(false),
             notifications: create_rw_signal(Vec::new()),
+            wishlist: create_rw_signal(Vec::new()),
+            duplicates: create_rw_signal(Vec::new()),
             i18n: create_rw_signal(HashMap::new()),
         }
     }
@@ -805,6 +1672,50 @@ impl AppState {
         
         self.notifications.update(|notifications| {
             notifications.push(notification);
+        });
+    }
+
+    pub fn update_title(&self, updated_title: TitleWithVolumes) {
+        self.titles.update(|titles| {
+            if let Some(pos) = titles.iter().position(|t| t.title.id == updated_title.title.id) {
+                titles[pos] = updated_title;
+            }
+        });
+    }
+
+    pub fn add_volume_to_title(&self, title_id: Uuid, new_volume: Volume) {
+        self.titles.update(|titles| {
+            if let Some(title_with_volumes) = titles.iter_mut().find(|t| t.title.id == title_id) {
+                title_with_volumes.volumes.push(new_volume);
+                title_with_volumes.total_volumes += 1;
+                if new_volume.loan_status == LoanStatus::Available {
+                    title_with_volumes.available_volumes += 1;
+                }
+            }
+        });
+    }
+
+    pub fn add_to_wishlist(&self, item: WishlistItem) {
+        self.wishlist.update(|wishlist| {
+            wishlist.push(item);
+        });
+    }
+
+    pub fn remove_from_wishlist(&self, item_id: Uuid) {
+        self.wishlist.update(|wishlist| {
+            wishlist.retain(|item| item.id != item_id);
+        });
+    }
+
+    pub fn add_duplicate_candidate(&self, candidate: DuplicateCandidate) {
+        self.duplicates.update(|duplicates| {
+            duplicates.push(candidate);
+        });
+    }
+
+    pub fn remove_duplicate_candidate(&self, candidate_id: Uuid) {
+        self.duplicates.update(|duplicates| {
+            duplicates.retain(|dup| dup.id != candidate_id);
         });
     }
 }
@@ -1171,16 +2082,24 @@ pub async fn metrics_middleware(
 }
 ```
 
-### 11.3 Scan page with barcode scanner
+### 11.3 Enhanced Scan Page with Dual Barcode Support
 ```rust
 // frontend/src/pages/scan.rs
 use leptos::*;
 use web_sys::HtmlInputElement;
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ScanResult {
+    Volume(VolumeWithTitleContext),
+    ExistingTitle(TitleWithVolumes),
+    NewTitleMetadata(ExternalMetadata),
+    UnknownIsbn(String),
+}
+
 #[component]
 pub fn ScanPage() -> impl IntoView {
     let (barcode, set_barcode) = create_signal(String::new());
-    let (scan_result, set_scan_result) = create_signal(None::<Volume>);
+    let (scan_result, set_scan_result) = create_signal(None::<ScanResult>);
     let (loading, set_loading) = create_signal(false);
     let app_state = use_app_state();
     let api_client = use_context::<ApiClient>().expect("ApiClient not provided");
@@ -1191,19 +2110,26 @@ pub fn ScanPage() -> impl IntoView {
         async move {
             set_loading.set(true);
             match api_client.scan_barcode(&barcode).await {
-                Ok(Some(volume)) => {
-                    set_scan_result.set(Some(volume));
-                    app_state.add_notification(
-                        "Volume found!".to_string(), 
-                        NotificationLevel::Success
-                    );
-                }
-                Ok(None) => {
-                    set_scan_result.set(None);
-                    app_state.add_notification(
-                        "No volume found for this barcode".to_string(), 
-                        NotificationLevel::Warning
-                    );
+                Ok(result) => {
+                    set_scan_result.set(Some(result));
+                    match &result {
+                        ScanResult::Volume(_) => app_state.add_notification(
+                            "Volume found!".to_string(), 
+                            NotificationLevel::Success
+                        ),
+                        ScanResult::ExistingTitle(_) => app_state.add_notification(
+                            "Title found in collection!".to_string(), 
+                            NotificationLevel::Success
+                        ),
+                        ScanResult::NewTitleMetadata(_) => app_state.add_notification(
+                            "New title metadata retrieved!".to_string(), 
+                            NotificationLevel::Info
+                        ),
+                        ScanResult::UnknownIsbn(_) => app_state.add_notification(
+                            "Unknown ISBN - you can add it manually".to_string(), 
+                            NotificationLevel::Warning
+                        ),
+                    }
                 }
                 Err(e) => {
                     app_state.add_notification(
@@ -1227,23 +2153,26 @@ pub fn ScanPage() -> impl IntoView {
     };
 
     view! {
-        <div class="max-w-2xl mx-auto">
-            <h1 class="text-2xl font-bold mb-6">"Scan a barcode"</h1>
+        <div class="max-w-4xl mx-auto">
+            <h1 class="text-2xl font-bold mb-6">"Barcode Scanner"</h1>
             
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        "Barcode"
+                        "Barcode (Volume or ISBN)"
                     </label>
                     <input
                         type="text"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Scan or enter barcode..."
+                        placeholder="Scan volume barcode (VOL-XXXXXX) or ISBN (13 digits)..."
                         prop:value=barcode
                         on:input=move |ev| set_barcode.set(event_target_value(&ev))
                         on:keydown=on_scan
                         autofocus
                     />
+                    <p class="text-xs text-gray-500 mt-1">
+                        "Volume barcodes (Code 128) for loan/return operations, ISBN barcodes (EAN-13) for title lookup/add"
+                    </p>
                 </div>
 
                 <Show when=move || loading.get()>
@@ -1254,21 +2183,146 @@ pub fn ScanPage() -> impl IntoView {
                 </Show>
 
                 <Show when=move || scan_result.get().is_some()>
-                    {move || scan_result.get().map(|volume| view! {
-                        <div class="mt-6 p-4 bg-green-50 border border-green-200 rounded-md">
-                            <h3 class="text-lg font-semibold text-green-800">"Volume found!"</h3>
-                            <VolumeCard volume=volume />
-                            <div class="mt-4 flex space-x-2">
-                                <button class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-                                    "Loan"
-                                </button>
-                                <button class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-                                    "Return"
-                                </button>
-                            </div>
-                        </div>
+                    {move || scan_result.get().map(|result| match result {
+                        ScanResult::Volume(volume_context) => view! {
+                            <VolumeResultDisplay volume_context=volume_context />
+                        }.into_view(),
+                        ScanResult::ExistingTitle(title_with_volumes) => view! {
+                            <ExistingTitleDisplay title_with_volumes=title_with_volumes />
+                        }.into_view(),
+                        ScanResult::NewTitleMetadata(metadata) => view! {
+                            <NewTitleDisplay metadata=metadata />
+                        }.into_view(),
+                        ScanResult::UnknownIsbn(isbn) => view! {
+                            <UnknownIsbnDisplay isbn=isbn />
+                        }.into_view(),
                     })}
                 </Show>
+            </div>
+        </div>
+    }
+}
+
+#[component]
+fn VolumeResultDisplay(volume_context: VolumeWithTitleContext) -> impl IntoView {
+    view! {
+        <div class="mt-6 space-y-6">
+            // Title context
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-md">
+                <h3 class="text-lg font-semibold text-blue-800 mb-2">
+                    {format!("Volume {}/{} of \"{}\"", 
+                        volume_context.volume.copy_number,
+                        volume_context.other_copies.len() + 1,
+                        volume_context.title.title
+                    )}
+                </h3>
+                // ... rest of volume display
+            </div>
+            
+            // Actions for volume
+            <div class="flex space-x-4">
+                <Show when=move || volume_context.volume.loan_status == LoanStatus::Available>
+                    <button class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+                        "Loan This Volume"
+                    </button>
+                </Show>
+                <Show when=move || volume_context.volume.loan_status == LoanStatus::Loaned>
+                    <button class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
+                        "Return This Volume"
+                    </button>
+                </Show>
+            </div>
+        </div>
+    }
+}
+
+#[component]
+fn ExistingTitleDisplay(title_with_volumes: TitleWithVolumes) -> impl IntoView {
+    view! {
+        <div class="mt-6 space-y-6">
+            <div class="p-4 bg-green-50 border border-green-200 rounded-md">
+                <h3 class="text-lg font-semibold text-green-800 mb-2">
+                    {format!("\"{}\" - Found in Collection", title_with_volumes.title.title)}
+                </h3>
+                <p class="text-sm text-gray-600">
+                    {format!("{} copies total, {} available", 
+                        title_with_volumes.total_volumes,
+                        title_with_volumes.available_volumes
+                    )}
+                </p>
+            </div>
+            
+            // Actions for existing title
+            <div class="flex space-x-4">
+                <button class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+                    "View Title Details"
+                </button>
+                <Show when=move || title_with_volumes.available_volumes > 0>
+                    <button class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
+                        "Loan Available Copy"
+                    </button>
+                </Show>
+                <button class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-medium">
+                    "Add Another Copy"
+                </button>
+            </div>
+        </div>
+    }
+}
+
+#[component]
+fn NewTitleDisplay(metadata: ExternalMetadata) -> impl IntoView {
+    view! {
+        <div class="mt-6 space-y-6">
+            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                <h3 class="text-lg font-semibold text-yellow-800 mb-2">
+                    {format!("New Title: \"{}\"", metadata.title)}
+                </h3>
+                <p class="text-sm text-gray-600 mb-2">
+                    {format!("Author: {}", metadata.authors.join(", "))}
+                </p>
+                <p class="text-sm text-gray-600">
+                    {format!("Publisher: {} ({})", 
+                        metadata.publisher.unwrap_or_else(|| "Unknown".to_string()),
+                        metadata.publication_year.map(|y| y.to_string()).unwrap_or_else(|| "Unknown".to_string())
+                    )}
+                </p>
+            </div>
+            
+            // Actions for new title
+            <div class="flex space-x-4">
+                <button class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
+                    "Add to Collection"
+                </button>
+                <button class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+                    "Add to Wishlist"
+                </button>
+            </div>
+        </div>
+    }
+}
+
+#[component]
+fn UnknownIsbnDisplay(isbn: String) -> impl IntoView {
+    view! {
+        <div class="mt-6 space-y-6">
+            <div class="p-4 bg-gray-50 border border-gray-200 rounded-md">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">
+                    "Unknown ISBN"
+                </h3>
+                <p class="text-sm text-gray-600 mb-2">
+                    {format!("ISBN: {}", isbn)}
+                </p>
+                <p class="text-sm text-gray-600">
+                    "This ISBN was not found in external databases. You can add it manually."
+                </p>
+            </div>
+            
+            // Actions for unknown ISBN
+            <div class="flex space-x-4">
+                <button class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
+                    "Add Manually"
+                </button>
             </div>
         </div>
     }
