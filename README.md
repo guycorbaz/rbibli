@@ -21,9 +21,8 @@ rbibli is a comprehensive web application for managing a personal book collectio
 
 ### Backend
 - **Language**: Rust
-- **Web Framework**: Axum (async, performant, type-safe)
+- **Web Framework**: actix-web
 - **Database**: MariaDB/PostgreSQL/MySQL with SQLx
-- **Authentication**: JWT
 - **Validation**: validator crate
 - **Logging**: tracing + tracing-subscriber
 
@@ -37,8 +36,7 @@ rbibli is a comprehensive web application for managing a personal book collectio
 ### Infrastructure
 - **Containerization**: Docker + Docker Compose
 - **Reverse Proxy**: Nginx
-- **Cache**: Redis
-- **File Storage**: Local filesystem or S3-compatible
+- **File Storage**: Local filesystem
 
 ## Project Status
 
