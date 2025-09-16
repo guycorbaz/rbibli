@@ -1,5 +1,8 @@
-/target
+target
+frontend/target
+backend/target
 .aider*
-.env
 .idea
-.tml
+frontend/.idea
+backend/.idea
+frontend/dist
