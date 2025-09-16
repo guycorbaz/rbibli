@@ -1,8 +1,8 @@
-target
-frontend/target
-backend/target
 .aider*
 .idea
+target
 frontend/.idea
-backend/.idea
+frontend/target
 frontend/dist
+backend/.idea
+backend/target
