@@ -1,9 +1,6 @@
-.aider*
-.idea
+.aider
 target
-frontend/.idea
-frontend/target
-frontend/dist
-frontend/public
-backend/.idea
-backend/target
+.idea/
+target/
+dist/
+public/
