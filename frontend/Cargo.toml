@@ -1,0 +1,47 @@
+[package]
+name = "frontend"
+version = "0.1.0"
+edition = "2024"
+authors = ["Guy Corbaz"]
+
+#[lib]
+#crate-type = ["cdylib"]
+
+[features]
+default = ["csr"]
+csr= []
+ssr = []
+
+[dependencies]
+leptos = { version = "0.8.5", features = ["csr"] }
+leptos_router = { version = "0.8.5"}
+leptos_meta = { version = "0.8.5"}
+console_error_panic_hook = "0.1.7"
+console_log = "1.0"
+log = "0.4.28"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.143"
+reqwest = { version = "0.12.23", features = ["json"] }
+wasm-bindgen = "0.2.101"
+wasm-bindgen-futures = "0.4.51"
+uuid = { version = "1.18.1", features = ["v4", "serde", "js"] }
+chrono = { version = "0.4.42", features = ["serde", "wasmbind"] }
+tracing = "0.1.41"
+
+[dependencies.web-sys]
+version = "0.3.78"
+features = [
+  "console",
+  "HtmlInputElement",
+  "HtmlSelectElement",
+  "HtmlTextAreaElement",
+  "KeyboardEvent",
+  "Event",
+  "EventTarget",
+  "Window",
+  "Document",
+  "Element",
+  "HtmlElement",
+  "Location",
+]
+
