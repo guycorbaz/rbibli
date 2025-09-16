@@ -4,5 +4,6 @@ target
 frontend/.idea
 frontend/target
 frontend/dist
+frontend/public
 backend/.idea
 backend/target
