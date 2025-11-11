@@ -1,0 +1,34 @@
+import { Button, VerticalBox } from "std-widgets.slint";
+import {SideBar} from "side_bar.slint";
+import {AboutPage, TitlesPage, TitleData} from "pages/pages.slint";
+
+export component AppWindow inherits Window {
+    in-out property <[TitleData]> titles: [];
+    callback load-titles();
+    //preferred-width: 700px;
+    //preferred-height: 500px;
+    min-width: 700px;
+    min-height: 500px;
+    title: @tr("Personal Library");
+    //icon: @image-url("../../logo/slint-logo-small-light.png");
+
+
+    HorizontalLayout {
+        side-bar := SideBar {
+            title: @tr("Personal Library");
+            model: [@tr("Menu" => "Volumes"), @tr("Menu" => "Subscribers"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
+        }
+
+        if(side-bar.current-item == 0) : TitlesPage {
+            titles: root.titles;
+            load-titles => {
+                root.load-titles();
+            }
+        }
+        //if(side-bar.current-item == 1) : ListViewPage {}
+        //if(side-bar.current-item == 2) : TableViewPage {}
+        //if(side-bar.current-item == 3) : TextEditPage {}
+        //if(side-bar.current-item == 4) : EasingsPage {}
+        if(side-bar.current-item == 4) : AboutPage {}
+    }
+}

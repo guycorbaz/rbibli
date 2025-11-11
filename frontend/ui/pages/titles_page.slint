@@ -1,0 +1,119 @@
+import { Page } from "page.slint";
+import { ListView, VerticalBox, HorizontalBox, Button } from "std-widgets.slint";
+
+// Structure to hold title data
+export struct TitleData {
+    title: string,
+    subtitle: string,
+    isbn: string,
+    publisher: string,
+    volume-count: int,
+    language: string,
+}
+
+export component TitlesPage inherits Page {
+    title: @tr("Titles");
+    description: @tr("Manage your book titles and volumes");
+
+    // Property to hold the list of titles
+    in-out property <[TitleData]> titles: [];
+
+    // Callback to request loading titles
+    callback load-titles();
+
+    VerticalBox {
+        alignment: stretch;
+        padding: 20px;
+
+        HorizontalBox {
+            alignment: start;
+            height: 40px;
+            Text {
+                text: @tr("Book Titles");
+                font-size: 24px;
+                font-weight: 700;
+            }
+        }
+
+        HorizontalBox {
+            height: 40px;
+            alignment: end;
+            Button {
+                text: @tr("Refresh");
+                clicked => {
+                    root.load-titles();
+                }
+            }
+        }
+
+        // List of titles
+        if titles.length == 0: Text {
+            text: @tr("No titles found. Click Refresh to load titles from the backend.");
+            color: #888;
+        }
+
+        if titles.length > 0: ListView {
+            for title[index] in titles: Rectangle {
+                height: 80px;
+                border-width: 1px;
+                border-color: #ddd;
+                border-radius: 4px;
+                background: Math.mod(index, 2) == 0 ? #fafafa : white;
+
+                HorizontalLayout {
+                    padding: 8px;
+                    spacing: 10px;
+
+                    VerticalLayout {
+                        alignment: start;
+                        spacing: 4px;
+
+                        Text {
+                            text: title.title;
+                            font-size: 15px;
+                            font-weight: 600;
+                            overflow: elide;
+                        }
+
+                        if title.subtitle != "": Text {
+                            text: title.subtitle;
+                            font-size: 13px;
+                            color: #666;
+                            overflow: elide;
+                        }
+
+                        HorizontalBox {
+                            spacing: 15px;
+
+                            if title.isbn != "": Text {
+                                text: "ISBN: " + title.isbn;
+                                font-size: 11px;
+                                color: #888;
+                            }
+
+                            if title.publisher != "": Text {
+                                text: title.publisher;
+                                font-size: 11px;
+                                color: #888;
+                                overflow: elide;
+                            }
+
+                            Text {
+                                text: "Volumes: " + title.volume-count;
+                                font-size: 11px;
+                                color: #0066cc;
+                                font-weight: 600;
+                            }
+
+                            Text {
+                                text: title.language;
+                                font-size: 11px;
+                                color: #888;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

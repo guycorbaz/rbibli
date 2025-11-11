@@ -1,0 +1,16 @@
+// Copyright © SixtyFPS GmbH <info@slint.dev>
+// SPDX-License-Identifier: MIT
+
+import { AboutSlint } from "std-widgets.slint";
+import { Page } from "page.slint";
+
+export component AboutPage inherits Page {
+    title: @tr("About");
+    show-enable-switch: false;
+    description: @tr("Personal book library management");
+
+    AboutSlint { }
+
+    // Spacer
+    Rectangle { }
+}
