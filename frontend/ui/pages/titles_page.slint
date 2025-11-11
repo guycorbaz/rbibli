@@ -1,5 +1,5 @@
 import { Page } from "page.slint";
-import { ListView, VerticalBox, HorizontalBox, Button } from "std-widgets.slint";
+import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
 
 // Structure to hold title data
 export struct TitleData {
@@ -17,9 +17,20 @@ export component TitlesPage inherits Page {
 
     // Property to hold the list of titles
     in-out property <[TitleData]> titles: [];
+    in-out property <bool> show-create-dialog: false;
+    in-out property <string> new-title: "";
+    in-out property <string> new-subtitle: "";
+    in-out property <string> new-isbn: "";
+    in-out property <string> new-publisher: "";
+    in-out property <string> new-publication-year: "";
+    in-out property <string> new-pages: "";
+    in-out property <string> new-language: "fr";
+    in-out property <string> new-genre: "";
+    in-out property <string> new-summary: "";
 
     // Callback to request loading titles
     callback load-titles();
+    callback create-title(string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publication_year, pages, language, genre, summary
 
     VerticalBox {
         alignment: stretch;
@@ -35,18 +46,214 @@ export component TitlesPage inherits Page {
                 font-weight: 700;
             }
 
-            Button {
-                text: @tr("Refresh");
-                min-width: 100px;
-                height: 35px;
-                clicked => {
-                    root.load-titles();
+            HorizontalBox {
+                spacing: 10px;
+
+                Button {
+                    text: @tr("Refresh");
+                    min-width: 100px;
+                    height: 35px;
+                    clicked => {
+                        root.load-titles();
+                    }
+                }
+
+                Button {
+                    text: @tr("+ New Title");
+                    primary: true;
+                    min-width: 150px;
+                    height: 35px;
+                    clicked => {
+                        root.show-create-dialog = true;
+                        root.new-title = "";
+                        root.new-subtitle = "";
+                        root.new-isbn = "";
+                        root.new-publisher = "";
+                        root.new-publication-year = "";
+                        root.new-pages = "";
+                        root.new-language = "fr";
+                        root.new-genre = "";
+                        root.new-summary = "";
+                    }
+                }
+            }
+        }
+
+        // Create title dialog
+        if show-create-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+            height: 650px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 12px;
+
+                Text {
+                    text: @tr("Create New Title");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Title:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-title;
+                        placeholder-text: @tr("Title (required)");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Subtitle:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-subtitle;
+                        placeholder-text: @tr("Subtitle (optional)");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("ISBN:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-isbn;
+                        placeholder-text: @tr("ISBN-13 or ISBN-10");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Publisher:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-publisher;
+                        placeholder-text: @tr("Publisher name");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Pub. Year:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-publication-year;
+                        placeholder-text: @tr("E.g., 2024");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Pages:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-pages;
+                        placeholder-text: @tr("Number of pages");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Language:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-language;
+                        placeholder-text: @tr("E.g., fr, en, es");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Genre:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-genre;
+                        placeholder-text: @tr("E.g., Fiction, Science");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Summary:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.new-summary;
+                        height: 100px;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-create-dialog = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Create");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.new-title != "";
+                        clicked => {
+                            root.create-title(
+                                root.new-title,
+                                root.new-subtitle,
+                                root.new-isbn,
+                                root.new-publisher,
+                                root.new-publication-year,
+                                root.new-pages,
+                                root.new-language,
+                                root.new-genre,
+                                root.new-summary
+                            );
+                            root.show-create-dialog = false;
+                        }
+                    }
                 }
             }
         }
 
         // List of titles
-        if titles.length == 0: Text {
+        if titles.length == 0 && !show-create-dialog: Text {
             text: @tr("No titles found. Click Refresh to load titles from the backend.");
             color: #888;
         }

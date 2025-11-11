@@ -9,7 +9,7 @@ mod models;
 mod api_client;
 
 use api_client::ApiClient;
-use models::{CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest};
+use models::{CreateTitleRequest, CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest};
 
 slint::include_modules!();
 
@@ -439,6 +439,68 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to delete publisher: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the create-title callback
+    {
+        let load_titles = load_titles.clone();
+        let api_client = api_client.clone();
+        ui.on_create_title(move |title, subtitle, isbn, publisher, publication_year, pages, language, genre, summary| {
+            println!("Creating title: {}", title);
+
+            let request = CreateTitleRequest {
+                title: title.to_string(),
+                subtitle: if subtitle.is_empty() {
+                    None
+                } else {
+                    Some(subtitle.to_string())
+                },
+                isbn: if isbn.is_empty() {
+                    None
+                } else {
+                    Some(isbn.to_string())
+                },
+                publisher: if publisher.is_empty() {
+                    None
+                } else {
+                    Some(publisher.to_string())
+                },
+                publication_year: if publication_year.is_empty() {
+                    None
+                } else {
+                    publication_year.parse::<i32>().ok()
+                },
+                pages: if pages.is_empty() {
+                    None
+                } else {
+                    pages.parse::<i32>().ok()
+                },
+                language: language.to_string(),
+                dewey_code: None,
+                dewey_category: None,
+                genre: if genre.is_empty() {
+                    None
+                } else {
+                    Some(genre.to_string())
+                },
+                summary: if summary.is_empty() {
+                    None
+                } else {
+                    Some(summary.to_string())
+                },
+                cover_url: None,
+            };
+
+            match api_client.create_title(request) {
+                Ok(id) => {
+                    println!("Successfully created title with ID: {}", id);
+                    load_titles();
+                }
+                Err(e) => {
+                    eprintln!("Failed to create title: {}", e);
                 }
             }
         });
