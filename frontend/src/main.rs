@@ -9,7 +9,7 @@ mod models;
 mod api_client;
 
 use api_client::ApiClient;
-use models::{CreateTitleRequest, CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest};
+use models::{CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest};
 
 slint::include_modules!();
 
@@ -35,12 +35,17 @@ fn main() -> Result<(), Box<dyn Error>> {
                     let slint_titles: Vec<TitleData> = titles_data
                         .iter()
                         .map(|t| TitleData {
+                            id: t.title.id.clone().into(),
                             title: t.title.title.clone().into(),
                             subtitle: t.title.subtitle.clone().unwrap_or_default().into(),
                             isbn: t.title.isbn.clone().unwrap_or_default().into(),
                             publisher: t.title.publisher.clone().unwrap_or_default().into(),
                             volume_count: t.volume_count as i32,
                             language: t.title.language.clone().into(),
+                            publication_year: t.title.publication_year.map(|y| y.to_string()).unwrap_or_default().into(),
+                            pages: t.title.pages.map(|p| p.to_string()).unwrap_or_default().into(),
+                            genre: t.title.genre.clone().unwrap_or_default().into(),
+                            summary: t.title.summary.clone().unwrap_or_default().into(),
                         })
                         .collect();
 
@@ -501,6 +506,76 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to create title: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the update-title callback
+    {
+        let load_titles = load_titles.clone();
+        let api_client = api_client.clone();
+        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publication_year, pages, language, genre, summary| {
+            println!("Updating title: {}", id);
+
+            let request = UpdateTitleRequest {
+                title: if title.is_empty() {
+                    None
+                } else {
+                    Some(title.to_string())
+                },
+                subtitle: if subtitle.is_empty() {
+                    None
+                } else {
+                    Some(subtitle.to_string())
+                },
+                isbn: if isbn.is_empty() {
+                    None
+                } else {
+                    Some(isbn.to_string())
+                },
+                publisher: if publisher.is_empty() {
+                    None
+                } else {
+                    Some(publisher.to_string())
+                },
+                publication_year: if publication_year.is_empty() {
+                    None
+                } else {
+                    publication_year.parse::<i32>().ok()
+                },
+                pages: if pages.is_empty() {
+                    None
+                } else {
+                    pages.parse::<i32>().ok()
+                },
+                language: if language.is_empty() {
+                    None
+                } else {
+                    Some(language.to_string())
+                },
+                dewey_code: None,
+                dewey_category: None,
+                genre: if genre.is_empty() {
+                    None
+                } else {
+                    Some(genre.to_string())
+                },
+                summary: if summary.is_empty() {
+                    None
+                } else {
+                    Some(summary.to_string())
+                },
+                cover_url: None,
+            };
+
+            match api_client.update_title(&id.to_string(), request) {
+                Ok(_) => {
+                    println!("Successfully updated title");
+                    load_titles();
+                }
+                Err(e) => {
+                    eprintln!("Failed to update title: {}", e);
                 }
             }
         });

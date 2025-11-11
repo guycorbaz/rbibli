@@ -9,6 +9,7 @@ export component AppWindow inherits Window {
     in-out property <[PublisherData]> publishers: [];
     callback load-titles();
     callback create-title(string, string, string, string, string, string, string, string, string);
+    callback update-title(string, string, string, string, string, string, string, string, string, string);
     callback load-locations();
     callback create-location(string, string, string);
     callback delete-location(string);
@@ -40,6 +41,9 @@ export component AppWindow inherits Window {
             }
             create-title(title, subtitle, isbn, publisher, publication-year, pages, language, genre, summary) => {
                 root.create-title(title, subtitle, isbn, publisher, publication-year, pages, language, genre, summary);
+            }
+            update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre, summary) => {
+                root.update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre, summary);
             }
         }
         if(side-bar.current-item == 1) : LocationsPage {

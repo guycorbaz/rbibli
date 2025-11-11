@@ -1,4 +1,4 @@
-use crate::models::{TitleWithCount, CreateTitleRequest, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest};
+use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest};
 use std::error::Error;
 
 /// API client for communicating with the rbibli backend
@@ -59,6 +59,27 @@ impl ApiClient {
         println!("Successfully created title with ID: {}", title_id);
 
         Ok(title_id)
+    }
+
+    /// Update a title by ID
+    pub fn update_title(&self, title_id: &str, request: UpdateTitleRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/titles/{}", self.base_url, title_id);
+
+        println!("Updating title: {}", title_id);
+
+        let response = self.client
+            .put(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully updated title: {}", title_id);
+
+        Ok(())
     }
 
     /// Fetch all locations from the backend with hierarchical paths

@@ -48,6 +48,23 @@ pub struct CreateTitleRequest {
     pub cover_url: Option<String>,
 }
 
+/// UpdateTitleRequest for updating an existing title
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateTitleRequest {
+    pub title: Option<String>,
+    pub subtitle: Option<String>,
+    pub isbn: Option<String>,
+    pub publisher: Option<String>,
+    pub publication_year: Option<i32>,
+    pub pages: Option<i32>,
+    pub language: Option<String>,
+    pub dewey_code: Option<String>,
+    pub dewey_category: Option<String>,
+    pub genre: Option<String>,
+    pub summary: Option<String>,
+    pub cover_url: Option<String>,
+}
+
 /// Location represents a physical location where volumes can be stored
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Location {

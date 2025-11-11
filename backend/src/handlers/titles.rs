@@ -1,5 +1,5 @@
 use actix_web::{web, HttpResponse, Responder};
-use crate::models::{TitleWithCount, CreateTitleRequest};
+use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest};
 use crate::AppState;
 use log::{info, warn, error, debug};
 use sqlx::Row;
@@ -149,6 +149,157 @@ pub async fn create_title(
                 "error": {
                     "code": "DATABASE_ERROR",
                     "message": "Failed to create title",
+                    "details": {
+                        "error": e.to_string()
+                    }
+                }
+            }))
+        }
+    }
+}
+
+/// PUT /api/v1/titles/{id} - Update a title
+pub async fn update_title(
+    data: web::Data<AppState>,
+    id: web::Path<String>,
+    req: web::Json<UpdateTitleRequest>,
+) -> impl Responder {
+    info!("PUT /api/v1/titles/{} - Updating title", id);
+
+    // Build dynamic UPDATE query based on provided fields
+    let mut update_parts = Vec::new();
+    let mut has_updates = false;
+
+    if req.title.is_some() {
+        update_parts.push("title = ?");
+        has_updates = true;
+    }
+    if req.subtitle.is_some() {
+        update_parts.push("subtitle = ?");
+        has_updates = true;
+    }
+    if req.isbn.is_some() {
+        update_parts.push("isbn = ?");
+        has_updates = true;
+    }
+    if req.publisher.is_some() {
+        update_parts.push("publisher_old = ?");
+        has_updates = true;
+    }
+    if req.publication_year.is_some() {
+        update_parts.push("publication_year = ?");
+        has_updates = true;
+    }
+    if req.pages.is_some() {
+        update_parts.push("pages = ?");
+        has_updates = true;
+    }
+    if req.language.is_some() {
+        update_parts.push("language = ?");
+        has_updates = true;
+    }
+    if req.dewey_code.is_some() {
+        update_parts.push("dewey_code = ?");
+        has_updates = true;
+    }
+    if req.dewey_category.is_some() {
+        update_parts.push("dewey_category = ?");
+        has_updates = true;
+    }
+    if req.genre.is_some() {
+        update_parts.push("genre = ?");
+        has_updates = true;
+    }
+    if req.summary.is_some() {
+        update_parts.push("summary = ?");
+        has_updates = true;
+    }
+    if req.cover_url.is_some() {
+        update_parts.push("cover_url = ?");
+        has_updates = true;
+    }
+
+    if !has_updates {
+        warn!("No fields to update for title {}", id);
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": {
+                "code": "NO_UPDATES",
+                "message": "No fields provided for update"
+            }
+        }));
+    }
+
+    update_parts.push("updated_at = NOW()");
+    let update_clause = update_parts.join(", ");
+    let query = format!("UPDATE titles SET {} WHERE id = ?", update_clause);
+
+    debug!("Update query: {}", query);
+
+    let mut query_builder = sqlx::query(&query);
+
+    // Bind parameters in the same order as update_parts
+    if let Some(ref title) = req.title {
+        query_builder = query_builder.bind(title);
+    }
+    if let Some(ref subtitle) = req.subtitle {
+        query_builder = query_builder.bind(subtitle);
+    }
+    if let Some(ref isbn) = req.isbn {
+        query_builder = query_builder.bind(isbn);
+    }
+    if let Some(ref publisher) = req.publisher {
+        query_builder = query_builder.bind(publisher);
+    }
+    if let Some(publication_year) = req.publication_year {
+        query_builder = query_builder.bind(publication_year);
+    }
+    if let Some(pages) = req.pages {
+        query_builder = query_builder.bind(pages);
+    }
+    if let Some(ref language) = req.language {
+        query_builder = query_builder.bind(language);
+    }
+    if let Some(ref dewey_code) = req.dewey_code {
+        query_builder = query_builder.bind(dewey_code);
+    }
+    if let Some(ref dewey_category) = req.dewey_category {
+        query_builder = query_builder.bind(dewey_category);
+    }
+    if let Some(ref genre) = req.genre {
+        query_builder = query_builder.bind(genre);
+    }
+    if let Some(ref summary) = req.summary {
+        query_builder = query_builder.bind(summary);
+    }
+    if let Some(ref cover_url) = req.cover_url {
+        query_builder = query_builder.bind(cover_url);
+    }
+
+    query_builder = query_builder.bind(id.as_str());
+
+    match query_builder.execute(&data.db_pool).await {
+        Ok(result) => {
+            if result.rows_affected() == 0 {
+                warn!("Title {} not found", id);
+                HttpResponse::NotFound().json(serde_json::json!({
+                    "error": {
+                        "code": "NOT_FOUND",
+                        "message": "Title not found"
+                    }
+                }))
+            } else {
+                info!("Successfully updated title {}", id);
+                HttpResponse::Ok().json(serde_json::json!({
+                    "message": "Title updated successfully"
+                }))
+            }
+        }
+        Err(e) => {
+            error!("Database error while updating title: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to update title",
                     "details": {
                         "error": e.to_string()
                     }
