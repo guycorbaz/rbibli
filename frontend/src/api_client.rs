@@ -1,4 +1,4 @@
-use crate::models::TitleWithCount;
+use crate::models::{TitleWithCount, LocationWithPath, CreateLocationRequest};
 use std::error::Error;
 
 /// API client for communicating with the rbibli backend
@@ -33,6 +33,71 @@ impl ApiClient {
         println!("Successfully fetched {} titles", titles.len());
 
         Ok(titles)
+    }
+
+    /// Fetch all locations from the backend with hierarchical paths
+    pub fn get_locations(&self) -> Result<Vec<LocationWithPath>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/locations", self.base_url);
+
+        println!("Fetching locations from: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let locations: Vec<LocationWithPath> = response.json()?;
+
+        println!("Successfully fetched {} locations", locations.len());
+
+        Ok(locations)
+    }
+
+    /// Create a new location
+    pub fn create_location(&self, request: CreateLocationRequest) -> Result<String, Box<dyn Error>> {
+        let url = format!("{}/api/v1/locations", self.base_url);
+
+        println!("Creating location: {}", request.name);
+
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        let result: serde_json::Value = response.json()?;
+        let location_id = result["id"].as_str()
+            .ok_or("No ID in response")?
+            .to_string();
+
+        println!("Successfully created location with ID: {}", location_id);
+
+        Ok(location_id)
+    }
+
+    /// Delete a location by ID
+    pub fn delete_location(&self, location_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/locations/{}", self.base_url, location_id);
+
+        println!("Deleting location: {}", location_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully deleted location: {}", location_id);
+
+        Ok(())
     }
 }
 

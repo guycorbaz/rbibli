@@ -1,10 +1,14 @@
 import { Button, VerticalBox } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, LocationsPage, LocationData} from "pages/pages.slint";
 
 export component AppWindow inherits Window {
     in-out property <[TitleData]> titles: [];
+    in-out property <[LocationData]> locations: [];
     callback load-titles();
+    callback load-locations();
+    callback create-location(string, string, string);
+    callback delete-location(string);
     //preferred-width: 700px;
     //preferred-height: 500px;
     min-width: 700px;
@@ -16,7 +20,7 @@ export component AppWindow inherits Window {
     HorizontalLayout {
         side-bar := SideBar {
             title: @tr("Personal Library");
-            model: [@tr("Menu" => "Volumes"), @tr("Menu" => "Subscribers"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
+            model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
         }
 
         if(side-bar.current-item == 0) : TitlesPage {
@@ -25,10 +29,20 @@ export component AppWindow inherits Window {
                 root.load-titles();
             }
         }
-        //if(side-bar.current-item == 1) : ListViewPage {}
+        if(side-bar.current-item == 1) : LocationsPage {
+            locations: root.locations;
+            load-locations => {
+                root.load-locations();
+            }
+            create-location(name, description, parent-id) => {
+                root.create-location(name, description, parent-id);
+            }
+            delete-location(id) => {
+                root.delete-location(id);
+            }
+        }
         //if(side-bar.current-item == 2) : TableViewPage {}
         //if(side-bar.current-item == 3) : TextEditPage {}
-        //if(side-bar.current-item == 4) : EasingsPage {}
         if(side-bar.current-item == 4) : AboutPage {}
     }
 }

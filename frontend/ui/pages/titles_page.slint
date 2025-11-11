@@ -26,20 +26,19 @@ export component TitlesPage inherits Page {
         padding: 20px;
 
         HorizontalBox {
-            alignment: start;
-            height: 40px;
+            alignment: space-between;
+            height: 50px;
+
             Text {
                 text: @tr("Book Titles");
                 font-size: 24px;
                 font-weight: 700;
             }
-        }
 
-        HorizontalBox {
-            height: 40px;
-            alignment: end;
             Button {
                 text: @tr("Refresh");
+                min-width: 100px;
+                height: 35px;
                 clicked => {
                     root.load-titles();
                 }

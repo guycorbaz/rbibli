@@ -1,0 +1,245 @@
+import { Page } from "page.slint";
+import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+
+// Structure to hold location data
+export struct LocationData {
+    id: string,
+    name: string,
+    description: string,
+    parent-id: string,
+    full-path: string,
+    level: int,
+}
+
+export component LocationsPage inherits Page {
+    title: @tr("Locations");
+    description: @tr("Manage storage locations for your volumes");
+
+    // Properties
+    in-out property <[LocationData]> locations: [];
+    in-out property <bool> show-create-dialog: false;
+    in-out property <string> new-location-name: "";
+    in-out property <string> new-location-description: "";
+    in-out property <string> new-location-parent-id: "";
+
+    // Callbacks
+    callback load-locations();
+    callback create-location(string, string, string); // name, description, parent_id
+    callback delete-location(string); // id
+
+    VerticalBox {
+        alignment: stretch;
+        padding: 20px;
+
+        // Header with title and buttons
+        HorizontalBox {
+            alignment: space-between;
+            height: 50px;
+
+            Text {
+                text: @tr("Storage Locations");
+                font-size: 24px;
+                font-weight: 700;
+            }
+
+            HorizontalBox {
+                spacing: 10px;
+
+                Button {
+                    text: @tr("Refresh");
+                    min-width: 100px;
+                    height: 35px;
+                    clicked => {
+                        root.load-locations();
+                    }
+                }
+
+                Button {
+                    text: @tr("+ New Location");
+                    primary: true;
+                    min-width: 150px;
+                    height: 35px;
+                    clicked => {
+                        root.show-create-dialog = true;
+                        root.new-location-name = "";
+                        root.new-location-description = "";
+                        root.new-location-parent-id = "";
+                    }
+                }
+            }
+        }
+
+        // Create location dialog
+        if show-create-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+            height: 250px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 15px;
+
+                Text {
+                    text: @tr("Create New Location");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Name:");
+                        width: 100px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-location-name;
+                        placeholder-text: @tr("Location name (required)");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Description:");
+                        width: 100px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.new-location-description;
+                        height: 60px;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-create-dialog = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Create");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.new-location-name != "";
+                        clicked => {
+                            root.create-location(
+                                root.new-location-name,
+                                root.new-location-description,
+                                root.new-location-parent-id
+                            );
+                            root.show-create-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Empty state
+        if locations.length == 0 && !show-create-dialog: Rectangle {
+            height: 100px;
+            Text {
+                text: @tr("No locations found. Click 'New Location' to create one.");
+                color: #888;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        // List of locations
+        if locations.length > 0: ListView {
+            for location[index] in locations: Rectangle {
+                height: 70px;
+                border-width: 1px;
+                border-color: #ddd;
+                border-radius: 4px;
+                background: Math.mod(index, 2) == 0 ? #fafafa : white;
+
+                HorizontalLayout {
+                    padding: 10px;
+                    spacing: 10px;
+
+                    // Indentation based on level
+                    Rectangle {
+                        width: location.level * 20px;
+                    }
+
+                    // Location info
+                    VerticalLayout {
+                        alignment: start;
+                        spacing: 4px;
+
+                        HorizontalBox {
+                            spacing: 10px;
+
+                            Text {
+                                text: location.name;
+                                font-size: 15px;
+                                font-weight: 600;
+                                overflow: elide;
+                            }
+
+                            if location.level > 0: Text {
+                                text: "→";
+                                color: #888;
+                                font-size: 12px;
+                            }
+                        }
+
+                        Text {
+                            text: location.full-path;
+                            font-size: 12px;
+                            color: #666;
+                            overflow: elide;
+                        }
+
+                        if location.description != "": Text {
+                            text: location.description;
+                            font-size: 11px;
+                            color: #888;
+                            overflow: elide;
+                        }
+                    }
+
+                    // Action buttons
+                    HorizontalBox {
+                        width: 200px;
+                        spacing: 8px;
+                        alignment: end;
+
+                        Button {
+                            text: @tr("Add Child");
+                            min-width: 90px;
+                            height: 32px;
+                            clicked => {
+                                root.show-create-dialog = true;
+                                root.new-location-name = "";
+                                root.new-location-description = "";
+                                root.new-location-parent-id = location.id;
+                            }
+                        }
+
+                        Button {
+                            text: @tr("Delete");
+                            min-width: 80px;
+                            height: 32px;
+                            clicked => {
+                                root.delete-location(location.id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
