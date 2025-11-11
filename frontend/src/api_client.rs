@@ -1,4 +1,4 @@
-use crate::models::{TitleWithCount, LocationWithPath, CreateLocationRequest};
+use crate::models::{TitleWithCount, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest};
 use std::error::Error;
 
 /// API client for communicating with the rbibli backend
@@ -96,6 +96,71 @@ impl ApiClient {
         }
 
         println!("Successfully deleted location: {}", location_id);
+
+        Ok(())
+    }
+
+    /// Fetch all authors from the backend with title counts
+    pub fn get_authors(&self) -> Result<Vec<AuthorWithTitleCount>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/authors", self.base_url);
+
+        println!("Fetching authors from: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let authors: Vec<AuthorWithTitleCount> = response.json()?;
+
+        println!("Successfully fetched {} authors", authors.len());
+
+        Ok(authors)
+    }
+
+    /// Create a new author
+    pub fn create_author(&self, request: CreateAuthorRequest) -> Result<String, Box<dyn Error>> {
+        let url = format!("{}/api/v1/authors", self.base_url);
+
+        println!("Creating author: {} {}", request.first_name, request.last_name);
+
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        let result: serde_json::Value = response.json()?;
+        let author_id = result["id"].as_str()
+            .ok_or("No ID in response")?
+            .to_string();
+
+        println!("Successfully created author with ID: {}", author_id);
+
+        Ok(author_id)
+    }
+
+    /// Delete an author by ID
+    pub fn delete_author(&self, author_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/authors/{}", self.base_url, author_id);
+
+        println!("Deleting author: {}", author_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully deleted author: {}", author_id);
 
         Ok(())
     }

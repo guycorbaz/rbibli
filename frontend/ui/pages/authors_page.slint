@@ -1,0 +1,339 @@
+import { Page } from "page.slint";
+import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+
+// Structure to hold author data
+export struct AuthorData {
+    id: string,
+    first-name: string,
+    last-name: string,
+    biography: string,
+    birth-date: string,
+    death-date: string,
+    nationality: string,
+    website-url: string,
+    title-count: int,
+}
+
+export component AuthorsPage inherits Page {
+    title: @tr("Authors");
+    description: @tr("Manage book authors in your library");
+
+    // Properties
+    in-out property <[AuthorData]> authors: [];
+    in-out property <bool> show-create-dialog: false;
+    in-out property <string> new-first-name: "";
+    in-out property <string> new-last-name: "";
+    in-out property <string> new-biography: "";
+    in-out property <string> new-birth-date: "";
+    in-out property <string> new-death-date: "";
+    in-out property <string> new-nationality: "";
+    in-out property <string> new-website-url: "";
+
+    // Callbacks
+    callback load-authors();
+    callback create-author(string, string, string, string, string, string, string); // first_name, last_name, biography, birth_date, death_date, nationality, website_url
+    callback delete-author(string); // id
+
+    VerticalBox {
+        alignment: stretch;
+        padding: 20px;
+
+        // Header with title and buttons
+        HorizontalBox {
+            alignment: space-between;
+            height: 50px;
+
+            Text {
+                text: @tr("Authors");
+                font-size: 24px;
+                font-weight: 700;
+            }
+
+            HorizontalBox {
+                spacing: 10px;
+
+                Button {
+                    text: @tr("Refresh");
+                    min-width: 100px;
+                    height: 35px;
+                    clicked => {
+                        root.load-authors();
+                    }
+                }
+
+                Button {
+                    text: @tr("+ New Author");
+                    primary: true;
+                    min-width: 150px;
+                    height: 35px;
+                    clicked => {
+                        root.show-create-dialog = true;
+                        root.new-first-name = "";
+                        root.new-last-name = "";
+                        root.new-biography = "";
+                        root.new-birth-date = "";
+                        root.new-death-date = "";
+                        root.new-nationality = "";
+                        root.new-website-url = "";
+                    }
+                }
+            }
+        }
+
+        // Create author dialog
+        if show-create-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+            height: 550px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 12px;
+
+                Text {
+                    text: @tr("Create New Author");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("First Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-first-name;
+                        placeholder-text: @tr("First name (required)");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Last Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-last-name;
+                        placeholder-text: @tr("Last name (required)");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Biography:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.new-biography;
+                        height: 80px;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Birth Date:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-birth-date;
+                        placeholder-text: @tr("YYYY-MM-DD");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Death Date:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-death-date;
+                        placeholder-text: @tr("YYYY-MM-DD");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Nationality:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-nationality;
+                        placeholder-text: @tr("E.g., American, British");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Website:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-website-url;
+                        placeholder-text: @tr("https://...");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-create-dialog = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Create");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.new-first-name != "" && root.new-last-name != "";
+                        clicked => {
+                            root.create-author(
+                                root.new-first-name,
+                                root.new-last-name,
+                                root.new-biography,
+                                root.new-birth-date,
+                                root.new-death-date,
+                                root.new-nationality,
+                                root.new-website-url
+                            );
+                            root.show-create-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Empty state
+        if authors.length == 0 && !show-create-dialog: Rectangle {
+            height: 100px;
+            Text {
+                text: @tr("No authors found. Click 'New Author' to create one.");
+                color: #888;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        // List of authors
+        if authors.length > 0: ListView {
+            for author[index] in authors: Rectangle {
+                height: 90px;
+                border-width: 1px;
+                border-color: #ddd;
+                border-radius: 4px;
+                background: Math.mod(index, 2) == 0 ? #fafafa : white;
+
+                HorizontalLayout {
+                    padding: 12px;
+                    spacing: 10px;
+
+                    // Author info
+                    VerticalLayout {
+                        alignment: start;
+                        spacing: 5px;
+
+                        // Name
+                        HorizontalBox {
+                            spacing: 8px;
+
+                            Text {
+                                text: author.first-name + " " + author.last-name;
+                                font-size: 16px;
+                                font-weight: 700;
+                                overflow: elide;
+                            }
+
+                            if author.title-count > 0: Rectangle {
+                                background: #0066cc;
+                                border-radius: 10px;
+                                width: 50px;
+                                height: 20px;
+
+                                Text {
+                                    text: author.title-count + " books";
+                                    color: white;
+                                    font-size: 11px;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+
+                        // Nationality and dates
+                        if author.nationality != "" || author.birth-date != "": HorizontalBox {
+                            spacing: 12px;
+
+                            if author.nationality != "": Text {
+                                text: "🌍 " + author.nationality;
+                                font-size: 12px;
+                                color: #666;
+                                overflow: elide;
+                            }
+
+                            if author.birth-date != "": Text {
+                                text: "📅 " + author.birth-date + (author.death-date != "" ? " - " + author.death-date : "");
+                                font-size: 12px;
+                                color: #666;
+                                overflow: elide;
+                            }
+                        }
+
+                        // Biography
+                        if author.biography != "": Text {
+                            text: author.biography;
+                            font-size: 11px;
+                            color: #888;
+                            overflow: elide;
+                        }
+
+                        // Website
+                        if author.website-url != "": Text {
+                            text: "🔗 " + author.website-url;
+                            font-size: 11px;
+                            color: #0066cc;
+                            overflow: elide;
+                        }
+                    }
+
+                    // Action buttons
+                    HorizontalBox {
+                        width: 100px;
+                        spacing: 8px;
+                        alignment: end;
+
+                        Button {
+                            text: @tr("Delete");
+                            min-width: 80px;
+                            height: 32px;
+                            clicked => {
+                                root.delete-author(author.id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

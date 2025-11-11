@@ -9,7 +9,7 @@ mod models;
 mod api_client;
 
 use api_client::ApiClient;
-use models::CreateLocationRequest;
+use models::{CreateLocationRequest, CreateAuthorRequest};
 
 slint::include_modules!();
 
@@ -99,6 +99,49 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
+    // Function to load authors and populate the UI
+    let load_authors = {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+
+        move || {
+            println!("Loading authors from backend...");
+
+            match api_client.get_authors() {
+                Ok(authors_data) => {
+                    println!("Successfully fetched {} authors", authors_data.len());
+
+                    // Convert backend AuthorWithTitleCount to Slint AuthorData
+                    let slint_authors: Vec<AuthorData> = authors_data
+                        .iter()
+                        .map(|a| AuthorData {
+                            id: a.author.id.clone().into(),
+                            first_name: a.author.first_name.clone().into(),
+                            last_name: a.author.last_name.clone().into(),
+                            biography: a.author.biography.clone().unwrap_or_default().into(),
+                            birth_date: a.author.birth_date.clone().unwrap_or_default().into(),
+                            death_date: a.author.death_date.clone().unwrap_or_default().into(),
+                            nationality: a.author.nationality.clone().unwrap_or_default().into(),
+                            website_url: a.author.website_url.clone().unwrap_or_default().into(),
+                            title_count: a.title_count as i32,
+                        })
+                        .collect();
+
+                    // Update the UI with the authors
+                    if let Some(ui) = ui_weak.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_authors));
+                        ui.set_authors(model.into());
+                        println!("UI updated with authors");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch authors: {}", e);
+                    eprintln!("Make sure the backend server is running on http://localhost:8000");
+                }
+            }
+        }
+    };
+
     // Connect the load-titles callback
     {
         let load_titles = load_titles.clone();
@@ -167,11 +210,90 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect the load-authors callback
+    {
+        let load_authors = load_authors.clone();
+        ui.on_load_authors(move || {
+            load_authors();
+        });
+    }
+
+    // Connect the create-author callback
+    {
+        let load_authors = load_authors.clone();
+        let api_client = api_client.clone();
+        ui.on_create_author(move |first_name, last_name, biography, birth_date, death_date, nationality, website_url| {
+            println!("Creating author: {} {}", first_name, last_name);
+
+            let request = CreateAuthorRequest {
+                first_name: first_name.to_string(),
+                last_name: last_name.to_string(),
+                biography: if biography.is_empty() {
+                    None
+                } else {
+                    Some(biography.to_string())
+                },
+                birth_date: if birth_date.is_empty() {
+                    None
+                } else {
+                    Some(birth_date.to_string())
+                },
+                death_date: if death_date.is_empty() {
+                    None
+                } else {
+                    Some(death_date.to_string())
+                },
+                nationality: if nationality.is_empty() {
+                    None
+                } else {
+                    Some(nationality.to_string())
+                },
+                website_url: if website_url.is_empty() {
+                    None
+                } else {
+                    Some(website_url.to_string())
+                },
+            };
+
+            match api_client.create_author(request) {
+                Ok(id) => {
+                    println!("Successfully created author with ID: {}", id);
+                    load_authors();
+                }
+                Err(e) => {
+                    eprintln!("Failed to create author: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the delete-author callback
+    {
+        let load_authors = load_authors.clone();
+        let api_client = api_client.clone();
+        ui.on_delete_author(move |author_id| {
+            println!("Deleting author: {}", author_id);
+
+            match api_client.delete_author(&author_id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully deleted author");
+                    load_authors();
+                }
+                Err(e) => {
+                    eprintln!("Failed to delete author: {}", e);
+                }
+            }
+        });
+    }
+
     // Load titles on startup
     load_titles();
 
     // Load locations on startup
     load_locations();
+
+    // Load authors on startup
+    load_authors();
 
     ui.run()?;
 

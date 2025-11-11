@@ -60,3 +60,40 @@ pub struct CreateLocationRequest {
     pub description: Option<String>,
     pub parent_id: Option<String>,
 }
+
+/// Author represents a book author
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Author {
+    pub id: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub biography: Option<String>,
+    pub birth_date: Option<String>,
+    pub death_date: Option<String>,
+    pub nationality: Option<String>,
+    pub website_url: Option<String>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub updated_at: DateTime<Utc>,
+}
+
+/// AuthorWithTitleCount includes the title count
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthorWithTitleCount {
+    #[serde(flatten)]
+    pub author: Author,
+    pub title_count: i64,
+}
+
+/// CreateAuthorRequest for creating a new author
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateAuthorRequest {
+    pub first_name: String,
+    pub last_name: String,
+    pub biography: Option<String>,
+    pub birth_date: Option<String>,
+    pub death_date: Option<String>,
+    pub nationality: Option<String>,
+    pub website_url: Option<String>,
+}

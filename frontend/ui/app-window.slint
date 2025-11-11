@@ -1,14 +1,18 @@
 import { Button, VerticalBox } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, LocationsPage, LocationData} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, LocationsPage, LocationData, AuthorsPage, AuthorData} from "pages/pages.slint";
 
 export component AppWindow inherits Window {
     in-out property <[TitleData]> titles: [];
     in-out property <[LocationData]> locations: [];
+    in-out property <[AuthorData]> authors: [];
     callback load-titles();
     callback load-locations();
     callback create-location(string, string, string);
     callback delete-location(string);
+    callback load-authors();
+    callback create-author(string, string, string, string, string, string, string);
+    callback delete-author(string);
     //preferred-width: 700px;
     //preferred-height: 500px;
     min-width: 700px;
@@ -20,7 +24,7 @@ export component AppWindow inherits Window {
     HorizontalLayout {
         side-bar := SideBar {
             title: @tr("Personal Library");
-            model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
+            model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
         }
 
         if(side-bar.current-item == 0) : TitlesPage {
@@ -41,8 +45,20 @@ export component AppWindow inherits Window {
                 root.delete-location(id);
             }
         }
-        //if(side-bar.current-item == 2) : TableViewPage {}
-        //if(side-bar.current-item == 3) : TextEditPage {}
-        if(side-bar.current-item == 4) : AboutPage {}
+        if(side-bar.current-item == 2) : AuthorsPage {
+            authors: root.authors;
+            load-authors => {
+                root.load-authors();
+            }
+            create-author(first-name, last-name, biography, birth-date, death-date, nationality, website-url) => {
+                root.create-author(first-name, last-name, biography, birth-date, death-date, nationality, website-url);
+            }
+            delete-author(id) => {
+                root.delete-author(id);
+            }
+        }
+        //if(side-bar.current-item == 3) : LoansPage {}
+        //if(side-bar.current-item == 4) : StatisticsPage {}
+        if(side-bar.current-item == 5) : AboutPage {}
     }
 }
