@@ -174,3 +174,37 @@ pub struct UpdatePublisherRequest {
     pub country: Option<String>,
     pub founded_year: Option<i32>,
 }
+
+/// Genre represents a book genre/category
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Genre {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub updated_at: DateTime<Utc>,
+}
+
+/// GenreWithTitleCount includes the title count
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GenreWithTitleCount {
+    #[serde(flatten)]
+    pub genre: Genre,
+    pub title_count: i64,
+}
+
+/// CreateGenreRequest for creating a new genre
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateGenreRequest {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+/// UpdateGenreRequest for updating a genre
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateGenreRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+}

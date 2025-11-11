@@ -9,7 +9,7 @@ mod models;
 mod api_client;
 
 use api_client::ApiClient;
-use models::{CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest};
+use models::{CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest, CreateGenreRequest, UpdateGenreRequest};
 
 slint::include_modules!();
 
@@ -182,6 +182,44 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to fetch publishers: {}", e);
+                    eprintln!("Make sure the backend server is running on http://localhost:8000");
+                }
+            }
+        }
+    };
+
+    // Function to load genres and populate the UI
+    let load_genres = {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+
+        move || {
+            println!("Loading genres from backend...");
+
+            match api_client.get_genres() {
+                Ok(genres_data) => {
+                    println!("Successfully fetched {} genres", genres_data.len());
+
+                    // Convert backend GenreWithTitleCount to Slint GenreData
+                    let slint_genres: Vec<GenreData> = genres_data
+                        .iter()
+                        .map(|g| GenreData {
+                            id: g.genre.id.clone().into(),
+                            name: g.genre.name.clone().into(),
+                            description: g.genre.description.clone().unwrap_or_default().into(),
+                            title_count: g.title_count as i32,
+                        })
+                        .collect();
+
+                    // Update the UI with the genres
+                    if let Some(ui) = ui_weak.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_genres));
+                        ui.set_genres(model.into());
+                        println!("UI updated with genres");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch genres: {}", e);
                     eprintln!("Make sure the backend server is running on http://localhost:8000");
                 }
             }
@@ -449,6 +487,93 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect the load-genres callback
+    {
+        let load_genres = load_genres.clone();
+        ui.on_load_genres(move || {
+            load_genres();
+        });
+    }
+
+    // Connect the create-genre callback
+    {
+        let load_genres = load_genres.clone();
+        let api_client = api_client.clone();
+        ui.on_create_genre(move |name, description| {
+            println!("Creating genre: {}", name);
+
+            let request = CreateGenreRequest {
+                name: name.to_string(),
+                description: if description.is_empty() {
+                    None
+                } else {
+                    Some(description.to_string())
+                },
+            };
+
+            match api_client.create_genre(request) {
+                Ok(id) => {
+                    println!("Successfully created genre with ID: {}", id);
+                    load_genres();
+                }
+                Err(e) => {
+                    eprintln!("Failed to create genre: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the update-genre callback
+    {
+        let load_genres = load_genres.clone();
+        let api_client = api_client.clone();
+        ui.on_update_genre(move |id, name, description| {
+            println!("Updating genre: {}", id);
+
+            let request = UpdateGenreRequest {
+                name: if name.is_empty() {
+                    None
+                } else {
+                    Some(name.to_string())
+                },
+                description: if description.is_empty() {
+                    None
+                } else {
+                    Some(description.to_string())
+                },
+            };
+
+            match api_client.update_genre(&id.to_string(), request) {
+                Ok(_) => {
+                    println!("Successfully updated genre");
+                    load_genres();
+                }
+                Err(e) => {
+                    eprintln!("Failed to update genre: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the delete-genre callback
+    {
+        let load_genres = load_genres.clone();
+        let api_client = api_client.clone();
+        ui.on_delete_genre(move |genre_id| {
+            println!("Deleting genre: {}", genre_id);
+
+            match api_client.delete_genre(&genre_id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully deleted genre");
+                    load_genres();
+                }
+                Err(e) => {
+                    eprintln!("Failed to delete genre: {}", e);
+                }
+            }
+        });
+    }
+
     // Connect the create-title callback
     {
         let load_titles = load_titles.clone();
@@ -592,6 +717,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Load publishers on startup
     load_publishers();
+
+    // Load genres on startup
+    load_genres();
 
     ui.run()?;
 

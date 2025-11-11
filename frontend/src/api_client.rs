@@ -1,4 +1,4 @@
-use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest};
+use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest};
 use std::error::Error;
 
 /// API client for communicating with the rbibli backend
@@ -294,6 +294,92 @@ impl ApiClient {
         }
 
         println!("Successfully deleted publisher: {}", publisher_id);
+
+        Ok(())
+    }
+
+    /// Fetch all genres from the backend with title counts
+    pub fn get_genres(&self) -> Result<Vec<GenreWithTitleCount>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/genres", self.base_url);
+
+        println!("Fetching genres from: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let genres: Vec<GenreWithTitleCount> = response.json()?;
+
+        println!("Successfully fetched {} genres", genres.len());
+
+        Ok(genres)
+    }
+
+    /// Create a new genre
+    pub fn create_genre(&self, request: CreateGenreRequest) -> Result<String, Box<dyn Error>> {
+        let url = format!("{}/api/v1/genres", self.base_url);
+
+        println!("Creating genre: {}", request.name);
+
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        let result: serde_json::Value = response.json()?;
+        let genre_id = result["id"].as_str()
+            .ok_or("No ID in response")?
+            .to_string();
+
+        println!("Successfully created genre with ID: {}", genre_id);
+
+        Ok(genre_id)
+    }
+
+    /// Update a genre by ID
+    pub fn update_genre(&self, genre_id: &str, request: UpdateGenreRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/genres/{}", self.base_url, genre_id);
+
+        println!("Updating genre: {}", genre_id);
+
+        let response = self.client
+            .put(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully updated genre: {}", genre_id);
+
+        Ok(())
+    }
+
+    /// Delete a genre by ID
+    pub fn delete_genre(&self, genre_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/genres/{}", self.base_url, genre_id);
+
+        println!("Deleting genre: {}", genre_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully deleted genre: {}", genre_id);
 
         Ok(())
     }

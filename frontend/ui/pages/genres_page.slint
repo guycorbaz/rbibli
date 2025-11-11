@@ -1,0 +1,292 @@
+import { Page } from "page.slint";
+import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+
+// Structure to hold genre data
+export struct GenreData {
+    id: string,
+    name: string,
+    description: string,
+    title-count: int,
+}
+
+export component GenresPage inherits Page {
+    title: @tr("Genres");
+    description: @tr("Manage book genres and categories");
+
+    // Property to hold the list of genres
+    in-out property <[GenreData]> genres: [];
+    in-out property <bool> show-create-dialog: false;
+    in-out property <string> new-name: "";
+    in-out property <string> new-description: "";
+
+    // Edit dialog properties
+    in-out property <bool> show-edit-dialog: false;
+    in-out property <string> edit-id: "";
+    in-out property <string> edit-name: "";
+    in-out property <string> edit-description: "";
+
+    // Callbacks
+    callback load-genres();
+    callback create-genre(string, string); // name, description
+    callback update-genre(string, string, string); // id, name, description
+    callback delete-genre(string); // id
+
+    VerticalBox {
+        alignment: stretch;
+        padding: 20px;
+
+        HorizontalBox {
+            alignment: space-between;
+            height: 50px;
+
+            Text {
+                text: @tr("Book Genres");
+                font-size: 24px;
+                font-weight: 700;
+            }
+
+            HorizontalBox {
+                spacing: 10px;
+
+                Button {
+                    text: @tr("Refresh");
+                    min-width: 100px;
+                    height: 35px;
+                    clicked => {
+                        root.load-genres();
+                    }
+                }
+
+                Button {
+                    text: @tr("+ New Genre");
+                    primary: true;
+                    min-width: 150px;
+                    height: 35px;
+                    clicked => {
+                        root.show-create-dialog = true;
+                        root.new-name = "";
+                        root.new-description = "";
+                    }
+                }
+            }
+        }
+
+        // Create genre dialog
+        if show-create-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+            height: 350px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 12px;
+
+                Text {
+                    text: @tr("Create New Genre");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-name;
+                        placeholder-text: @tr("Genre name (required)");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Description:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.new-description;
+                        height: 100px;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-create-dialog = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Save");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.new-name != "";
+                        clicked => {
+                            root.create-genre(root.new-name, root.new-description);
+                            root.show-create-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Edit genre dialog
+        if show-edit-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+            height: 350px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 12px;
+
+                Text {
+                    text: @tr("Edit Genre");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-name;
+                        placeholder-text: @tr("Genre name (required)");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Description:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.edit-description;
+                        height: 100px;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-edit-dialog = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Save");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.edit-name != "";
+                        clicked => {
+                            root.update-genre(root.edit-id, root.edit-name, root.edit-description);
+                            root.show-edit-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // List of genres
+        if genres.length == 0 && !show-create-dialog && !show-edit-dialog: Text {
+            text: @tr("No genres found. Click Refresh to load genres from the backend.");
+            color: #888;
+        }
+
+        if genres.length > 0: ListView {
+            for genre[index] in genres: Rectangle {
+                height: 70px;
+                border-width: 1px;
+                border-color: #ddd;
+                border-radius: 4px;
+                background: Math.mod(index, 2) == 0 ? #fafafa : white;
+
+                HorizontalLayout {
+                    padding: 8px;
+                    spacing: 10px;
+
+                    VerticalLayout {
+                        alignment: start;
+                        spacing: 4px;
+
+                        Text {
+                            text: genre.name;
+                            font-size: 15px;
+                            font-weight: 600;
+                            overflow: elide;
+                        }
+
+                        if genre.description != "": Text {
+                            text: genre.description;
+                            font-size: 12px;
+                            color: #666;
+                            overflow: elide;
+                        }
+
+                        Text {
+                            text: "Titles: " + genre.title-count;
+                            font-size: 11px;
+                            color: #0066cc;
+                            font-weight: 600;
+                        }
+                    }
+
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 5px;
+                        width: 90px;
+
+                        Button {
+                            text: @tr("Edit");
+                            min-width: 80px;
+                            height: 32px;
+                            clicked => {
+                                root.edit-id = genre.id;
+                                root.edit-name = genre.name;
+                                root.edit-description = genre.description;
+                                root.show-edit-dialog = true;
+                            }
+                        }
+
+                        Button {
+                            text: @tr("Delete");
+                            min-width: 80px;
+                            height: 32px;
+                            clicked => {
+                                root.delete-genre(genre.id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

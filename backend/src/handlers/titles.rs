@@ -21,7 +21,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             t.language,
             t.dewey_code,
             t.dewey_category,
-            t.genre,
+            t.genre_old as genre,
             t.summary,
             t.cover_url,
             t.created_at,
@@ -30,7 +30,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
         FROM titles t
         LEFT JOIN volumes v ON t.id = v.title_id
         GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publication_year,
-                 t.pages, t.language, t.dewey_code, t.dewey_category, t.genre,
+                 t.pages, t.language, t.dewey_code, t.dewey_category, t.genre_old,
                  t.summary, t.cover_url, t.created_at, t.updated_at
         ORDER BY t.title ASC
     "#;
@@ -114,7 +114,7 @@ pub async fn create_title(
 
     let query = r#"
         INSERT INTO titles (id, title, subtitle, isbn, publisher_old, publication_year, pages,
-                           language, dewey_code, dewey_category, genre, summary, cover_url,
+                           language, dewey_code, dewey_category, genre_old, summary, cover_url,
                            created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     "#;
@@ -207,7 +207,7 @@ pub async fn update_title(
         has_updates = true;
     }
     if req.genre.is_some() {
-        update_parts.push("genre = ?");
+        update_parts.push("genre_old = ?");
         has_updates = true;
     }
     if req.summary.is_some() {

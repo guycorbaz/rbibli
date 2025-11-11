@@ -1,12 +1,13 @@
 import { Button, VerticalBox } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
 
 export component AppWindow inherits Window {
     in-out property <[TitleData]> titles: [];
     in-out property <[LocationData]> locations: [];
     in-out property <[AuthorData]> authors: [];
     in-out property <[PublisherData]> publishers: [];
+    in-out property <[GenreData]> genres: [];
     callback load-titles();
     callback create-title(string, string, string, string, string, string, string, string, string);
     callback update-title(string, string, string, string, string, string, string, string, string, string);
@@ -20,6 +21,10 @@ export component AppWindow inherits Window {
     callback create-publisher(string, string, string, string, string);
     callback update-publisher(string, string, string, string, string, string);
     callback delete-publisher(string);
+    callback load-genres();
+    callback create-genre(string, string);
+    callback update-genre(string, string, string);
+    callback delete-genre(string);
     //preferred-width: 700px;
     //preferred-height: 500px;
     min-width: 700px;
@@ -31,7 +36,7 @@ export component AppWindow inherits Window {
     HorizontalLayout {
         side-bar := SideBar {
             title: @tr("Personal Library");
-            model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
+            model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Genres"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
         }
 
         if(side-bar.current-item == 0) : TitlesPage {
@@ -85,8 +90,23 @@ export component AppWindow inherits Window {
                 root.delete-publisher(id);
             }
         }
-        //if(side-bar.current-item == 4) : LoansPage {}
-        //if(side-bar.current-item == 5) : StatisticsPage {}
-        if(side-bar.current-item == 6) : AboutPage {}
+        if(side-bar.current-item == 4) : GenresPage {
+            genres: root.genres;
+            load-genres => {
+                root.load-genres();
+            }
+            create-genre(name, description) => {
+                root.create-genre(name, description);
+            }
+            update-genre(id, name, description) => {
+                root.update-genre(id, name, description);
+            }
+            delete-genre(id) => {
+                root.delete-genre(id);
+            }
+        }
+        //if(side-bar.current-item == 5) : LoansPage {}
+        //if(side-bar.current-item == 6) : StatisticsPage {}
+        if(side-bar.current-item == 7) : AboutPage {}
     }
 }
