@@ -1,11 +1,12 @@
 import { Button, VerticalBox } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, LocationsPage, LocationData, AuthorsPage, AuthorData} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData} from "pages/pages.slint";
 
 export component AppWindow inherits Window {
     in-out property <[TitleData]> titles: [];
     in-out property <[LocationData]> locations: [];
     in-out property <[AuthorData]> authors: [];
+    in-out property <[PublisherData]> publishers: [];
     callback load-titles();
     callback load-locations();
     callback create-location(string, string, string);
@@ -13,6 +14,9 @@ export component AppWindow inherits Window {
     callback load-authors();
     callback create-author(string, string, string, string, string, string, string);
     callback delete-author(string);
+    callback load-publishers();
+    callback create-publisher(string, string, string, string, string);
+    callback delete-publisher(string);
     //preferred-width: 700px;
     //preferred-height: 500px;
     min-width: 700px;
@@ -24,7 +28,7 @@ export component AppWindow inherits Window {
     HorizontalLayout {
         side-bar := SideBar {
             title: @tr("Personal Library");
-            model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
+            model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
         }
 
         if(side-bar.current-item == 0) : TitlesPage {
@@ -57,8 +61,20 @@ export component AppWindow inherits Window {
                 root.delete-author(id);
             }
         }
-        //if(side-bar.current-item == 3) : LoansPage {}
-        //if(side-bar.current-item == 4) : StatisticsPage {}
-        if(side-bar.current-item == 5) : AboutPage {}
+        if(side-bar.current-item == 3) : PublishersPage {
+            publishers: root.publishers;
+            load-publishers => {
+                root.load-publishers();
+            }
+            create-publisher(name, description, website-url, country, founded-year) => {
+                root.create-publisher(name, description, website-url, country, founded-year);
+            }
+            delete-publisher(id) => {
+                root.delete-publisher(id);
+            }
+        }
+        //if(side-bar.current-item == 4) : LoansPage {}
+        //if(side-bar.current-item == 5) : StatisticsPage {}
+        if(side-bar.current-item == 6) : AboutPage {}
     }
 }

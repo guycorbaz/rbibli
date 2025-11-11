@@ -1,0 +1,305 @@
+import { Page } from "page.slint";
+import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+
+// Structure to hold publisher data
+export struct PublisherData {
+    id: string,
+    name: string,
+    description: string,
+    website-url: string,
+    country: string,
+    founded-year: int,
+    title-count: int,
+}
+
+export component PublishersPage inherits Page {
+    title: @tr("Publishers");
+    description: @tr("Manage book publishers in your library");
+
+    // Properties
+    in-out property <[PublisherData]> publishers: [];
+    in-out property <bool> show-create-dialog: false;
+    in-out property <string> new-name: "";
+    in-out property <string> new-description: "";
+    in-out property <string> new-website-url: "";
+    in-out property <string> new-country: "";
+    in-out property <string> new-founded-year: "";
+
+    // Callbacks
+    callback load-publishers();
+    callback create-publisher(string, string, string, string, string); // name, description, website_url, country, founded_year
+    callback delete-publisher(string); // id
+
+    VerticalBox {
+        alignment: stretch;
+        padding: 20px;
+
+        // Header with title and buttons
+        HorizontalBox {
+            alignment: space-between;
+            height: 50px;
+
+            Text {
+                text: @tr("Publishers");
+                font-size: 24px;
+                font-weight: 700;
+            }
+
+            HorizontalBox {
+                spacing: 10px;
+
+                Button {
+                    text: @tr("Refresh");
+                    min-width: 100px;
+                    height: 35px;
+                    clicked => {
+                        root.load-publishers();
+                    }
+                }
+
+                Button {
+                    text: @tr("+ New Publisher");
+                    primary: true;
+                    min-width: 150px;
+                    height: 35px;
+                    clicked => {
+                        root.show-create-dialog = true;
+                        root.new-name = "";
+                        root.new-description = "";
+                        root.new-website-url = "";
+                        root.new-country = "";
+                        root.new-founded-year = "";
+                    }
+                }
+            }
+        }
+
+        // Create publisher dialog
+        if show-create-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+            height: 450px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 15px;
+
+                Text {
+                    text: @tr("Create New Publisher");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-name;
+                        placeholder-text: @tr("Publisher name (required)");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Description:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.new-description;
+                        height: 80px;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Website:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-website-url;
+                        placeholder-text: @tr("https://...");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Country:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-country;
+                        placeholder-text: @tr("E.g., USA, UK, France");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Founded Year:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-founded-year;
+                        placeholder-text: @tr("E.g., 1950");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-create-dialog = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Create");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.new-name != "";
+                        clicked => {
+                            root.create-publisher(
+                                root.new-name,
+                                root.new-description,
+                                root.new-website-url,
+                                root.new-country,
+                                root.new-founded-year
+                            );
+                            root.show-create-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Empty state
+        if publishers.length == 0 && !show-create-dialog: Rectangle {
+            height: 100px;
+            Text {
+                text: @tr("No publishers found. Click 'New Publisher' to create one.");
+                color: #888;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+        }
+
+        // List of publishers
+        if publishers.length > 0: ListView {
+            for publisher[index] in publishers: Rectangle {
+                height: 85px;
+                border-width: 1px;
+                border-color: #ddd;
+                border-radius: 4px;
+                background: Math.mod(index, 2) == 0 ? #fafafa : white;
+
+                HorizontalLayout {
+                    padding: 12px;
+                    spacing: 10px;
+
+                    // Publisher info
+                    VerticalLayout {
+                        alignment: start;
+                        spacing: 5px;
+
+                        // Name
+                        HorizontalBox {
+                            spacing: 8px;
+
+                            Text {
+                                text: publisher.name;
+                                font-size: 16px;
+                                font-weight: 700;
+                                overflow: elide;
+                            }
+
+                            if publisher.title-count > 0: Rectangle {
+                                background: #0066cc;
+                                border-radius: 10px;
+                                width: 50px;
+                                height: 20px;
+
+                                Text {
+                                    text: publisher.title-count + " books";
+                                    color: white;
+                                    font-size: 11px;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
+                        }
+
+                        // Country and founded year
+                        if publisher.country != "" || publisher.founded-year > 0: HorizontalBox {
+                            spacing: 12px;
+
+                            if publisher.country != "": Text {
+                                text: "🌍 " + publisher.country;
+                                font-size: 12px;
+                                color: #666;
+                                overflow: elide;
+                            }
+
+                            if publisher.founded-year > 0: Text {
+                                text: "📅 Founded " + publisher.founded-year;
+                                font-size: 12px;
+                                color: #666;
+                                overflow: elide;
+                            }
+                        }
+
+                        // Description
+                        if publisher.description != "": Text {
+                            text: publisher.description;
+                            font-size: 11px;
+                            color: #888;
+                            overflow: elide;
+                        }
+
+                        // Website
+                        if publisher.website-url != "": Text {
+                            text: "🔗 " + publisher.website-url;
+                            font-size: 11px;
+                            color: #0066cc;
+                            overflow: elide;
+                        }
+                    }
+
+                    // Action buttons
+                    HorizontalBox {
+                        width: 100px;
+                        spacing: 8px;
+                        alignment: end;
+
+                        Button {
+                            text: @tr("Delete");
+                            min-width: 80px;
+                            height: 32px;
+                            clicked => {
+                                root.delete-publisher(publisher.id);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

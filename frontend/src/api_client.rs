@@ -1,4 +1,4 @@
-use crate::models::{TitleWithCount, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest};
+use crate::models::{TitleWithCount, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest};
 use std::error::Error;
 
 /// API client for communicating with the rbibli backend
@@ -161,6 +161,71 @@ impl ApiClient {
         }
 
         println!("Successfully deleted author: {}", author_id);
+
+        Ok(())
+    }
+
+    /// Fetch all publishers from the backend with title counts
+    pub fn get_publishers(&self) -> Result<Vec<PublisherWithTitleCount>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/publishers", self.base_url);
+
+        println!("Fetching publishers from: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let publishers: Vec<PublisherWithTitleCount> = response.json()?;
+
+        println!("Successfully fetched {} publishers", publishers.len());
+
+        Ok(publishers)
+    }
+
+    /// Create a new publisher
+    pub fn create_publisher(&self, request: CreatePublisherRequest) -> Result<String, Box<dyn Error>> {
+        let url = format!("{}/api/v1/publishers", self.base_url);
+
+        println!("Creating publisher: {}", request.name);
+
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        let result: serde_json::Value = response.json()?;
+        let publisher_id = result["id"].as_str()
+            .ok_or("No ID in response")?
+            .to_string();
+
+        println!("Successfully created publisher with ID: {}", publisher_id);
+
+        Ok(publisher_id)
+    }
+
+    /// Delete a publisher by ID
+    pub fn delete_publisher(&self, publisher_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/publishers/{}", self.base_url, publisher_id);
+
+        println!("Deleting publisher: {}", publisher_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully deleted publisher: {}", publisher_id);
 
         Ok(())
     }

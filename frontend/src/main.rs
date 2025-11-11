@@ -9,7 +9,7 @@ mod models;
 mod api_client;
 
 use api_client::ApiClient;
-use models::{CreateLocationRequest, CreateAuthorRequest};
+use models::{CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest};
 
 slint::include_modules!();
 
@@ -136,6 +136,47 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to fetch authors: {}", e);
+                    eprintln!("Make sure the backend server is running on http://localhost:8000");
+                }
+            }
+        }
+    };
+
+    // Function to load publishers and populate the UI
+    let load_publishers = {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+
+        move || {
+            println!("Loading publishers from backend...");
+
+            match api_client.get_publishers() {
+                Ok(publishers_data) => {
+                    println!("Successfully fetched {} publishers", publishers_data.len());
+
+                    // Convert backend PublisherWithTitleCount to Slint PublisherData
+                    let slint_publishers: Vec<PublisherData> = publishers_data
+                        .iter()
+                        .map(|p| PublisherData {
+                            id: p.publisher.id.clone().into(),
+                            name: p.publisher.name.clone().into(),
+                            description: p.publisher.description.clone().unwrap_or_default().into(),
+                            website_url: p.publisher.website_url.clone().unwrap_or_default().into(),
+                            country: p.publisher.country.clone().unwrap_or_default().into(),
+                            founded_year: p.publisher.founded_year.unwrap_or(0),
+                            title_count: p.title_count as i32,
+                        })
+                        .collect();
+
+                    // Update the UI with the publishers
+                    if let Some(ui) = ui_weak.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_publishers));
+                        ui.set_publishers(model.into());
+                        println!("UI updated with publishers");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch publishers: {}", e);
                     eprintln!("Make sure the backend server is running on http://localhost:8000");
                 }
             }
@@ -286,6 +327,76 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect the load-publishers callback
+    {
+        let load_publishers = load_publishers.clone();
+        ui.on_load_publishers(move || {
+            load_publishers();
+        });
+    }
+
+    // Connect the create-publisher callback
+    {
+        let load_publishers = load_publishers.clone();
+        let api_client = api_client.clone();
+        ui.on_create_publisher(move |name, description, website_url, country, founded_year| {
+            println!("Creating publisher: {}", name);
+
+            let request = CreatePublisherRequest {
+                name: name.to_string(),
+                description: if description.is_empty() {
+                    None
+                } else {
+                    Some(description.to_string())
+                },
+                website_url: if website_url.is_empty() {
+                    None
+                } else {
+                    Some(website_url.to_string())
+                },
+                country: if country.is_empty() {
+                    None
+                } else {
+                    Some(country.to_string())
+                },
+                founded_year: if founded_year.is_empty() {
+                    None
+                } else {
+                    founded_year.parse::<i32>().ok()
+                },
+            };
+
+            match api_client.create_publisher(request) {
+                Ok(id) => {
+                    println!("Successfully created publisher with ID: {}", id);
+                    load_publishers();
+                }
+                Err(e) => {
+                    eprintln!("Failed to create publisher: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the delete-publisher callback
+    {
+        let load_publishers = load_publishers.clone();
+        let api_client = api_client.clone();
+        ui.on_delete_publisher(move |publisher_id| {
+            println!("Deleting publisher: {}", publisher_id);
+
+            match api_client.delete_publisher(&publisher_id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully deleted publisher");
+                    load_publishers();
+                }
+                Err(e) => {
+                    eprintln!("Failed to delete publisher: {}", e);
+                }
+            }
+        });
+    }
+
     // Load titles on startup
     load_titles();
 
@@ -294,6 +405,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Load authors on startup
     load_authors();
+
+    // Load publishers on startup
+    load_publishers();
 
     ui.run()?;
 

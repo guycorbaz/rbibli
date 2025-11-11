@@ -167,6 +167,12 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/authors/{id}", web::get().to(handlers::authors::get_author))
             .route("/api/v1/authors/{id}", web::put().to(handlers::authors::update_author))
             .route("/api/v1/authors/{id}", web::delete().to(handlers::authors::delete_author))
+            // API v1 routes - Publishers
+            .route("/api/v1/publishers", web::get().to(handlers::publishers::list_publishers))
+            .route("/api/v1/publishers", web::post().to(handlers::publishers::create_publisher))
+            .route("/api/v1/publishers/{id}", web::get().to(handlers::publishers::get_publisher))
+            .route("/api/v1/publishers/{id}", web::put().to(handlers::publishers::update_publisher))
+            .route("/api/v1/publishers/{id}", web::delete().to(handlers::publishers::delete_publisher))
             .route("/{name}", web::get().to(greet))
     })
     .listen(listener)?
