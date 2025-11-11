@@ -130,3 +130,13 @@ pub struct CreatePublisherRequest {
     pub country: Option<String>,
     pub founded_year: Option<i32>,
 }
+
+/// UpdatePublisherRequest for updating a publisher
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdatePublisherRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub website_url: Option<String>,
+    pub country: Option<String>,
+    pub founded_year: Option<i32>,
+}

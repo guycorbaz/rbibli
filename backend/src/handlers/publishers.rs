@@ -21,7 +21,7 @@ pub async fn list_publishers(data: web::Data<AppState>) -> impl Responder {
             p.updated_at,
             COUNT(t.id) as title_count
         FROM publishers p
-        LEFT JOIN titles t ON p.id = t.publisher
+        LEFT JOIN titles t ON p.id = t.publisher_id
         GROUP BY p.id
         ORDER BY p.name ASC
     "#;

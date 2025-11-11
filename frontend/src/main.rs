@@ -9,7 +9,7 @@ mod models;
 mod api_client;
 
 use api_client::ApiClient;
-use models::{CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest};
+use models::{CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest};
 
 slint::include_modules!();
 
@@ -373,6 +373,53 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to create publisher: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the update-publisher callback
+    {
+        let load_publishers = load_publishers.clone();
+        let api_client = api_client.clone();
+        ui.on_update_publisher(move |id, name, description, website_url, country, founded_year| {
+            println!("Updating publisher: {}", id);
+
+            let request = UpdatePublisherRequest {
+                name: if name.is_empty() {
+                    None
+                } else {
+                    Some(name.to_string())
+                },
+                description: if description.is_empty() {
+                    None
+                } else {
+                    Some(description.to_string())
+                },
+                website_url: if website_url.is_empty() {
+                    None
+                } else {
+                    Some(website_url.to_string())
+                },
+                country: if country.is_empty() {
+                    None
+                } else {
+                    Some(country.to_string())
+                },
+                founded_year: if founded_year.is_empty() {
+                    None
+                } else {
+                    founded_year.parse::<i32>().ok()
+                },
+            };
+
+            match api_client.update_publisher(&id.to_string(), request) {
+                Ok(_) => {
+                    println!("Successfully updated publisher");
+                    load_publishers();
+                }
+                Err(e) => {
+                    eprintln!("Failed to update publisher: {}", e);
                 }
             }
         });

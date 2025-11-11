@@ -1,4 +1,4 @@
-use crate::models::{TitleWithCount, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest};
+use crate::models::{TitleWithCount, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest};
 use std::error::Error;
 
 /// API client for communicating with the rbibli backend
@@ -208,6 +208,27 @@ impl ApiClient {
         println!("Successfully created publisher with ID: {}", publisher_id);
 
         Ok(publisher_id)
+    }
+
+    /// Update a publisher by ID
+    pub fn update_publisher(&self, publisher_id: &str, request: UpdatePublisherRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/publishers/{}", self.base_url, publisher_id);
+
+        println!("Updating publisher: {}", publisher_id);
+
+        let response = self.client
+            .put(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully updated publisher: {}", publisher_id);
+
+        Ok(())
     }
 
     /// Delete a publisher by ID

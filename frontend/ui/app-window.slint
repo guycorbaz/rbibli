@@ -16,6 +16,7 @@ export component AppWindow inherits Window {
     callback delete-author(string);
     callback load-publishers();
     callback create-publisher(string, string, string, string, string);
+    callback update-publisher(string, string, string, string, string, string);
     callback delete-publisher(string);
     //preferred-width: 700px;
     //preferred-height: 500px;
@@ -68,6 +69,9 @@ export component AppWindow inherits Window {
             }
             create-publisher(name, description, website-url, country, founded-year) => {
                 root.create-publisher(name, description, website-url, country, founded-year);
+            }
+            update-publisher(id, name, description, website-url, country, founded-year) => {
+                root.update-publisher(id, name, description, website-url, country, founded-year);
             }
             delete-publisher(id) => {
                 root.delete-publisher(id);

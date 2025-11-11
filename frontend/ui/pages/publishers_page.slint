@@ -19,15 +19,23 @@ export component PublishersPage inherits Page {
     // Properties
     in-out property <[PublisherData]> publishers: [];
     in-out property <bool> show-create-dialog: false;
+    in-out property <bool> show-edit-dialog: false;
     in-out property <string> new-name: "";
     in-out property <string> new-description: "";
     in-out property <string> new-website-url: "";
     in-out property <string> new-country: "";
     in-out property <string> new-founded-year: "";
+    in-out property <string> edit-id: "";
+    in-out property <string> edit-name: "";
+    in-out property <string> edit-description: "";
+    in-out property <string> edit-website-url: "";
+    in-out property <string> edit-country: "";
+    in-out property <string> edit-founded-year: "";
 
     // Callbacks
     callback load-publishers();
     callback create-publisher(string, string, string, string, string); // name, description, website_url, country, founded_year
+    callback update-publisher(string, string, string, string, string, string); // id, name, description, website_url, country, founded_year
     callback delete-publisher(string); // id
 
     VerticalBox {
@@ -191,8 +199,126 @@ export component PublishersPage inherits Page {
             }
         }
 
+        // Edit publisher dialog
+        if show-edit-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+            height: 450px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 15px;
+
+                Text {
+                    text: @tr("Edit Publisher");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-name;
+                        placeholder-text: @tr("Publisher name (required)");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Description:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.edit-description;
+                        height: 80px;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Website:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-website-url;
+                        placeholder-text: @tr("https://...");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Country:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-country;
+                        placeholder-text: @tr("E.g., USA, UK, France");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Founded Year:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-founded-year;
+                        placeholder-text: @tr("E.g., 1950");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-edit-dialog = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Save");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.edit-name != "";
+                        clicked => {
+                            root.update-publisher(
+                                root.edit-id,
+                                root.edit-name,
+                                root.edit-description,
+                                root.edit-website-url,
+                                root.edit-country,
+                                root.edit-founded-year
+                            );
+                            root.show-edit-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
         // Empty state
-        if publishers.length == 0 && !show-create-dialog: Rectangle {
+        if publishers.length == 0 && !show-create-dialog && !show-edit-dialog: Rectangle {
             height: 100px;
             Text {
                 text: @tr("No publishers found. Click 'New Publisher' to create one.");
@@ -285,9 +411,24 @@ export component PublishersPage inherits Page {
 
                     // Action buttons
                     HorizontalBox {
-                        width: 100px;
+                        width: 200px;
                         spacing: 8px;
                         alignment: end;
+
+                        Button {
+                            text: @tr("Edit");
+                            min-width: 80px;
+                            height: 32px;
+                            clicked => {
+                                root.edit-id = publisher.id;
+                                root.edit-name = publisher.name;
+                                root.edit-description = publisher.description;
+                                root.edit-website-url = publisher.website-url;
+                                root.edit-country = publisher.country;
+                                root.edit-founded-year = publisher.founded-year > 0 ? publisher.founded-year : "";
+                                root.show-edit-dialog = true;
+                            }
+                        }
 
                         Button {
                             text: @tr("Delete");

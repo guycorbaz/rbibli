@@ -14,7 +14,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             t.title,
             t.subtitle,
             t.isbn,
-            t.publisher,
+            t.publisher_old as publisher,
             t.publication_year,
             t.pages,
             t.language,
@@ -28,7 +28,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             COUNT(v.id) as volume_count
         FROM titles t
         LEFT JOIN volumes v ON t.id = v.title_id
-        GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher, t.publication_year,
+        GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publication_year,
                  t.pages, t.language, t.dewey_code, t.dewey_category, t.genre,
                  t.summary, t.cover_url, t.created_at, t.updated_at
         ORDER BY t.title ASC
