@@ -1,47 +1,235 @@
+// ============================================================================
+// app-window.slint
+// ============================================================================
+// Main application window component for the rbibli (personal library management) system.
+//
+// This is the root component of the Slint UI application. It provides:
+// - A navigation sidebar for switching between different pages
+// - Conditional rendering of pages based on sidebar selection
+// - Data properties for storing application state (titles, authors, etc.)
+// - Callbacks for communicating with the Rust backend via API calls
+//
+// The window uses a horizontal layout with:
+// - Left side: Navigation sidebar with menu items
+// - Right side: Content area showing the currently selected page
+//
+// Pages are conditionally rendered based on the sidebar's current-item index:
+//   0 = Titles Page (manage books/titles)
+//   1 = Locations Page (manage storage locations)
+//   2 = Authors Page (manage authors)
+//   3 = Publishers Page (manage publishers)
+//   4 = Genres Page (manage genres/categories)
+//   5 = Loans Page (manage book loans) - NOT YET IMPLEMENTED
+//   6 = Statistics Page (view library statistics) - NOT YET IMPLEMENTED
+//   7 = About Page (application information)
+//
+// All text is internationalized using the @tr() macro for multi-language support.
+// ============================================================================
+
 import { Button, VerticalBox } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
 import {AboutPage, TitlesPage, TitleData, GenreItem, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
 
+// AppWindow - Main application window component
+//
+// This component serves as the root container for the entire application.
+// It manages the overall application state and coordinates communication between
+// the UI and the Rust backend through a series of callbacks.
+//
+// Properties:
+//   - titles: Array of book titles with their metadata and volume counts
+//   - locations: Array of physical storage locations with hierarchical paths
+//   - authors: Array of authors with their biographical information
+//   - publishers: Array of publishers with their company details
+//   - genres: Array of book genres/categories
+//   - genre-items: Array of genre items formatted for dropdowns
+//   - genre-names: Array of genre names for ComboBox widgets
+//
+// Callbacks (connected to Rust backend):
+//   Data Loading:
+//     - load-titles(): Fetches all titles from the backend
+//     - load-locations(): Fetches all locations from the backend
+//     - load-authors(): Fetches all authors from the backend
+//     - load-publishers(): Fetches all publishers from the backend
+//     - load-genres(): Fetches all genres from the backend
+//
+//   Title Operations:
+//     - create-title(title, subtitle, isbn, publisher, year, pages, lang, genre, summary)
+//     - update-title(id, title, subtitle, isbn, publisher, year, pages, lang, genre, summary)
+//     - find-genre-index(genre-id) -> int: Finds the index of a genre in the dropdown
+//
+//   Location Operations:
+//     - create-location(name, description, parent-id)
+//     - delete-location(id)
+//
+//   Author Operations:
+//     - create-author(first-name, last-name, bio, birth, death, nationality, website)
+//     - delete-author(id)
+//
+//   Publisher Operations:
+//     - create-publisher(name, description, website, country, founded-year)
+//     - update-publisher(id, name, description, website, country, founded-year)
+//     - delete-publisher(id)
+//
+//   Genre Operations:
+//     - create-genre(name, description)
+//     - update-genre(id, name, description)
+//     - delete-genre(id)
+//
+// Window Settings:
+//   - Minimum size: 700x500 pixels
+//   - Title: "Personal Library" (internationalized)
 export component AppWindow inherits Window {
+    // ========================================================================
+    // Data Properties
+    // ========================================================================
+    // These properties store the application data fetched from the backend.
+    // They are updated by the Rust code when data is loaded or modified.
+
+    // Array of titles with volume counts (books in the library)
     in-out property <[TitleData]> titles: [];
+
+    // Array of storage locations with hierarchical paths
     in-out property <[LocationData]> locations: [];
+
+    // Array of authors with biographical information
     in-out property <[AuthorData]> authors: [];
+
+    // Array of publishers with company details
     in-out property <[PublisherData]> publishers: [];
+
+    // Array of genres with title counts
     in-out property <[GenreData]> genres: [];
+
+    // Array of genre items formatted for dropdown selection
     in-out property <[GenreItem]> genre-items: [];
+
+    // Array of genre names for ComboBox widgets
     in-out property <[string]> genre-names: [];
+
+    // ========================================================================
+    // Callbacks - Title Operations
+    // ========================================================================
+
+    // Triggers loading of all titles from the backend
     callback load-titles();
+
+    // Creates a new title in the library
+    // Parameters: title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary
     callback create-title(string, string, string, string, string, string, string, string, string);
+
+    // Updates an existing title's information
+    // Parameters: id, title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary
     callback update-title(string, string, string, string, string, string, string, string, string, string);
+
+    // Finds the index of a genre in the genre dropdown list
+    // Parameter: genre-id (UUID string)
+    // Returns: Index position in the dropdown, or -1 if not found
     callback find-genre-index(string) -> int;
+
+    // ========================================================================
+    // Callbacks - Location Operations
+    // ========================================================================
+
+    // Triggers loading of all storage locations from the backend
     callback load-locations();
+
+    // Creates a new storage location
+    // Parameters: name, description, parent-id (UUID or empty for root location)
     callback create-location(string, string, string);
+
+    // Deletes a storage location by ID
+    // Parameter: id (UUID string)
     callback delete-location(string);
+
+    // ========================================================================
+    // Callbacks - Author Operations
+    // ========================================================================
+
+    // Triggers loading of all authors from the backend
     callback load-authors();
+
+    // Creates a new author
+    // Parameters: first-name, last-name, biography, birth-date, death-date, nationality, website-url
     callback create-author(string, string, string, string, string, string, string);
+
+    // Deletes an author by ID
+    // Parameter: id (UUID string)
     callback delete-author(string);
+
+    // ========================================================================
+    // Callbacks - Publisher Operations
+    // ========================================================================
+
+    // Triggers loading of all publishers from the backend
     callback load-publishers();
+
+    // Creates a new publisher
+    // Parameters: name, description, website-url, country, founded-year
     callback create-publisher(string, string, string, string, string);
+
+    // Updates an existing publisher's information
+    // Parameters: id, name, description, website-url, country, founded-year
     callback update-publisher(string, string, string, string, string, string);
+
+    // Deletes a publisher by ID
+    // Parameter: id (UUID string)
     callback delete-publisher(string);
+
+    // ========================================================================
+    // Callbacks - Genre Operations
+    // ========================================================================
+
+    // Triggers loading of all genres from the backend
     callback load-genres();
+
+    // Creates a new genre/category
+    // Parameters: name, description
     callback create-genre(string, string);
+
+    // Updates an existing genre's information
+    // Parameters: id, name, description
     callback update-genre(string, string, string);
+
+    // Deletes a genre by ID
+    // Parameter: id (UUID string)
     callback delete-genre(string);
-    //preferred-width: 700px;
-    //preferred-height: 500px;
+
+    // ========================================================================
+    // Window Configuration
+    // ========================================================================
+    // Minimum window dimensions to ensure usable interface
     min-width: 700px;
     min-height: 500px;
+
+    // Window title (internationalized)
     title: @tr("Personal Library");
+
+    // Optional: Custom window icon (currently commented out)
     //icon: @image-url("../../logo/slint-logo-small-light.png");
 
-
+    // ========================================================================
+    // Main Layout - Horizontal split between sidebar and content
+    // ========================================================================
     HorizontalLayout {
+        // Left side: Navigation sidebar
+        // The sidebar provides menu items for switching between different pages.
+        // The current-item property tracks which menu item is selected (0-7).
         side-bar := SideBar {
             title: @tr("Personal Library");
+            // Menu items (internationalized):
+            // 0: Titles, 1: Locations, 2: Authors, 3: Publishers,
+            // 4: Genres, 5: Loans (TODO), 6: Statistics (TODO), 7: About
             model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Genres"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
         }
 
+        // ====================================================================
+        // Right side: Content area with conditional page rendering
+        // ====================================================================
+        // Pages are shown/hidden based on the sidebar's current-item property.
+        // Each page receives data and callbacks from the AppWindow.
+
+        // PAGE 0: Titles Page - Manage books and titles in the library
         if(side-bar.current-item == 0) : TitlesPage {
             titles: root.titles;
             genres: root.genre-items;
@@ -59,6 +247,8 @@ export component AppWindow inherits Window {
                 return root.find-genre-index(genre-id);
             }
         }
+
+        // PAGE 1: Locations Page - Manage physical storage locations
         if(side-bar.current-item == 1) : LocationsPage {
             locations: root.locations;
             load-locations => {
@@ -71,6 +261,8 @@ export component AppWindow inherits Window {
                 root.delete-location(id);
             }
         }
+
+        // PAGE 2: Authors Page - Manage book authors
         if(side-bar.current-item == 2) : AuthorsPage {
             authors: root.authors;
             load-authors => {
@@ -83,6 +275,8 @@ export component AppWindow inherits Window {
                 root.delete-author(id);
             }
         }
+
+        // PAGE 3: Publishers Page - Manage publishing companies
         if(side-bar.current-item == 3) : PublishersPage {
             publishers: root.publishers;
             load-publishers => {
@@ -98,6 +292,8 @@ export component AppWindow inherits Window {
                 root.delete-publisher(id);
             }
         }
+
+        // PAGE 4: Genres Page - Manage book genres/categories
         if(side-bar.current-item == 4) : GenresPage {
             genres: root.genres;
             load-genres => {
@@ -113,8 +309,14 @@ export component AppWindow inherits Window {
                 root.delete-genre(id);
             }
         }
+
+        // PAGE 5: Loans Page - Manage book loans (NOT YET IMPLEMENTED)
         //if(side-bar.current-item == 5) : LoansPage {}
+
+        // PAGE 6: Statistics Page - View library statistics (NOT YET IMPLEMENTED)
         //if(side-bar.current-item == 6) : StatisticsPage {}
+
+        // PAGE 7: About Page - Application information and version
         if(side-bar.current-item == 7) : AboutPage {}
     }
 }

@@ -1,12 +1,61 @@
 // Copyright © SixtyFPS GmbH <info@slint.dev>
 // SPDX-License-Identifier: MIT
 
+// ============================================================================
+// pages.slint
+// ============================================================================
+// Central export file for all page components in the rbibli application.
+//
+// This file re-exports all page components and their associated data structures
+// (structs) to provide a single import point for the main application window.
+//
+// Exported Components:
+//   - AboutPage: Application information and version details
+//   - TitlesPage: Manage book titles in the library
+//   - LocationsPage: Manage physical storage locations
+//   - AuthorsPage: Manage book authors
+//   - PublishersPage: Manage publishing companies
+//   - GenresPage: Manage book genres/categories
+//
+// Exported Data Structures:
+//   - TitleData: Struct containing title metadata and volume count
+//   - GenreItem: Struct for genre dropdown items
+//   - LocationData: Struct for storage location with hierarchical path
+//   - AuthorData: Struct for author biographical information
+//   - PublisherData: Struct for publisher company details
+//   - GenreData: Struct for genre with title count
+//
+// Usage:
+//   import {AboutPage, TitlesPage, TitleData} from "pages/pages.slint";
+//
+// Note: Some page components from the original Slint gallery template
+// are commented out as they are not used in this application.
+// ============================================================================
+
+// About page - Application information
 export { AboutPage } from "about_page.slint";
+
+// Titles page - Manage book titles with metadata
+// Exports: TitlesPage component, TitleData struct, GenreItem struct
 export { TitlesPage, TitleData, GenreItem } from "titles_page.slint";
+
+// Locations page - Manage storage locations
+// Exports: LocationsPage component, LocationData struct
 export { LocationsPage, LocationData } from "locations_page.slint";
+
+// Authors page - Manage book authors
+// Exports: AuthorsPage component, AuthorData struct
 export { AuthorsPage, AuthorData } from "authors_page.slint";
+
+// Publishers page - Manage publishing companies
+// Exports: PublishersPage component, PublisherData struct
 export { PublishersPage, PublisherData } from "publishers_page.slint";
+
+// Genres page - Manage book genres/categories
+// Exports: GenresPage component, GenreData struct
 export { GenresPage, GenreData } from "genres_page.slint";
+
+// Commented out pages from original Slint gallery template (not used):
 //export { ControlsPage } from "controls_page.slint";
 //export { EasingsPage } from "easings_page.slint";
 //export { ListViewPage } from "list_view_page.slint";

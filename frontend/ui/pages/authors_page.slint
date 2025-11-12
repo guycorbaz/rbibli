@@ -1,7 +1,67 @@
+// ============================================================================
+// authors_page.slint
+// ============================================================================
+// Authors management page for the rbibli personal library application.
+//
+// This page provides a complete interface for managing book authors in the
+// library database. It allows users to:
+// - View a list of all authors with their biographical information
+// - See the number of titles associated with each author
+// - Create new authors with full biographical details
+// - Delete existing authors (if they have no associated titles)
+// - Refresh the author list from the backend
+//
+// The page uses a card-based layout with alternating row colors for better
+// readability. Each author card displays:
+// - Full name (first + last name) in bold
+// - Title count badge (if author has books)
+// - Nationality with emoji indicator
+// - Birth and death dates (if available)
+// - Biography excerpt
+// - Website link (if available)
+// - Delete action button
+//
+// The create dialog provides form fields for all author attributes:
+// - First name and last name (required)
+// - Biography (multi-line text)
+// - Birth date and death date (ISO format: YYYY-MM-DD)
+// - Nationality
+// - Website URL
+//
+// All text is internationalized using @tr() for multi-language support.
+// ============================================================================
+
 import { Page } from "page.slint";
 import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
 
-// Structure to hold author data
+// AuthorData - Data structure for author information (EXPORTED)
+//
+// This struct represents a single author with their biographical information
+// and statistics. It mirrors the backend API's author data structure.
+//
+// Fields:
+//   - id: Unique identifier (UUID string) for the author
+//   - first-name: Author's first/given name
+//   - last-name: Author's last/family/surname
+//   - biography: Biographical text about the author
+//   - birth-date: Birth date in ISO format (YYYY-MM-DD), empty if unknown
+//   - death-date: Death date in ISO format (YYYY-MM-DD), empty if alive/unknown
+//   - nationality: Author's nationality (e.g., "American", "British")
+//   - website-url: Author's website URL
+//   - title-count: Number of titles/books associated with this author
+//
+// Example:
+//   AuthorData {
+//       id: "123e4567-e89b-12d3-a456-426614174000",
+//       first-name: "Isaac",
+//       last-name: "Asimov",
+//       biography: "American science fiction writer",
+//       birth-date: "1920-01-02",
+//       death-date: "1992-04-06",
+//       nationality: "American",
+//       website-url: "",
+//       title-count: 42
+//   }
 export struct AuthorData {
     id: string,
     first-name: string,
@@ -14,44 +74,103 @@ export struct AuthorData {
     title-count: int,
 }
 
+// AuthorsPage - Authors management page component (EXPORTED)
+//
+// This component provides the complete user interface for managing authors
+// in the library. It inherits from the base Page component to maintain
+// consistent styling with other pages.
+//
+// Features:
+//   - List view of all authors with biographical details
+//   - Create new authors via modal dialog form
+//   - Delete authors with confirmation
+//   - Empty state message when no authors exist
+//   - Alternating row colors for better readability
+//   - Title count badges showing number of associated books
+//   - Emoji indicators for nationality, dates, and website
+//
+// Layout Structure:
+//   1. Header: Page title with Refresh and New Author buttons
+//   2. Create Dialog: Modal form for adding new authors (conditional)
+//   3. Empty State: Message when no authors exist (conditional)
+//   4. Author List: Card-based list view of all authors (conditional)
+//
+// Data Flow:
+//   - Authors data is passed from AppWindow via the authors property
+//   - Create/delete operations trigger callbacks to Rust backend
+//   - Backend updates database and returns new data
+//   - Authors property is updated, triggering UI refresh
+//
+// Validation:
+//   - First name and last name are required fields
+//   - Create button is disabled until both required fields are filled
+//   - Date fields accept ISO format (YYYY-MM-DD)
 export component AuthorsPage inherits Page {
+    // Page title and description (internationalized)
     title: @tr("Authors");
     description: @tr("Manage book authors in your library");
 
+    // ========================================================================
     // Properties
+    // ========================================================================
+
+    // Array of all authors loaded from the backend
     in-out property <[AuthorData]> authors: [];
+
+    // Whether the create author dialog is currently visible
     in-out property <bool> show-create-dialog: false;
-    in-out property <string> new-first-name: "";
-    in-out property <string> new-last-name: "";
-    in-out property <string> new-biography: "";
-    in-out property <string> new-birth-date: "";
-    in-out property <string> new-death-date: "";
-    in-out property <string> new-nationality: "";
-    in-out property <string> new-website-url: "";
 
-    // Callbacks
+    // Form fields for creating a new author
+    in-out property <string> new-first-name: "";        // Required
+    in-out property <string> new-last-name: "";         // Required
+    in-out property <string> new-biography: "";         // Optional multi-line text
+    in-out property <string> new-birth-date: "";        // Optional, ISO format (YYYY-MM-DD)
+    in-out property <string> new-death-date: "";        // Optional, ISO format (YYYY-MM-DD)
+    in-out property <string> new-nationality: "";       // Optional
+    in-out property <string> new-website-url: "";       // Optional
+
+    // ========================================================================
+    // Callbacks (connected to Rust backend)
+    // ========================================================================
+
+    // Triggers reloading of all authors from the backend
     callback load-authors();
-    callback create-author(string, string, string, string, string, string, string); // first_name, last_name, biography, birth_date, death_date, nationality, website_url
-    callback delete-author(string); // id
 
+    // Creates a new author in the database
+    // Parameters: first_name, last_name, biography, birth_date, death_date, nationality, website_url
+    callback create-author(string, string, string, string, string, string, string);
+
+    // Deletes an author by ID
+    // Parameter: author id (UUID string)
+    // Note: May fail if author has associated titles
+    callback delete-author(string);
+
+    // ========================================================================
+    // Main Content Layout
+    // ========================================================================
     VerticalBox {
         alignment: stretch;
         padding: 20px;
 
-        // Header with title and buttons
+        // ====================================================================
+        // Header Section - Title and action buttons
+        // ====================================================================
         HorizontalBox {
             alignment: space-between;
             height: 50px;
 
+            // Page title
             Text {
                 text: @tr("Authors");
                 font-size: 24px;
                 font-weight: 700;
             }
 
+            // Action buttons (right-aligned)
             HorizontalBox {
                 spacing: 10px;
 
+                // Refresh button - reloads authors from backend
                 Button {
                     text: @tr("Refresh");
                     min-width: 100px;
@@ -61,12 +180,14 @@ export component AuthorsPage inherits Page {
                     }
                 }
 
+                // New Author button - opens create dialog
                 Button {
                     text: @tr("+ New Author");
                     primary: true;
                     min-width: 150px;
                     height: 35px;
                     clicked => {
+                        // Show dialog and reset all form fields
                         root.show-create-dialog = true;
                         root.new-first-name = "";
                         root.new-last-name = "";
@@ -80,7 +201,11 @@ export component AuthorsPage inherits Page {
             }
         }
 
-        // Create author dialog
+        // ====================================================================
+        // Create Author Dialog - Modal form for adding new authors
+        // ====================================================================
+        // This dialog appears when show-create-dialog is true.
+        // It provides form fields for all author attributes.
         if show-create-dialog: Rectangle {
             background: white;
             border-width: 2px;
@@ -92,12 +217,14 @@ export component AuthorsPage inherits Page {
                 padding: 20px;
                 spacing: 12px;
 
+                // Dialog title
                 Text {
                     text: @tr("Create New Author");
                     font-size: 18px;
                     font-weight: 600;
                 }
 
+                // First Name field (REQUIRED)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -111,6 +238,7 @@ export component AuthorsPage inherits Page {
                     }
                 }
 
+                // Last Name field (REQUIRED)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -124,6 +252,7 @@ export component AuthorsPage inherits Page {
                     }
                 }
 
+                // Biography field (Optional multi-line)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -137,6 +266,7 @@ export component AuthorsPage inherits Page {
                     }
                 }
 
+                // Birth Date field (Optional, ISO format)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -150,6 +280,7 @@ export component AuthorsPage inherits Page {
                     }
                 }
 
+                // Death Date field (Optional, ISO format)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -163,6 +294,7 @@ export component AuthorsPage inherits Page {
                     }
                 }
 
+                // Nationality field (Optional)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -176,6 +308,7 @@ export component AuthorsPage inherits Page {
                     }
                 }
 
+                // Website URL field (Optional)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -189,10 +322,12 @@ export component AuthorsPage inherits Page {
                     }
                 }
 
+                // Dialog action buttons (Cancel and Create)
                 HorizontalBox {
                     spacing: 10px;
                     alignment: end;
 
+                    // Cancel button - closes dialog without creating
                     Button {
                         text: @tr("Cancel");
                         min-width: 100px;
@@ -202,6 +337,8 @@ export component AuthorsPage inherits Page {
                         }
                     }
 
+                    // Create button - submits form and creates author
+                    // Disabled if required fields (first name, last name) are empty
                     Button {
                         text: @tr("Create");
                         primary: true;
@@ -209,6 +346,7 @@ export component AuthorsPage inherits Page {
                         height: 35px;
                         enabled: root.new-first-name != "" && root.new-last-name != "";
                         clicked => {
+                            // Call backend to create author
                             root.create-author(
                                 root.new-first-name,
                                 root.new-last-name,
@@ -218,6 +356,7 @@ export component AuthorsPage inherits Page {
                                 root.new-nationality,
                                 root.new-website-url
                             );
+                            // Close dialog after submission
                             root.show-create-dialog = false;
                         }
                     }
@@ -225,7 +364,9 @@ export component AuthorsPage inherits Page {
             }
         }
 
-        // Empty state
+        // ====================================================================
+        // Empty State - Shown when no authors exist
+        // ====================================================================
         if authors.length == 0 && !show-create-dialog: Rectangle {
             height: 100px;
             Text {
@@ -236,28 +377,35 @@ export component AuthorsPage inherits Page {
             }
         }
 
-        // List of authors
+        // ====================================================================
+        // Author List - Card-based list view of all authors
+        // ====================================================================
+        // Each author is displayed as a card with biographical information,
+        // title count badge, and action buttons.
         if authors.length > 0: ListView {
+            // Each author item is rendered as a card
             for author[index] in authors: Rectangle {
                 height: 90px;
                 border-width: 1px;
                 border-color: #ddd;
                 border-radius: 4px;
+                // Alternating row colors for better readability
                 background: Math.mod(index, 2) == 0 ? #fafafa : white;
 
                 HorizontalLayout {
                     padding: 12px;
                     spacing: 10px;
 
-                    // Author info
+                    // Left side: Author biographical information
                     VerticalLayout {
                         alignment: start;
                         spacing: 5px;
 
-                        // Name
+                        // Author name and title count badge
                         HorizontalBox {
                             spacing: 8px;
 
+                            // Full name (first + last)
                             Text {
                                 text: author.first-name + " " + author.last-name;
                                 font-size: 16px;
@@ -265,6 +413,7 @@ export component AuthorsPage inherits Page {
                                 overflow: elide;
                             }
 
+                            // Title count badge (only shown if author has books)
                             if author.title-count > 0: Rectangle {
                                 background: #0066cc;
                                 border-radius: 10px;
@@ -281,10 +430,12 @@ export component AuthorsPage inherits Page {
                             }
                         }
 
-                        // Nationality and dates
+                        // Nationality and dates row (conditional)
+                        // Only shown if author has nationality or birth date
                         if author.nationality != "" || author.birth-date != "": HorizontalBox {
                             spacing: 12px;
 
+                            // Nationality with globe emoji
                             if author.nationality != "": Text {
                                 text: "🌍 " + author.nationality;
                                 font-size: 12px;
@@ -292,6 +443,8 @@ export component AuthorsPage inherits Page {
                                 overflow: elide;
                             }
 
+                            // Birth and death dates with calendar emoji
+                            // Shows "birth - death" if both available, otherwise just birth
                             if author.birth-date != "": Text {
                                 text: "📅 " + author.birth-date + (author.death-date != "" ? " - " + author.death-date : "");
                                 font-size: 12px;
@@ -300,7 +453,7 @@ export component AuthorsPage inherits Page {
                             }
                         }
 
-                        // Biography
+                        // Biography excerpt (conditional)
                         if author.biography != "": Text {
                             text: author.biography;
                             font-size: 11px;
@@ -308,7 +461,7 @@ export component AuthorsPage inherits Page {
                             overflow: elide;
                         }
 
-                        // Website
+                        // Website URL with link emoji (conditional)
                         if author.website-url != "": Text {
                             text: "🔗 " + author.website-url;
                             font-size: 11px;
@@ -317,12 +470,14 @@ export component AuthorsPage inherits Page {
                         }
                     }
 
-                    // Action buttons
+                    // Right side: Action buttons
                     HorizontalBox {
                         width: 100px;
                         spacing: 8px;
                         alignment: end;
 
+                        // Delete button - removes author from database
+                        // Note: May fail if author has associated titles
                         Button {
                             text: @tr("Delete");
                             min-width: 80px;

@@ -1,7 +1,70 @@
+// ============================================================================
+// locations_page.slint
+// ============================================================================
+// Locations management page for the rbibli personal library application.
+//
+// This page provides a complete interface for managing physical storage
+// locations in the library. It allows users to:
+// - View a hierarchical list of all storage locations
+// - See the full path of each location (e.g., "House > Room > Bookshelf")
+// - Create new root locations or nested child locations
+// - Delete existing locations (if they have no volumes stored in them)
+// - Refresh the location list from the backend
+//
+// Locations support parent-child hierarchical relationships, enabling users
+// to organize their physical storage in a tree structure. For example:
+// - House
+//   - Living Room
+//     - Bookshelf 1
+//     - Bookshelf 2
+//   - Bedroom
+//     - Nightstand
+//
+// The page uses a tree-like list layout with visual indentation to show
+// the hierarchy. Each location item displays:
+// - Location name (bold)
+// - Hierarchy indicator arrow (→) for child locations
+// - Full hierarchical path
+// - Description (if available)
+// - "Add Child" and "Delete" action buttons
+//
+// Locations are displayed with indentation based on their level in the
+// hierarchy (level * 20px), making the tree structure clear.
+//
+// The create dialog supports:
+// - Name (required)
+// - Description (optional)
+// - Parent ID (automatically set when using "Add Child" button)
+//
+// All text is internationalized using @tr() for multi-language support.
+// ============================================================================
+
 import { Page } from "page.slint";
 import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
 
-// Structure to hold location data
+// LocationData - Data structure for storage location information (EXPORTED)
+//
+// This struct represents a single physical storage location with its
+// hierarchical information. It mirrors the backend API's location data structure.
+//
+// Fields:
+//   - id: Unique identifier (UUID string) for the location
+//   - name: Location name (e.g., "Bookshelf 1", "Living Room")
+//   - description: Optional description of the location
+//   - parent-id: UUID of the parent location (empty string for root locations)
+//   - full-path: Complete hierarchical path using " > " separator
+//                (e.g., "House > Living Room > Bookshelf 1")
+//   - level: Depth in the hierarchy (0 for root, 1 for first-level children, etc.)
+//
+// Example:
+//   LocationData {
+//       id: "123e4567-e89b-12d3-a456-426614174000",
+//       name: "Bookshelf 1",
+//       description: "Main bookshelf in living room",
+//       parent-id: "parent-uuid-here",
+//       full-path: "House > Living Room > Bookshelf 1",
+//       level: 2
+//   }
 export struct LocationData {
     id: string,
     name: string,
@@ -11,40 +74,105 @@ export struct LocationData {
     level: int,
 }
 
+// LocationsPage - Locations management page component (EXPORTED)
+//
+// This component provides the complete user interface for managing physical
+// storage locations in the library. It inherits from the base Page component
+// to maintain consistent styling with other pages.
+//
+// Features:
+//   - Hierarchical tree view of all locations with visual indentation
+//   - Full path display showing parent-child relationships
+//   - Create new root locations or nested child locations
+//   - Delete locations with confirmation
+//   - Empty state message when no locations exist
+//   - Alternating row colors for better readability
+//   - Visual hierarchy indicators (arrows and indentation)
+//
+// Layout Structure:
+//   1. Header: Page title with Refresh and New Location buttons
+//   2. Create Dialog: Modal form for adding new locations (conditional)
+//   3. Empty State: Message when no locations exist (conditional)
+//   4. Location List: Hierarchical tree view of all locations (conditional)
+//
+// Hierarchical Functionality:
+//   - Root locations have level=0 and no parent
+//   - Child locations have level>0 and a parent_id
+//   - "Add Child" button creates a new location under the current one
+//   - Indentation increases by 20px per level
+//   - Full path shows complete hierarchy (e.g., "A > B > C")
+//
+// Data Flow:
+//   - Locations data is passed from AppWindow via the locations property
+//   - Create/delete operations trigger callbacks to Rust backend
+//   - Backend updates database and returns new data
+//   - Locations property is updated, triggering UI refresh
+//
+// Validation:
+//   - Location name is a required field
+//   - Create button is disabled until name field is filled
+//   - Description is optional
+//   - Parent ID is automatically set when using "Add Child" button
 export component LocationsPage inherits Page {
+    // Page title and description (internationalized)
     title: @tr("Locations");
     description: @tr("Manage storage locations for your volumes");
 
+    // ========================================================================
     // Properties
+    // ========================================================================
+
+    // Array of all locations loaded from the backend (hierarchical)
     in-out property <[LocationData]> locations: [];
-    in-out property <bool> show-create-dialog: false;
-    in-out property <string> new-location-name: "";
-    in-out property <string> new-location-description: "";
-    in-out property <string> new-location-parent-id: "";
 
-    // Callbacks
+    // Create dialog state
+    in-out property <bool> show-create-dialog: false;          // Whether create dialog is visible
+    in-out property <string> new-location-name: "";            // Name for new location (required)
+    in-out property <string> new-location-description: "";     // Description (optional)
+    in-out property <string> new-location-parent-id: "";       // Parent UUID (empty = root location)
+
+    // ========================================================================
+    // Callbacks (connected to Rust backend)
+    // ========================================================================
+
+    // Triggers reloading of all locations from the backend
     callback load-locations();
-    callback create-location(string, string, string); // name, description, parent_id
-    callback delete-location(string); // id
 
+    // Creates a new location in the database
+    // Parameters: name, description, parent_id (empty string for root)
+    callback create-location(string, string, string);
+
+    // Deletes a location by ID
+    // Parameter: location id (UUID string)
+    // Note: May fail if location has child locations or volumes stored in it
+    callback delete-location(string);
+
+    // ========================================================================
+    // Main Content Layout
+    // ========================================================================
     VerticalBox {
         alignment: stretch;
         padding: 20px;
 
-        // Header with title and buttons
+        // ====================================================================
+        // Header Section - Title and action buttons
+        // ====================================================================
         HorizontalBox {
             alignment: space-between;
             height: 50px;
 
+            // Page title
             Text {
                 text: @tr("Storage Locations");
                 font-size: 24px;
                 font-weight: 700;
             }
 
+            // Action buttons (right-aligned)
             HorizontalBox {
                 spacing: 10px;
 
+                // Refresh button - reloads locations from backend
                 Button {
                     text: @tr("Refresh");
                     min-width: 100px;
@@ -54,12 +182,15 @@ export component LocationsPage inherits Page {
                     }
                 }
 
+                // New Location button - opens create dialog for root location
                 Button {
                     text: @tr("+ New Location");
                     primary: true;
                     min-width: 150px;
                     height: 35px;
                     clicked => {
+                        // Show dialog and reset all form fields
+                        // Empty parent_id creates a root location
                         root.show-create-dialog = true;
                         root.new-location-name = "";
                         root.new-location-description = "";
@@ -69,7 +200,12 @@ export component LocationsPage inherits Page {
             }
         }
 
-        // Create location dialog
+        // ====================================================================
+        // Create Location Dialog - Modal form for adding new locations
+        // ====================================================================
+        // This dialog appears when show-create-dialog is true.
+        // It can create either root locations (parent_id = "") or child
+        // locations (parent_id = UUID of parent).
         if show-create-dialog: Rectangle {
             background: white;
             border-width: 2px;
@@ -81,12 +217,14 @@ export component LocationsPage inherits Page {
                 padding: 20px;
                 spacing: 15px;
 
+                // Dialog title
                 Text {
                     text: @tr("Create New Location");
                     font-size: 18px;
                     font-weight: 600;
                 }
 
+                // Location Name field (REQUIRED)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -100,6 +238,7 @@ export component LocationsPage inherits Page {
                     }
                 }
 
+                // Location Description field (Optional)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -113,10 +252,12 @@ export component LocationsPage inherits Page {
                     }
                 }
 
+                // Dialog action buttons (Cancel and Create)
                 HorizontalBox {
                     spacing: 10px;
                     alignment: end;
 
+                    // Cancel button - closes dialog without creating
                     Button {
                         text: @tr("Cancel");
                         min-width: 100px;
@@ -126,6 +267,8 @@ export component LocationsPage inherits Page {
                         }
                     }
 
+                    // Create button - submits form and creates location
+                    // Disabled if required field (name) is empty
                     Button {
                         text: @tr("Create");
                         primary: true;
@@ -133,11 +276,14 @@ export component LocationsPage inherits Page {
                         height: 35px;
                         enabled: root.new-location-name != "";
                         clicked => {
+                            // Call backend to create location
+                            // If parent_id is empty, creates a root location
                             root.create-location(
                                 root.new-location-name,
                                 root.new-location-description,
                                 root.new-location-parent-id
                             );
+                            // Close dialog after submission
                             root.show-create-dialog = false;
                         }
                     }
@@ -145,7 +291,9 @@ export component LocationsPage inherits Page {
             }
         }
 
-        // Empty state
+        // ====================================================================
+        // Empty State - Shown when no locations exist
+        // ====================================================================
         if locations.length == 0 && !show-create-dialog: Rectangle {
             height: 100px;
             Text {
@@ -156,32 +304,42 @@ export component LocationsPage inherits Page {
             }
         }
 
-        // List of locations
+        // ====================================================================
+        // Location List - Hierarchical tree view of all locations
+        // ====================================================================
+        // Each location is displayed with visual indentation based on its
+        // hierarchy level. Locations show their name, full path, description,
+        // and action buttons (Add Child and Delete).
         if locations.length > 0: ListView {
+            // Each location item is rendered with hierarchical indentation
             for location[index] in locations: Rectangle {
                 height: 70px;
                 border-width: 1px;
                 border-color: #ddd;
                 border-radius: 4px;
+                // Alternating row colors for better readability
                 background: Math.mod(index, 2) == 0 ? #fafafa : white;
 
                 HorizontalLayout {
                     padding: 10px;
                     spacing: 10px;
 
-                    // Indentation based on level
+                    // Visual indentation based on hierarchy level
+                    // Each level adds 20px of indentation (0px for root, 20px for level 1, etc.)
                     Rectangle {
                         width: location.level * 20px;
                     }
 
-                    // Location info
+                    // Location information section
                     VerticalLayout {
                         alignment: start;
                         spacing: 4px;
 
+                        // Location name with hierarchy indicator
                         HorizontalBox {
                             spacing: 10px;
 
+                            // Location name
                             Text {
                                 text: location.name;
                                 font-size: 15px;
@@ -189,6 +347,7 @@ export component LocationsPage inherits Page {
                                 overflow: elide;
                             }
 
+                            // Arrow indicator for child locations (not shown for root)
                             if location.level > 0: Text {
                                 text: "→";
                                 color: #888;
@@ -196,6 +355,7 @@ export component LocationsPage inherits Page {
                             }
                         }
 
+                        // Full hierarchical path (e.g., "House > Room > Shelf")
                         Text {
                             text: location.full-path;
                             font-size: 12px;
@@ -203,6 +363,7 @@ export component LocationsPage inherits Page {
                             overflow: elide;
                         }
 
+                        // Description (conditional, only shown if not empty)
                         if location.description != "": Text {
                             text: location.description;
                             font-size: 11px;
@@ -211,24 +372,29 @@ export component LocationsPage inherits Page {
                         }
                     }
 
-                    // Action buttons
+                    // Action buttons section
                     HorizontalBox {
                         width: 200px;
                         spacing: 8px;
                         alignment: end;
 
+                        // Add Child button - creates a new location under this one
+                        // Opens create dialog with this location's ID as parent
                         Button {
                             text: @tr("Add Child");
                             min-width: 90px;
                             height: 32px;
                             clicked => {
+                                // Show create dialog with this location as parent
                                 root.show-create-dialog = true;
                                 root.new-location-name = "";
                                 root.new-location-description = "";
-                                root.new-location-parent-id = location.id;
+                                root.new-location-parent-id = location.id;  // Set parent for hierarchy
                             }
                         }
 
+                        // Delete button - removes location from database
+                        // Note: May fail if location has child locations or volumes
                         Button {
                             text: @tr("Delete");
                             min-width: 80px;

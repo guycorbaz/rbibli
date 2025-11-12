@@ -1,16 +1,62 @@
 // Copyright © SixtyFPS GmbH <info@slint.dev>
 // SPDX-License-Identifier: MIT
 
+// ============================================================================
+// about_page.slint
+// ============================================================================
+// About page component displaying application information.
+//
+// This page shows information about the rbibli application and the
+// Slint UI framework it's built with. It uses the standard AboutSlint
+// widget which provides:
+// - Slint logo and branding
+// - Version information
+// - Link to Slint website
+// - License and copyright information
+//
+// The page inherits from the base Page component to maintain consistent
+// styling with other pages in the application.
+//
+// Features:
+// - Simple, clean layout with minimal customization
+// - No interactive controls (show-enable-switch is hidden)
+// - Internationalized title and description
+//
+// This is typically the last item in the navigation sidebar and provides
+// users with information about the software and its underlying technology.
+// ============================================================================
+
 import { AboutSlint } from "std-widgets.slint";
 import { Page } from "page.slint";
 
+// AboutPage - Application information and credits (EXPORTED)
+//
+// This page displays information about the rbibli application and the
+// Slint UI framework. It's a simple informational page with no data
+// operations or user input.
+//
+// Content:
+//   - Application title and description
+//   - Slint framework information (via AboutSlint widget)
+//   - Logo, version, and links to Slint website
+//
+// Configuration:
+//   - show-enable-switch: false (no widget controls needed)
+//   - Title: Internationalized "About"
+//   - Description: "Personal book library management"
 export component AboutPage inherits Page {
+    // Page title (internationalized)
     title: @tr("About");
+
+    // Hide the widgets control switch (not needed on About page)
     show-enable-switch: false;
+
+    // Application description
     description: @tr("Personal book library management");
 
+    // Standard Slint about widget with framework information
     AboutSlint { }
 
-    // Spacer
+    // Spacer to add vertical space
     Rectangle { }
 }

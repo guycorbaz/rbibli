@@ -1,28 +1,98 @@
 // Copyright © SixtyFPS GmbH <info@slint.dev>
 // SPDX-License-Identifier: MIT
 
+// ============================================================================
+// page.slint
+// ============================================================================
+// Base component template for all content pages in the application.
+//
+// This component provides a common layout structure for all pages with:
+// - A header section containing the page title and utility switches
+// - A dark mode toggle (available on all pages)
+// - Optional widget enable/disable switches for demonstration pages
+// - A content area where child elements are placed via @children
+//
+// The Page component is inherited by all specific page implementations
+// (TitlesPage, AuthorsPage, etc.) to maintain consistent styling and
+// functionality across the application.
+//
+// Features:
+// - Configurable title and description
+// - Optional "Widgets enabled" switch (typically hidden in production pages)
+// - Optional "Widgets read-only" switch (for demonstration purposes)
+// - Dark mode toggle that applies to the entire application
+// - Accessibility support with tab-panel role
+//
+// Usage Example:
+//   export component MyPage inherits Page {
+//       title: "My Page Title";
+//       description: "Page description";
+//       show-enable-switch: false;  // Hide widget switch
+//
+//       // Add page content here
+//       Text { text: "Page content..."; }
+//   }
+// ============================================================================
+
 import { Switch, GridBox, ListView, ScrollView, HorizontalBox, VerticalBox, Palette } from "std-widgets.slint";
 
 import { GallerySettings } from "../gallery_settings.slint";
 
+// Page - Base component for all content pages (EXPORTED)
+//
+// This component serves as the foundation for all page components in the
+// application. It provides a consistent header with title and controls,
+// and delegates content rendering to child components.
+//
+// Properties:
+//   - title: Page title displayed in the header
+//   - description: Page description (informational, not currently displayed)
+//   - show-enable-switch: Whether to show the "Widgets enabled" toggle
+//   - show-enable-read-only: Whether to show the "Widgets read-only" toggle
+//
+// Layout:
+//   - Top: Header bar with title and switches
+//   - Bottom: Content area filled by child components (@children)
+//
+// Controls:
+//   - "Widgets enabled" switch: Enables/disables interactive widgets (optional)
+//   - "Widgets read-only" switch: Makes widgets read-only (optional)
+//   - "Dark Mode" switch: Toggles light/dark color scheme (always visible)
+//
+// Accessibility:
+//   - Role: tab-panel (indicates this is a content panel for a tab)
+//   - Label: Uses the page title for screen readers
 export component Page inherits VerticalBox {
+    // Page title displayed in the header
     in property <string> title: "title";
+
+    // Page description (not currently displayed in UI)
     in property <string> description: "description";
+
+    // Whether to show the "Widgets enabled" toggle switch
+    // Set to false for production pages (default: true for demo pages)
     in property <bool> show-enable-switch: true;
+
+    // Whether to show the "Widgets read-only" toggle switch
+    // Used for demonstration purposes (default: false)
     in property <bool> show-enable-read-only: false;
 
+    // Accessibility attributes
     accessible-role: tab-panel;
     accessible-label: root.title;
 
+    // Header bar with title and control switches
     HorizontalBox {
+        // Page title
         Text {
             font-size: 20px;
             text <=> root.title;
         }
 
-        // Spacer
+        // Spacer to push switches to the right
         Rectangle { }
 
+        // Optional "Widgets enabled" switch (typically hidden in production)
         if show-enable-switch: Switch {
             horizontal-stretch: 0;
             text: @tr("Widgets enabled");
@@ -30,6 +100,7 @@ export component Page inherits VerticalBox {
             enabled: true;
         }
 
+        // Optional "Widgets read-only" switch for demo purposes
         if show-enable-read-only: Switch {
             horizontal-stretch: 0;
             text: @tr("Widgets read-only");
@@ -37,6 +108,8 @@ export component Page inherits VerticalBox {
             enabled: true;
         }
 
+        // Dark mode toggle (always visible)
+        // Applies to the entire application via Palette.color-scheme
         Switch {
             horizontal-stretch: 0;
             text: @tr("Dark Mode");
@@ -47,5 +120,7 @@ export component Page inherits VerticalBox {
         }
     }
 
+    // Content area - child components are placed here
+    // Each specific page (TitlesPage, AuthorsPage, etc.) defines its own content
     @children
 }

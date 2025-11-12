@@ -1,5 +1,50 @@
+// ============================================================================
+// side_bar.slint
+// ============================================================================
+// Navigation sidebar component providing menu item selection functionality.
+//
+// This file defines two components:
+// 1. SideBarItem - Internal component representing a single menu item
+// 2. SideBar - Exported component containing a list of menu items
+//
+// Features:
+// - Visual feedback for hover, pressed, selected, and focused states
+// - Keyboard navigation support (Arrow keys, Enter, Space)
+// - Accessibility attributes for screen readers
+// - Smooth animations for state transitions
+// - Customizable menu items via model property
+//
+// The sidebar is designed to be used in the main application window
+// for navigating between different pages/views.
+// ============================================================================
+
 import { HorizontalBox, VerticalBox, Palette } from "std-widgets.slint";
 
+// SideBarItem - Internal component for a single sidebar menu item
+//
+// This component represents one clickable item in the sidebar navigation.
+// It provides visual feedback for different interaction states and
+// supports keyboard navigation for accessibility.
+//
+// Properties:
+//   - tab-index: Position of this item in the sidebar (0-based)
+//   - selected: Whether this item is currently selected
+//   - has-focus: Whether this item currently has keyboard focus
+//   - text: Display text for the menu item (bound to label.text)
+//
+// Callback:
+//   - clicked: Triggered when the user clicks/taps this item
+//
+// States:
+//   - pressed: When mouse/touch is pressed on the item (80% opacity)
+//   - hover: When mouse hovers over the item (60% opacity)
+//   - selected: When this is the active menu item (100% opacity)
+//   - focused: When keyboard focus is on this item (80% opacity)
+//
+// Accessibility:
+//   - Role: tab (part of a tab list)
+//   - Supports screen readers with appropriate labels
+//   - Keyboard accessible via Tab/Arrow keys
 component SideBarItem inherits Rectangle {
     in property <int> tab-index;
     in property <bool> selected;
@@ -54,29 +99,79 @@ component SideBarItem inherits Rectangle {
     }
 }
 
+// SideBar - Main navigation sidebar component (EXPORTED)
+//
+// This component creates a vertical navigation sidebar with a list of
+// clickable menu items. It manages the selection state and provides
+// keyboard navigation support for accessibility.
+//
+// Properties:
+//   IN:
+//     - model: Array of strings representing menu item labels
+//              Example: ["Titles", "Locations", "Authors", "About"]
+//     - title: Header text displayed at the top of the sidebar
+//   OUT:
+//     - current-item: Index of the currently selected menu item (0-based)
+//     - current-focused: Index of the item with keyboard focus, or -1 if no focus
+//
+// Layout:
+//   - Fixed width: 180px
+//   - Darker background for visual separation from content area
+//   - Vertical layout with title at top, menu items below
+//   - Supports additional child elements at the bottom (via @children)
+//
+// Keyboard Navigation:
+//   - Up Arrow: Move focus to previous item
+//   - Down Arrow: Move focus to next item
+//   - Enter/Space: Select the currently focused item
+//   - Tab: Move focus to/from the sidebar
+//
+// Accessibility:
+//   - Role: tab-list (contains multiple tab items)
+//   - Provides item count for screen readers
+//   - Delegates focus to current/focused item
+//   - Supports keyboard-only navigation
+//
+// Usage Example:
+//   SideBar {
+//       title: "My App";
+//       model: ["Home", "Settings", "About"];
+//       // Monitor current-item to switch content pages
+//   }
 export component SideBar inherits Rectangle {
+    // Array of menu item labels
     in property <[string]> model: [];
+
+    // Sidebar title/header text
     in property <string> title <=> label.text;
+
+    // Currently selected menu item index (0-based)
     out property <int> current-item: 0;
-    out property <int> current-focused: fs.has-focus ? fs.focused-tab : -1; // The currently focused tab
+
+    // Currently focused item for keyboard navigation (-1 = no focus)
+    out property <int> current-focused: fs.has-focus ? fs.focused-tab : -1;
 
     width: 180px;
     forward-focus: fs;
 
+    // Background rectangle with darker shade for visual distinction
     Rectangle {
         background: Palette.background.darker(0.2);
     }
 
+    // Main vertical layout containing title, menu items, and optional children
     VerticalBox {
         padding-left: 0px;
         padding-right: 0px;
         alignment: start;
 
+        // Sidebar title/header at the top
         label := Text {
             font-size: 16px;
             horizontal-alignment: center;
         }
 
+        // Navigation menu container with accessibility support
         navigation := VerticalLayout {
             alignment: start;
             vertical-stretch: 0;
@@ -85,7 +180,10 @@ export component SideBar inherits Rectangle {
             accessible-label: root.title;
             accessible-item-count: root.model.length;
 
+            // Focus scope for keyboard navigation
+            // Handles arrow keys, Enter, and Space for menu item selection
             fs := FocusScope {
+                // Handle key press events for navigation and selection
                 key-pressed(event) => {
                     if (event.text == "\n") {
                          root.current-item = root.current-focused;
@@ -102,6 +200,7 @@ export component SideBar inherits Rectangle {
                     return reject;
                 }
 
+                // Handle key release events (Space bar activation)
                 key-released(event) => {
                     if (event.text == " ") {
                          root.current-item = root.current-focused;
@@ -110,12 +209,14 @@ export component SideBar inherits Rectangle {
                     return reject;
                 }
 
+                // Tracks which tab currently has keyboard focus
                 property <int> focused-tab: 0;
 
                 x: 0;
-                width: 0; // Do not react on clicks
+                width: 0; // Zero width to avoid interfering with mouse clicks on menu items
             }
 
+            // Generate a SideBarItem for each entry in the model array
             for item[index] in root.model : SideBarItem {
                 clicked => { root.current-item = index; }
 
@@ -126,11 +227,14 @@ export component SideBar inherits Rectangle {
             }
         }
 
+        // Optional bottom section for additional child elements
+        // Can be used to add buttons, links, or other controls at the bottom
         VerticalLayout {
             bottom := VerticalBox {
                 padding-top: 0px;
                 padding-bottom: 0px;
 
+                // Placeholder for child elements added by parent component
                 @children
              }
         }

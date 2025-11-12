@@ -1,7 +1,54 @@
+// ============================================================================
+// genres_page.slint
+// ============================================================================
+// Genres management page for the rbibli personal library application.
+//
+// This page provides a complete interface for managing book genres (categories)
+// in the library database. It allows users to:
+// - View a list of all genres with descriptions and title counts
+// - Create new genres with name and description
+// - Edit existing genres to update name and description
+// - Delete genres (if they have no associated titles)
+// - Refresh the genre list from the backend
+//
+// Genres are used to categorize books into broad categories such as:
+// - Fiction, Non-Fiction, Science Fiction, Mystery, Biography, etc.
+//
+// The page uses a simple list layout with alternating row colors for better
+// readability. Each genre item displays:
+// - Genre name (bold)
+// - Description (if available)
+// - Title count showing how many books are in this genre
+// - Edit and Delete action buttons
+//
+// The page supports both create and edit dialogs with similar form fields:
+// - Name (required)
+// - Description (optional multi-line text)
+//
+// All text is internationalized using @tr() for multi-language support.
+// ============================================================================
+
 import { Page } from "page.slint";
 import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
 
-// Structure to hold genre data
+// GenreData - Data structure for genre information (EXPORTED)
+//
+// This struct represents a single book genre/category with its metadata
+// and statistics. It mirrors the backend API's genre data structure.
+//
+// Fields:
+//   - id: Unique identifier (UUID string) for the genre
+//   - name: Genre name (e.g., "Science Fiction", "Biography")
+//   - description: Description of what this genre encompasses
+//   - title-count: Number of titles categorized under this genre
+//
+// Example:
+//   GenreData {
+//       id: "123e4567-e89b-12d3-a456-426614174000",
+//       name: "Science Fiction",
+//       description: "Speculative fiction based on scientific concepts",
+//       title-count: 42
+//   }
 export struct GenreData {
     id: string,
     name: string,
@@ -9,45 +56,107 @@ export struct GenreData {
     title-count: int,
 }
 
+// GenresPage - Genres management page component (EXPORTED)
+//
+// This component provides the complete user interface for managing book genres
+// and categories in the library. It inherits from the base Page component to
+// maintain consistent styling with other pages.
+//
+// Features:
+//   - List view of all genres with descriptions and title counts
+//   - Create new genres via modal dialog form
+//   - Edit existing genres via modal dialog form
+//   - Delete genres with confirmation
+//   - Empty state message when no genres exist
+//   - Alternating row colors for better readability
+//   - Title count display showing number of books in each genre
+//
+// Layout Structure:
+//   1. Header: Page title with Refresh and New Genre buttons
+//   2. Create Dialog: Modal form for adding new genres (conditional)
+//   3. Edit Dialog: Modal form for updating genres (conditional)
+//   4. Empty State: Message when no genres exist (conditional)
+//   5. Genre List: Simple list view of all genres (conditional)
+//
+// Data Flow:
+//   - Genres data is passed from AppWindow via the genres property
+//   - Create/update/delete operations trigger callbacks to Rust backend
+//   - Backend updates database and returns new data
+//   - Genres property is updated, triggering UI refresh
+//
+// Validation:
+//   - Genre name is a required field
+//   - Save button is disabled until name field is filled
+//   - Description is optional multi-line text
 export component GenresPage inherits Page {
+    // Page title and description (internationalized)
     title: @tr("Genres");
     description: @tr("Manage book genres and categories");
 
-    // Property to hold the list of genres
+    // ========================================================================
+    // Properties
+    // ========================================================================
+
+    // Array of all genres loaded from the backend
     in-out property <[GenreData]> genres: [];
-    in-out property <bool> show-create-dialog: false;
-    in-out property <string> new-name: "";
-    in-out property <string> new-description: "";
 
-    // Edit dialog properties
-    in-out property <bool> show-edit-dialog: false;
-    in-out property <string> edit-id: "";
-    in-out property <string> edit-name: "";
-    in-out property <string> edit-description: "";
+    // Create dialog state
+    in-out property <bool> show-create-dialog: false;    // Whether create dialog is visible
+    in-out property <string> new-name: "";               // Name for new genre (required)
+    in-out property <string> new-description: "";        // Description for new genre (optional)
 
-    // Callbacks
+    // Edit dialog state
+    in-out property <bool> show-edit-dialog: false;      // Whether edit dialog is visible
+    in-out property <string> edit-id: "";                // ID of genre being edited
+    in-out property <string> edit-name: "";              // Updated name (required)
+    in-out property <string> edit-description: "";       // Updated description (optional)
+
+    // ========================================================================
+    // Callbacks (connected to Rust backend)
+    // ========================================================================
+
+    // Triggers reloading of all genres from the backend
     callback load-genres();
-    callback create-genre(string, string); // name, description
-    callback update-genre(string, string, string); // id, name, description
-    callback delete-genre(string); // id
 
+    // Creates a new genre in the database
+    // Parameters: name, description
+    callback create-genre(string, string);
+
+    // Updates an existing genre's information
+    // Parameters: id, name, description
+    callback update-genre(string, string, string);
+
+    // Deletes a genre by ID
+    // Parameter: genre id (UUID string)
+    // Note: May fail if genre has associated titles
+    callback delete-genre(string);
+
+    // ========================================================================
+    // Main Content Layout
+    // ========================================================================
     VerticalBox {
         alignment: stretch;
         padding: 20px;
 
+        // ====================================================================
+        // Header Section - Title and action buttons
+        // ====================================================================
         HorizontalBox {
             alignment: space-between;
             height: 50px;
 
+            // Page title
             Text {
                 text: @tr("Book Genres");
                 font-size: 24px;
                 font-weight: 700;
             }
 
+            // Action buttons (right-aligned)
             HorizontalBox {
                 spacing: 10px;
 
+                // Refresh button - reloads genres from backend
                 Button {
                     text: @tr("Refresh");
                     min-width: 100px;
@@ -57,12 +166,14 @@ export component GenresPage inherits Page {
                     }
                 }
 
+                // New Genre button - opens create dialog
                 Button {
                     text: @tr("+ New Genre");
                     primary: true;
                     min-width: 150px;
                     height: 35px;
                     clicked => {
+                        // Show dialog and reset all form fields
                         root.show-create-dialog = true;
                         root.new-name = "";
                         root.new-description = "";
@@ -71,7 +182,11 @@ export component GenresPage inherits Page {
             }
         }
 
-        // Create genre dialog
+        // ====================================================================
+        // Create Genre Dialog - Modal form for adding new genres
+        // ====================================================================
+        // This dialog appears when show-create-dialog is true.
+        // It provides form fields for genre name and description.
         if show-create-dialog: Rectangle {
             background: white;
             border-width: 2px;
@@ -83,12 +198,14 @@ export component GenresPage inherits Page {
                 padding: 20px;
                 spacing: 12px;
 
+                // Dialog title
                 Text {
                     text: @tr("Create New Genre");
                     font-size: 18px;
                     font-weight: 600;
                 }
 
+                // Genre Name field (REQUIRED)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -102,6 +219,7 @@ export component GenresPage inherits Page {
                     }
                 }
 
+                // Genre Description field (Optional multi-line)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -115,10 +233,12 @@ export component GenresPage inherits Page {
                     }
                 }
 
+                // Dialog action buttons (Cancel and Save)
                 HorizontalBox {
                     spacing: 10px;
                     alignment: end;
 
+                    // Cancel button - closes dialog without creating
                     Button {
                         text: @tr("Cancel");
                         min-width: 100px;
@@ -128,6 +248,8 @@ export component GenresPage inherits Page {
                         }
                     }
 
+                    // Save button - submits form and creates genre
+                    // Disabled if required field (name) is empty
                     Button {
                         text: @tr("Save");
                         primary: true;
@@ -135,7 +257,9 @@ export component GenresPage inherits Page {
                         height: 35px;
                         enabled: root.new-name != "";
                         clicked => {
+                            // Call backend to create genre
                             root.create-genre(root.new-name, root.new-description);
+                            // Close dialog after submission
                             root.show-create-dialog = false;
                         }
                     }
@@ -143,7 +267,11 @@ export component GenresPage inherits Page {
             }
         }
 
-        // Edit genre dialog
+        // ====================================================================
+        // Edit Genre Dialog - Modal form for updating existing genres
+        // ====================================================================
+        // This dialog appears when show-edit-dialog is true.
+        // It provides the same form fields as create, pre-filled with existing data.
         if show-edit-dialog: Rectangle {
             background: white;
             border-width: 2px;
@@ -155,12 +283,14 @@ export component GenresPage inherits Page {
                 padding: 20px;
                 spacing: 12px;
 
+                // Dialog title
                 Text {
                     text: @tr("Edit Genre");
                     font-size: 18px;
                     font-weight: 600;
                 }
 
+                // Genre Name field (REQUIRED)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -174,6 +304,7 @@ export component GenresPage inherits Page {
                     }
                 }
 
+                // Genre Description field (Optional multi-line)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -187,10 +318,12 @@ export component GenresPage inherits Page {
                     }
                 }
 
+                // Dialog action buttons (Cancel and Save)
                 HorizontalBox {
                     spacing: 10px;
                     alignment: end;
 
+                    // Cancel button - closes dialog without saving changes
                     Button {
                         text: @tr("Cancel");
                         min-width: 100px;
@@ -200,6 +333,8 @@ export component GenresPage inherits Page {
                         }
                     }
 
+                    // Save button - submits form and updates genre
+                    // Disabled if required field (name) is empty
                     Button {
                         text: @tr("Save");
                         primary: true;
@@ -207,7 +342,9 @@ export component GenresPage inherits Page {
                         height: 35px;
                         enabled: root.edit-name != "";
                         clicked => {
+                            // Call backend to update genre
                             root.update-genre(root.edit-id, root.edit-name, root.edit-description);
+                            // Close dialog after submission
                             root.show-edit-dialog = false;
                         }
                     }
@@ -215,28 +352,39 @@ export component GenresPage inherits Page {
             }
         }
 
-        // List of genres
+        // ====================================================================
+        // Empty State - Shown when no genres exist
+        // ====================================================================
         if genres.length == 0 && !show-create-dialog && !show-edit-dialog: Text {
             text: @tr("No genres found. Click Refresh to load genres from the backend.");
             color: #888;
         }
 
+        // ====================================================================
+        // Genre List - Simple list view of all genres
+        // ====================================================================
+        // Each genre is displayed with name, description, title count,
+        // and action buttons (Edit and Delete).
         if genres.length > 0: ListView {
+            // Each genre item is rendered as a simple card
             for genre[index] in genres: Rectangle {
                 height: 70px;
                 border-width: 1px;
                 border-color: #ddd;
                 border-radius: 4px;
+                // Alternating row colors for better readability
                 background: Math.mod(index, 2) == 0 ? #fafafa : white;
 
                 HorizontalLayout {
                     padding: 8px;
                     spacing: 10px;
 
+                    // Left side: Genre information
                     VerticalLayout {
                         alignment: start;
                         spacing: 4px;
 
+                        // Genre name
                         Text {
                             text: genre.name;
                             font-size: 15px;
@@ -244,6 +392,7 @@ export component GenresPage inherits Page {
                             overflow: elide;
                         }
 
+                        // Description (conditional, only shown if not empty)
                         if genre.description != "": Text {
                             text: genre.description;
                             font-size: 12px;
@@ -251,6 +400,7 @@ export component GenresPage inherits Page {
                             overflow: elide;
                         }
 
+                        // Title count - shows how many books are in this genre
                         Text {
                             text: "Titles: " + genre.title-count;
                             font-size: 11px;
@@ -259,23 +409,29 @@ export component GenresPage inherits Page {
                         }
                     }
 
+                    // Right side: Action buttons
                     VerticalLayout {
                         alignment: center;
                         spacing: 5px;
                         width: 90px;
 
+                        // Edit button - opens edit dialog with pre-filled data
                         Button {
                             text: @tr("Edit");
                             min-width: 80px;
                             height: 32px;
                             clicked => {
+                                // Pre-fill edit form with current genre data
                                 root.edit-id = genre.id;
                                 root.edit-name = genre.name;
                                 root.edit-description = genre.description;
+                                // Show edit dialog
                                 root.show-edit-dialog = true;
                             }
                         }
 
+                        // Delete button - removes genre from database
+                        // Note: May fail if genre has associated titles
                         Button {
                             text: @tr("Delete");
                             min-width: 80px;
