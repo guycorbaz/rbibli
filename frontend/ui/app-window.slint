@@ -1,6 +1,6 @@
 import { Button, VerticalBox } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, GenreItem, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
 
 export component AppWindow inherits Window {
     in-out property <[TitleData]> titles: [];
@@ -8,9 +8,12 @@ export component AppWindow inherits Window {
     in-out property <[AuthorData]> authors: [];
     in-out property <[PublisherData]> publishers: [];
     in-out property <[GenreData]> genres: [];
+    in-out property <[GenreItem]> genre-items: [];
+    in-out property <[string]> genre-names: [];
     callback load-titles();
     callback create-title(string, string, string, string, string, string, string, string, string);
     callback update-title(string, string, string, string, string, string, string, string, string, string);
+    callback find-genre-index(string) -> int;
     callback load-locations();
     callback create-location(string, string, string);
     callback delete-location(string);
@@ -41,14 +44,19 @@ export component AppWindow inherits Window {
 
         if(side-bar.current-item == 0) : TitlesPage {
             titles: root.titles;
+            genres: root.genre-items;
+            genre-names: root.genre-names;
             load-titles => {
                 root.load-titles();
             }
-            create-title(title, subtitle, isbn, publisher, publication-year, pages, language, genre, summary) => {
-                root.create-title(title, subtitle, isbn, publisher, publication-year, pages, language, genre, summary);
+            create-title(title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary) => {
+                root.create-title(title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary);
             }
-            update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre, summary) => {
-                root.update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre, summary);
+            update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary) => {
+                root.update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary);
+            }
+            find-genre-index(genre-id) => {
+                return root.find-genre-index(genre-id);
             }
         }
         if(side-bar.current-item == 1) : LocationsPage {

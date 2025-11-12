@@ -3,6 +3,57 @@ use log::{info, error};
 use sqlx::mysql::MySqlPoolOptions;
 use std::net::TcpListener;
 
+/// Main entry point for the rbibli backend server.
+///
+/// This asynchronous function initializes and starts the rbibli (personal library management)
+/// backend API server. It performs the following initialization steps:
+///
+/// 1. **Logging Setup**: Configures the logging system using `env_logger`. If the `RUST_LOG`
+///    environment variable is not set, it defaults to the "info" level.
+///
+/// 2. **Environment Configuration**: Loads environment variables from a `.env` file using
+///    the `dotenv` crate. Required variables include:
+///    - `DATABASE_URL`: Connection string for the MariaDB database
+///    - `HOST`: Server host address (defaults to "127.0.0.1")
+///    - `PORT`: Server port number (defaults to "8000")
+///
+/// 3. **Database Connection**: Establishes a connection pool to the MariaDB database using
+///    SQLx with a maximum of 5 connections.
+///
+/// 4. **Server Startup**: Creates a TCP listener on the configured host:port and starts
+///    the actix-web HTTP server with all configured routes.
+///
+/// # Returns
+///
+/// * `Ok(())` - Server started successfully and shut down gracefully
+/// * `Err(std::io::Error)` - Server failed to start due to:
+///   - Missing or invalid `DATABASE_URL` environment variable
+///   - Database connection failure
+///   - Failed to bind to the specified address (port already in use, invalid address, etc.)
+///   - Server runtime error
+///
+/// # Panics
+///
+/// The function will panic if:
+/// - `DATABASE_URL` environment variable is not set
+///
+/// # Example
+///
+/// To run the server:
+/// ```bash
+/// # Create a .env file with:
+/// # DATABASE_URL=mysql://user:password@localhost:3306/rbibli
+/// # HOST=127.0.0.1
+/// # PORT=8000
+///
+/// cargo run
+/// ```
+///
+/// # Safety
+///
+/// Uses `unsafe` to set the `RUST_LOG` environment variable before any threads are spawned.
+/// This is safe because it occurs at the very beginning of the main function before any
+/// other initialization.
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     // Initialize logger

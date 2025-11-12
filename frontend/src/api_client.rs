@@ -8,7 +8,31 @@ pub struct ApiClient {
 }
 
 impl ApiClient {
-    /// Create a new API client with the specified base URL
+    /// Creates a new API client with the specified base URL.
+    ///
+    /// This constructor initializes a new `ApiClient` instance configured to communicate
+    /// with a backend server at the given base URL. It creates a blocking HTTP client
+    /// using `reqwest` for making synchronous API requests.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_url` - The base URL of the backend API server (e.g., "http://localhost:8000")
+    ///
+    /// # Returns
+    ///
+    /// A new `ApiClient` instance ready to make API requests.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// // Create a client for a local development server
+    /// let client = ApiClient::new("http://localhost:8000".to_string());
+    ///
+    /// // Create a client for a remote server
+    /// let remote_client = ApiClient::new("https://api.example.com".to_string());
+    /// ```
     pub fn new(base_url: String) -> Self {
         Self {
             base_url,
@@ -16,7 +40,31 @@ impl ApiClient {
         }
     }
 
-    /// Fetch all titles from the backend
+    /// Fetches all titles with their volume counts from the backend API.
+    ///
+    /// This method makes a GET request to the `/api/v1/titles` endpoint to retrieve
+    /// a list of all titles in the library. Each title includes its metadata along
+    /// with a count of how many physical volumes (copies) exist for that title.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<TitleWithCount>)` - A vector of titles with volume counts on success
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails (network error, timeout, etc.)
+    ///   - The server returns a non-success status code
+    ///   - The response body cannot be parsed as JSON
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_titles() {
+    ///     Ok(titles) => println!("Found {} titles", titles.len()),
+    ///     Err(e) => eprintln!("Failed to fetch titles: {}", e),
+    /// }
+    /// ```
     pub fn get_titles(&self) -> Result<Vec<TitleWithCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/titles", self.base_url);
 
@@ -35,7 +83,60 @@ impl ApiClient {
         Ok(titles)
     }
 
-    /// Create a new title
+    /// Creates a new title in the library.
+    ///
+    /// This method makes a POST request to the `/api/v1/titles` endpoint to create
+    /// a new title with the provided metadata. The title is created without any
+    /// physical volumes initially (volume count = 0).
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - A `CreateTitleRequest` containing all the title metadata:
+    ///   - `title`: Title name (required)
+    ///   - `subtitle`: Optional subtitle
+    ///   - `isbn`: Optional ISBN number
+    ///   - `publisher`: Optional publisher name
+    ///   - `publication_year`: Optional publication year
+    ///   - `pages`: Optional page count
+    ///   - `language`: Language code (required)
+    ///   - `genre_id`: Optional genre UUID
+    ///   - `summary`: Optional book summary/description
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The UUID of the newly created title
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error (e.g., validation failure, database error)
+    ///   - The response cannot be parsed
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::CreateTitleRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = CreateTitleRequest {
+    ///     title: "The Rust Programming Language".to_string(),
+    ///     subtitle: Some("Second Edition".to_string()),
+    ///     isbn: Some("978-1-59327-828-1".to_string()),
+    ///     publisher: Some("No Starch Press".to_string()),
+    ///     publication_year: Some(2018),
+    ///     pages: Some(552),
+    ///     language: "en".to_string(),
+    ///     dewey_code: None,
+    ///     dewey_category: None,
+    ///     genre_id: None,
+    ///     summary: Some("The official book on Rust".to_string()),
+    ///     cover_url: None,
+    /// };
+    ///
+    /// match client.create_title(request) {
+    ///     Ok(id) => println!("Created title with ID: {}", id),
+    ///     Err(e) => eprintln!("Failed to create title: {}", e),
+    /// }
+    /// ```
     pub fn create_title(&self, request: CreateTitleRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/titles", self.base_url);
 
@@ -61,7 +162,45 @@ impl ApiClient {
         Ok(title_id)
     }
 
-    /// Update a title by ID
+    /// Updates an existing title's metadata.
+    ///
+    /// This method makes a PUT request to `/api/v1/titles/{id}` to update one or more
+    /// fields of an existing title. Only the fields present in the request (non-None)
+    /// will be updated; other fields remain unchanged.
+    ///
+    /// # Arguments
+    ///
+    /// * `title_id` - The UUID of the title to update
+    /// * `request` - An `UpdateTitleRequest` with the fields to update (all fields are optional)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Title updated successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The title ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The server returns an error (e.g., validation failure)
+    ///   - No fields were provided for update
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::UpdateTitleRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = UpdateTitleRequest {
+    ///     title: None,  // Don't change the title
+    ///     subtitle: Some("Third Edition".to_string()),  // Update subtitle
+    ///     pages: Some(600),  // Update page count
+    ///     ..Default::default()
+    /// };
+    ///
+    /// match client.update_title("123e4567-e89b-12d3-a456-426614174000", request) {
+    ///     Ok(()) => println!("Title updated successfully"),
+    ///     Err(e) => eprintln!("Failed to update title: {}", e),
+    /// }
+    /// ```
     pub fn update_title(&self, title_id: &str, request: UpdateTitleRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/titles/{}", self.base_url, title_id);
 
@@ -82,7 +221,38 @@ impl ApiClient {
         Ok(())
     }
 
-    /// Fetch all locations from the backend with hierarchical paths
+    /// Fetches all storage locations with their full hierarchical paths.
+    ///
+    /// This method makes a GET request to `/api/v1/locations` to retrieve all physical
+    /// storage locations in the library. Each location includes its full hierarchical path
+    /// (e.g., "House > Living Room > Bookshelf 1") and level in the hierarchy.
+    ///
+    /// Locations support parent-child relationships, allowing you to organize storage
+    /// in a tree structure (e.g., rooms contain shelves, shelves contain sections).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<LocationWithPath>)` - A vector of locations with full paths, ordered by path
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error
+    ///   - The response cannot be parsed
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_locations() {
+    ///     Ok(locations) => {
+    ///         for loc in locations {
+    ///             println!("{} (level {})", loc.full_path, loc.level);
+    ///         }
+    ///     },
+    ///     Err(e) => eprintln!("Failed to fetch locations: {}", e),
+    /// }
+    /// ```
     pub fn get_locations(&self) -> Result<Vec<LocationWithPath>, Box<dyn Error>> {
         let url = format!("{}/api/v1/locations", self.base_url);
 
@@ -101,7 +271,51 @@ impl ApiClient {
         Ok(locations)
     }
 
-    /// Create a new location
+    /// Creates a new storage location.
+    ///
+    /// This method makes a POST request to `/api/v1/locations` to create a new
+    /// physical storage location. The location can optionally be nested under
+    /// a parent location to create a hierarchical structure.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - A `CreateLocationRequest` containing:
+    ///   - `name`: Location name (required, e.g., "Bookshelf 1")
+    ///   - `description`: Optional description
+    ///   - `parent_id`: Optional UUID of the parent location for nesting
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The UUID of the newly created location
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The parent_id is invalid or doesn't exist
+    ///   - The server returns an error
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::CreateLocationRequest;
+    ///
+    /// let client = ApiClient::default();
+    ///
+    /// // Create a root location
+    /// let request = CreateLocationRequest {
+    ///     name: "Living Room".to_string(),
+    ///     description: Some("Main living area".to_string()),
+    ///     parent_id: None,
+    /// };
+    /// let room_id = client.create_location(request).unwrap();
+    ///
+    /// // Create a nested location
+    /// let shelf_request = CreateLocationRequest {
+    ///     name: "Bookshelf 1".to_string(),
+    ///     description: None,
+    ///     parent_id: Some(room_id),
+    /// };
+    /// client.create_location(shelf_request).unwrap();
+    /// ```
     pub fn create_location(&self, request: CreateLocationRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/locations", self.base_url);
 
@@ -127,7 +341,42 @@ impl ApiClient {
         Ok(location_id)
     }
 
-    /// Delete a location by ID
+    /// Deletes a storage location by its ID.
+    ///
+    /// This method makes a DELETE request to `/api/v1/locations/{id}` to permanently
+    /// remove a location from the system.
+    ///
+    /// # Arguments
+    ///
+    /// * `location_id` - The UUID of the location to delete
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Location deleted successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The location ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The location cannot be deleted (e.g., has child locations or volumes stored in it)
+    ///   - The server returns an error
+    ///
+    /// # Warning
+    ///
+    /// Deleting a location may fail if:
+    /// - It has child locations (delete children first)
+    /// - It has volumes stored in it (move volumes first)
+    /// - Database constraints prevent deletion
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.delete_location("123e4567-e89b-12d3-a456-426614174000") {
+    ///     Ok(()) => println!("Location deleted successfully"),
+    ///     Err(e) => eprintln!("Failed to delete location: {}", e),
+    /// }
+    /// ```
     pub fn delete_location(&self, location_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/locations/{}", self.base_url, location_id);
 
@@ -147,7 +396,38 @@ impl ApiClient {
         Ok(())
     }
 
-    /// Fetch all authors from the backend with title counts
+    /// Fetches all authors with their title counts from the backend API.
+    ///
+    /// This method makes a GET request to `/api/v1/authors` to retrieve a list of
+    /// all authors in the library database. Each author includes their biographical
+    /// information along with a count of how many titles they are associated with.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<AuthorWithTitleCount>)` - A vector of authors sorted by last name, then first name
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error
+    ///   - The response cannot be parsed
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_authors() {
+    ///     Ok(authors) => {
+    ///         for author in authors {
+    ///             println!("{} {} - {} titles",
+    ///                 author.author.first_name,
+    ///                 author.author.last_name,
+    ///                 author.title_count);
+    ///         }
+    ///     },
+    ///     Err(e) => eprintln!("Failed to fetch authors: {}", e),
+    /// }
+    /// ```
     pub fn get_authors(&self) -> Result<Vec<AuthorWithTitleCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/authors", self.base_url);
 
@@ -166,7 +446,52 @@ impl ApiClient {
         Ok(authors)
     }
 
-    /// Create a new author
+    /// Creates a new author in the library database.
+    ///
+    /// This method makes a POST request to `/api/v1/authors` to add a new author
+    /// with biographical information. The author can then be associated with titles.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - A `CreateAuthorRequest` containing:
+    ///   - `first_name`: Author's first name (required)
+    ///   - `last_name`: Author's last name (required)
+    ///   - `biography`: Optional biographical text
+    ///   - `birth_date`: Optional birth date in ISO format (YYYY-MM-DD)
+    ///   - `death_date`: Optional death date in ISO format (YYYY-MM-DD)
+    ///   - `nationality`: Optional nationality
+    ///   - `website_url`: Optional website URL
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The UUID of the newly created author
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - Date format is invalid
+    ///   - The server returns an error (e.g., validation failure)
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::CreateAuthorRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = CreateAuthorRequest {
+    ///     first_name: "Isaac".to_string(),
+    ///     last_name: "Asimov".to_string(),
+    ///     biography: Some("American science fiction writer".to_string()),
+    ///     birth_date: Some("1920-01-02".to_string()),
+    ///     death_date: Some("1992-04-06".to_string()),
+    ///     nationality: Some("American".to_string()),
+    ///     website_url: None,
+    /// };
+    ///
+    /// match client.create_author(request) {
+    ///     Ok(id) => println!("Created author with ID: {}", id),
+    ///     Err(e) => eprintln!("Failed to create author: {}", e),
+    /// }
+    /// ```
     pub fn create_author(&self, request: CreateAuthorRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/authors", self.base_url);
 
@@ -192,7 +517,40 @@ impl ApiClient {
         Ok(author_id)
     }
 
-    /// Delete an author by ID
+    /// Deletes an author from the library database.
+    ///
+    /// This method makes a DELETE request to `/api/v1/authors/{id}` to permanently
+    /// remove an author from the system.
+    ///
+    /// # Arguments
+    ///
+    /// * `author_id` - The UUID of the author to delete
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Author deleted successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The author ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The author cannot be deleted (e.g., has associated titles)
+    ///   - The server returns an error
+    ///
+    /// # Warning
+    ///
+    /// Deleting an author may fail if they are associated with any titles.
+    /// You may need to remove the author-title associations first.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.delete_author("123e4567-e89b-12d3-a456-426614174000") {
+    ///     Ok(()) => println!("Author deleted successfully"),
+    ///     Err(e) => eprintln!("Failed to delete author: {}", e),
+    /// }
+    /// ```
     pub fn delete_author(&self, author_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/authors/{}", self.base_url, author_id);
 
@@ -212,7 +570,37 @@ impl ApiClient {
         Ok(())
     }
 
-    /// Fetch all publishers from the backend with title counts
+    /// Fetches all publishers with their title counts from the backend API.
+    ///
+    /// This method makes a GET request to `/api/v1/publishers` to retrieve a list of
+    /// all publishers in the library database. Each publisher includes their company
+    /// information along with a count of how many titles they have published.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<PublisherWithTitleCount>)` - A vector of publishers sorted alphabetically by name
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error
+    ///   - The response cannot be parsed
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_publishers() {
+    ///     Ok(publishers) => {
+    ///         for publisher in publishers {
+    ///             println!("{} - {} titles",
+    ///                 publisher.publisher.name,
+    ///                 publisher.title_count);
+    ///         }
+    ///     },
+    ///     Err(e) => eprintln!("Failed to fetch publishers: {}", e),
+    /// }
+    /// ```
     pub fn get_publishers(&self) -> Result<Vec<PublisherWithTitleCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/publishers", self.base_url);
 
@@ -231,7 +619,47 @@ impl ApiClient {
         Ok(publishers)
     }
 
-    /// Create a new publisher
+    /// Creates a new publisher in the library database.
+    ///
+    /// This method makes a POST request to `/api/v1/publishers` to add a new publishing
+    /// company to the system. The publisher can then be associated with titles.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - A `CreatePublisherRequest` containing:
+    ///   - `name`: Publisher name (required)
+    ///   - `description`: Optional description of the publisher
+    ///   - `website_url`: Optional website URL
+    ///   - `country`: Optional country of origin
+    ///   - `founded_year`: Optional year the publisher was founded
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The UUID of the newly created publisher
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error (e.g., validation failure, duplicate name)
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::CreatePublisherRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = CreatePublisherRequest {
+    ///     name: "O'Reilly Media".to_string(),
+    ///     description: Some("Technical and computer book publisher".to_string()),
+    ///     website_url: Some("https://www.oreilly.com".to_string()),
+    ///     country: Some("United States".to_string()),
+    ///     founded_year: Some(1978),
+    /// };
+    ///
+    /// match client.create_publisher(request) {
+    ///     Ok(id) => println!("Created publisher with ID: {}", id),
+    ///     Err(e) => eprintln!("Failed to create publisher: {}", e),
+    /// }
+    /// ```
     pub fn create_publisher(&self, request: CreatePublisherRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/publishers", self.base_url);
 
@@ -257,7 +685,44 @@ impl ApiClient {
         Ok(publisher_id)
     }
 
-    /// Update a publisher by ID
+    /// Updates an existing publisher's information.
+    ///
+    /// This method makes a PUT request to `/api/v1/publishers/{id}` to update one or
+    /// more fields of an existing publisher. Only the fields present in the request
+    /// (non-None) will be updated; other fields remain unchanged.
+    ///
+    /// # Arguments
+    ///
+    /// * `publisher_id` - The UUID of the publisher to update
+    /// * `request` - An `UpdatePublisherRequest` with the fields to update (all optional)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Publisher updated successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The publisher ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The server returns an error (e.g., validation failure)
+    ///   - No fields were provided for update
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::UpdatePublisherRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = UpdatePublisherRequest {
+    ///     name: None,  // Don't change the name
+    ///     website_url: Some("https://new-website.com".to_string()),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// match client.update_publisher("123e4567-e89b-12d3-a456-426614174000", request) {
+    ///     Ok(()) => println!("Publisher updated successfully"),
+    ///     Err(e) => eprintln!("Failed to update publisher: {}", e),
+    /// }
+    /// ```
     pub fn update_publisher(&self, publisher_id: &str, request: UpdatePublisherRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/publishers/{}", self.base_url, publisher_id);
 
@@ -278,7 +743,40 @@ impl ApiClient {
         Ok(())
     }
 
-    /// Delete a publisher by ID
+    /// Deletes a publisher from the library database.
+    ///
+    /// This method makes a DELETE request to `/api/v1/publishers/{id}` to permanently
+    /// remove a publisher from the system.
+    ///
+    /// # Arguments
+    ///
+    /// * `publisher_id` - The UUID of the publisher to delete
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Publisher deleted successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The publisher ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The publisher cannot be deleted (e.g., has associated titles)
+    ///   - The server returns an error
+    ///
+    /// # Warning
+    ///
+    /// Deleting a publisher may fail if there are titles associated with it.
+    /// You may need to update those titles to use a different publisher first.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.delete_publisher("123e4567-e89b-12d3-a456-426614174000") {
+    ///     Ok(()) => println!("Publisher deleted successfully"),
+    ///     Err(e) => eprintln!("Failed to delete publisher: {}", e),
+    /// }
+    /// ```
     pub fn delete_publisher(&self, publisher_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/publishers/{}", self.base_url, publisher_id);
 
@@ -298,7 +796,37 @@ impl ApiClient {
         Ok(())
     }
 
-    /// Fetch all genres from the backend with title counts
+    /// Fetches all genres with their title counts from the backend API.
+    ///
+    /// This method makes a GET request to `/api/v1/genres` to retrieve a list of all
+    /// book genres/categories in the library. Each genre includes its information along
+    /// with a count of how many titles are categorized under that genre.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<GenreWithTitleCount>)` - A vector of genres sorted alphabetically by name
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error
+    ///   - The response cannot be parsed
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_genres() {
+    ///     Ok(genres) => {
+    ///         for genre in genres {
+    ///             println!("{} - {} titles",
+    ///                 genre.genre.name,
+    ///                 genre.title_count);
+    ///         }
+    ///     },
+    ///     Err(e) => eprintln!("Failed to fetch genres: {}", e),
+    /// }
+    /// ```
     pub fn get_genres(&self) -> Result<Vec<GenreWithTitleCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/genres", self.base_url);
 
@@ -317,7 +845,42 @@ impl ApiClient {
         Ok(genres)
     }
 
-    /// Create a new genre
+    /// Creates a new genre/category in the library database.
+    ///
+    /// This method makes a POST request to `/api/v1/genres` to add a new book
+    /// genre or category. Genres help organize titles by type (e.g., Fiction,
+    /// Science Fiction, Biography, etc.).
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - A `CreateGenreRequest` containing:
+    ///   - `name`: Genre name (required, e.g., "Science Fiction")
+    ///   - `description`: Optional description of the genre
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The UUID of the newly created genre
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error (e.g., duplicate genre name)
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::CreateGenreRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = CreateGenreRequest {
+    ///     name: "Science Fiction".to_string(),
+    ///     description: Some("Speculative fiction based on scientific concepts".to_string()),
+    /// };
+    ///
+    /// match client.create_genre(request) {
+    ///     Ok(id) => println!("Created genre with ID: {}", id),
+    ///     Err(e) => eprintln!("Failed to create genre: {}", e),
+    /// }
+    /// ```
     pub fn create_genre(&self, request: CreateGenreRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/genres", self.base_url);
 
@@ -343,7 +906,43 @@ impl ApiClient {
         Ok(genre_id)
     }
 
-    /// Update a genre by ID
+    /// Updates an existing genre's information.
+    ///
+    /// This method makes a PUT request to `/api/v1/genres/{id}` to update one or
+    /// more fields of an existing genre. Only the fields present in the request
+    /// (non-None) will be updated; other fields remain unchanged.
+    ///
+    /// # Arguments
+    ///
+    /// * `genre_id` - The UUID of the genre to update
+    /// * `request` - An `UpdateGenreRequest` with the fields to update (all optional)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Genre updated successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The genre ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The server returns an error (e.g., validation failure, duplicate name)
+    ///   - No fields were provided for update
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::UpdateGenreRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = UpdateGenreRequest {
+    ///     name: Some("Sci-Fi".to_string()),
+    ///     description: Some("Science Fiction and Fantasy".to_string()),
+    /// };
+    ///
+    /// match client.update_genre("123e4567-e89b-12d3-a456-426614174000", request) {
+    ///     Ok(()) => println!("Genre updated successfully"),
+    ///     Err(e) => eprintln!("Failed to update genre: {}", e),
+    /// }
+    /// ```
     pub fn update_genre(&self, genre_id: &str, request: UpdateGenreRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/genres/{}", self.base_url, genre_id);
 
@@ -364,7 +963,40 @@ impl ApiClient {
         Ok(())
     }
 
-    /// Delete a genre by ID
+    /// Deletes a genre from the library database.
+    ///
+    /// This method makes a DELETE request to `/api/v1/genres/{id}` to permanently
+    /// remove a genre/category from the system.
+    ///
+    /// # Arguments
+    ///
+    /// * `genre_id` - The UUID of the genre to delete
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Genre deleted successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The genre ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The genre cannot be deleted (e.g., has titles categorized under it)
+    ///   - The server returns an error
+    ///
+    /// # Warning
+    ///
+    /// Deleting a genre may fail if there are titles categorized under it.
+    /// You may need to recategorize those titles to a different genre first.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.delete_genre("123e4567-e89b-12d3-a456-426614174000") {
+    ///     Ok(()) => println!("Genre deleted successfully"),
+    ///     Err(e) => eprintln!("Failed to delete genre: {}", e),
+    /// }
+    /// ```
     pub fn delete_genre(&self, genre_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/genres/{}", self.base_url, genre_id);
 
@@ -386,6 +1018,32 @@ impl ApiClient {
 }
 
 impl Default for ApiClient {
+    /// Creates a default API client configured for local development.
+    ///
+    /// This implementation provides a convenient way to create an `ApiClient` instance
+    /// that connects to a backend server running locally on `http://localhost:8000`.
+    /// This is the typical configuration for development and testing.
+    ///
+    /// # Returns
+    ///
+    /// An `ApiClient` instance configured to connect to `http://localhost:8000`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// // Create a client using the default configuration
+    /// let client = ApiClient::default();
+    ///
+    /// // Equivalent to:
+    /// let explicit_client = ApiClient::new("http://localhost:8000".to_string());
+    /// ```
+    ///
+    /// # Usage in Production
+    ///
+    /// For production deployments, use `ApiClient::new()` with the appropriate server URL
+    /// instead of relying on this default implementation.
     fn default() -> Self {
         // Default to localhost:8000
         Self::new("http://localhost:8000".to_string())

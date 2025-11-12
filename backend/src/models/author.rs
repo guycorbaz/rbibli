@@ -75,6 +75,30 @@ pub enum AuthorRole {
 }
 
 impl std::fmt::Display for AuthorRole {
+    /// Formats the AuthorRole enum as a snake_case string for display and serialization.
+    ///
+    /// This implementation converts each AuthorRole variant into its corresponding
+    /// snake_case string representation, which is used for database storage and
+    /// API responses.
+    ///
+    /// # Arguments
+    ///
+    /// * `f` - The formatter to write the string representation to
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Successfully formatted the role
+    /// * `Err(std::fmt::Error)` - Failed to write to the formatter
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use backend::models::AuthorRole;
+    ///
+    /// assert_eq!(AuthorRole::MainAuthor.to_string(), "main_author");
+    /// assert_eq!(AuthorRole::CoAuthor.to_string(), "co_author");
+    /// assert_eq!(AuthorRole::Translator.to_string(), "translator");
+    /// ```
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AuthorRole::MainAuthor => write!(f, "main_author"),

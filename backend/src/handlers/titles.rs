@@ -5,7 +5,50 @@ use log::{info, warn, error, debug};
 use sqlx::Row;
 use uuid::Uuid;
 
-/// GET /api/v1/titles - List all titles with volume counts
+/// Lists all titles with their volume counts.
+///
+/// **Endpoint**: `GET /api/v1/titles`
+///
+/// This handler retrieves all titles from the database along with the count of physical
+/// volumes (copies) for each title. The titles are ordered alphabetically by title name.
+/// This query uses a `LEFT JOIN` to include titles even if they have zero volumes (wishlist items).
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `TitleWithCount` objects on success
+/// * `HttpResponse::InternalServerError` with error details if the database query fails
+///
+/// # Response Format
+///
+/// ```json
+/// [
+///   {
+///     "id": "uuid-string",
+///     "title": "Book Title",
+///     "subtitle": "Optional Subtitle",
+///     "isbn": "978-1234567890",
+///     "publisher": "Publisher Name",
+///     "publication_year": 2020,
+///     "pages": 350,
+///     "language": "en",
+///     "genre_id": "genre-uuid",
+///     "volume_count": 3,
+///     ...
+///   }
+/// ]
+/// ```
+///
+/// # Database Query
+///
+/// Executes a SQL query that:
+/// - Joins the `titles` table with the `volumes` table
+/// - Groups by title ID to count volumes
+/// - Returns 0 for titles with no volumes (wishlist functionality)
+/// - Orders results alphabetically by title
 pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/titles - Fetching all titles with volume counts");
     // Query to get all titles with their volume counts
@@ -22,6 +65,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             t.dewey_code,
             t.dewey_category,
             t.genre_old as genre,
+            t.genre_id,
             t.summary,
             t.cover_url,
             t.created_at,
@@ -30,7 +74,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
         FROM titles t
         LEFT JOIN volumes v ON t.id = v.title_id
         GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publication_year,
-                 t.pages, t.language, t.dewey_code, t.dewey_category, t.genre_old,
+                 t.pages, t.language, t.dewey_code, t.dewey_category, t.genre_old, t.genre_id,
                  t.summary, t.cover_url, t.created_at, t.updated_at
         ORDER BY t.title ASC
     "#;
@@ -74,6 +118,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
                             dewey_code: row.get("dewey_code"),
                             dewey_category: row.get("dewey_category"),
                             genre: row.get("genre"),
+                            genre_id: row.get("genre_id"),
                             summary: row.get("summary"),
                             cover_url: row.get("cover_url"),
                             created_at: chrono::DateTime::from_naive_utc_and_offset(created_at, chrono::Utc),
@@ -102,7 +147,57 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// POST /api/v1/titles - Create a new title
+/// Creates a new title in the library.
+///
+/// **Endpoint**: `POST /api/v1/titles`
+///
+/// This handler creates a new title with the provided metadata. The title is created
+/// without any physical volumes initially (volume_count = 0), making it suitable for
+/// wishlist items. A new UUID is automatically generated for the title.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `req` - JSON request body containing the title metadata
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "title": "Book Title (required)",
+///   "subtitle": "Optional subtitle",
+///   "isbn": "978-1234567890",
+///   "publisher": "Publisher name",
+///   "publication_year": 2020,
+///   "pages": 350,
+///   "language": "en (required)",
+///   "dewey_code": "000.00",
+///   "dewey_category": "Computer Science",
+///   "genre_id": "genre-uuid",
+///   "summary": "Book description",
+///   "cover_url": "https://example.com/cover.jpg"
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Created` (201) with the new title's UUID on success
+/// * `HttpResponse::InternalServerError` (500) if the database insertion fails
+///
+/// # Response Format
+///
+/// ```json
+/// {
+///   "id": "newly-generated-uuid",
+///   "message": "Title created successfully"
+/// }
+/// ```
+///
+/// # Database Operations
+///
+/// - Generates a new UUID v4 for the title
+/// - Sets `created_at` and `updated_at` to current timestamp
+/// - Inserts all provided metadata into the `titles` table
 pub async fn create_title(
     data: web::Data<AppState>,
     req: web::Json<CreateTitleRequest>,
@@ -114,7 +209,7 @@ pub async fn create_title(
 
     let query = r#"
         INSERT INTO titles (id, title, subtitle, isbn, publisher_old, publication_year, pages,
-                           language, dewey_code, dewey_category, genre_old, summary, cover_url,
+                           language, dewey_code, dewey_category, genre_id, summary, cover_url,
                            created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     "#;
@@ -130,7 +225,7 @@ pub async fn create_title(
         .bind(&req.language)
         .bind(&req.dewey_code)
         .bind(&req.dewey_category)
-        .bind(&req.genre)
+        .bind(&req.genre_id)
         .bind(&req.summary)
         .bind(&req.cover_url)
         .execute(&data.db_pool)
@@ -158,7 +253,63 @@ pub async fn create_title(
     }
 }
 
-/// PUT /api/v1/titles/{id} - Update a title
+/// Updates an existing title's metadata.
+///
+/// **Endpoint**: `PUT /api/v1/titles/{id}`
+///
+/// This handler updates one or more fields of an existing title. Only the fields present
+/// in the request (non-null) are updated; other fields remain unchanged. The update
+/// automatically sets the `updated_at` timestamp to the current time.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `id` - Path parameter containing the title's UUID
+/// * `req` - JSON request body with fields to update (all fields are optional)
+///
+/// # Request Body
+///
+/// All fields are optional. Only include fields you want to update:
+///
+/// ```json
+/// {
+///   "title": "New Title",
+///   "subtitle": "New Subtitle",
+///   "isbn": "978-1234567890",
+///   "publisher": "New Publisher",
+///   "publication_year": 2021,
+///   "pages": 400,
+///   "language": "en",
+///   "dewey_code": "100.00",
+///   "dewey_category": "Philosophy",
+///   "genre_id": "new-genre-uuid",
+///   "summary": "Updated description",
+///   "cover_url": "https://example.com/new-cover.jpg"
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` (200) if the title was found and updated successfully
+/// * `HttpResponse::NotFound` (404) if no title exists with the given ID
+/// * `HttpResponse::BadRequest` (400) if no fields were provided for update
+/// * `HttpResponse::InternalServerError` (500) if the database update fails
+///
+/// # Response Format
+///
+/// Success:
+/// ```json
+/// {
+///   "message": "Title updated successfully"
+/// }
+/// ```
+///
+/// # Database Operations
+///
+/// - Builds a dynamic UPDATE query based on provided fields
+/// - Automatically updates the `updated_at` timestamp
+/// - Uses parameterized queries to prevent SQL injection
+/// - Returns the number of rows affected to detect if title exists
 pub async fn update_title(
     data: web::Data<AppState>,
     id: web::Path<String>,
@@ -206,8 +357,8 @@ pub async fn update_title(
         update_parts.push("dewey_category = ?");
         has_updates = true;
     }
-    if req.genre.is_some() {
-        update_parts.push("genre_old = ?");
+    if req.genre_id.is_some() {
+        update_parts.push("genre_id = ?");
         has_updates = true;
     }
     if req.summary.is_some() {
@@ -265,8 +416,8 @@ pub async fn update_title(
     if let Some(ref dewey_category) = req.dewey_category {
         query_builder = query_builder.bind(dewey_category);
     }
-    if let Some(ref genre) = req.genre {
-        query_builder = query_builder.bind(genre);
+    if let Some(ref genre_id) = req.genre_id {
+        query_builder = query_builder.bind(genre_id);
     }
     if let Some(ref summary) = req.summary {
         query_builder = query_builder.bind(summary);

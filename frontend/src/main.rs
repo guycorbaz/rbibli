@@ -10,9 +10,70 @@ mod api_client;
 
 use api_client::ApiClient;
 use models::{CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest, CreateGenreRequest, UpdateGenreRequest};
+use slint::Model;
 
 slint::include_modules!();
 
+/// Main entry point for the rbibli frontend application.
+///
+/// This function initializes and runs the Slint-based desktop application for the rbibli
+/// (personal library management) system. It sets up the UI, creates an API client for
+/// backend communication, and connects all UI callbacks to their respective handlers.
+///
+/// # Application Structure
+///
+/// The application performs the following initialization:
+///
+/// 1. **UI Creation**: Instantiates the main `AppWindow` from the Slint UI definition
+///
+/// 2. **API Client**: Creates a default `ApiClient` instance configured to communicate
+///    with the backend server at `http://localhost:8000`
+///
+/// 3. **Data Loading**: Defines closures for loading data from the backend:
+///    - Titles with volume counts
+///    - Locations with hierarchical paths
+///    - Authors with title counts
+///    - Publishers with title counts
+///    - Genres with title counts
+///
+/// 4. **Callback Connections**: Wires up UI callbacks for:
+///    - Loading data from the backend
+///    - Creating new entities (titles, locations, authors, publishers, genres)
+///    - Updating existing entities (titles, publishers, genres)
+///    - Deleting entities (locations, authors, publishers, genres)
+///    - Finding genre indices for dropdown selection
+///
+/// 5. **Initial Data Load**: Fetches all initial data from the backend on startup
+///
+/// 6. **Event Loop**: Starts the Slint event loop to handle user interactions
+///
+/// # Returns
+///
+/// * `Ok(())` - Application ran successfully and was closed by the user
+/// * `Err(Box<dyn Error>)` - Application failed to start or encountered a runtime error
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Failed to create the Slint UI window
+/// - Failed to start the Slint event loop
+///
+/// Note: Backend communication errors are logged to stderr but do not cause the
+/// application to crash. Users will see error messages in the console if the backend
+/// is unavailable.
+///
+/// # Examples
+///
+/// Run the application:
+/// ```bash
+/// # Ensure the backend server is running on http://localhost:8000
+/// cargo run
+/// ```
+///
+/// # Panics
+///
+/// The function may panic if the Slint UI initialization fails in an unrecoverable way,
+/// though this is typically returned as an error instead.
 fn main() -> Result<(), Box<dyn Error>> {
     let ui = AppWindow::new()?;
 
@@ -45,6 +106,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             publication_year: t.title.publication_year.map(|y| y.to_string()).unwrap_or_default().into(),
                             pages: t.title.pages.map(|p| p.to_string()).unwrap_or_default().into(),
                             genre: t.title.genre.clone().unwrap_or_default().into(),
+                            genre_id: t.title.genre_id.clone().unwrap_or_default().into(),
                             summary: t.title.summary.clone().unwrap_or_default().into(),
                         })
                         .collect();
@@ -211,10 +273,29 @@ fn main() -> Result<(), Box<dyn Error>> {
                         })
                         .collect();
 
+                    // Convert to GenreItem for dropdown usage in TitlesPage
+                    let genre_items: Vec<GenreItem> = genres_data
+                        .iter()
+                        .map(|g| GenreItem {
+                            id: g.genre.id.clone().into(),
+                            name: g.genre.name.clone().into(),
+                        })
+                        .collect();
+
+                    // Extract genre names for ComboBox model
+                    let genre_names: Vec<slint::SharedString> = genres_data
+                        .iter()
+                        .map(|g| g.genre.name.clone().into())
+                        .collect();
+
                     // Update the UI with the genres
                     if let Some(ui) = ui_weak.upgrade() {
                         let model = Rc::new(slint::VecModel::from(slint_genres));
                         ui.set_genres(model.into());
+                        let items_model = Rc::new(slint::VecModel::from(genre_items));
+                        ui.set_genre_items(items_model.into());
+                        let names_model = Rc::new(slint::VecModel::from(genre_names));
+                        ui.set_genre_names(names_model.into());
                         println!("UI updated with genres");
                     }
                 }
@@ -574,11 +655,27 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect the find-genre-index callback
+    {
+        let ui_weak = ui.as_weak();
+        ui.on_find_genre_index(move |genre_id| {
+            if let Some(ui) = ui_weak.upgrade() {
+                let genre_items = ui.get_genre_items();
+                for (i, item) in genre_items.iter().enumerate() {
+                    if item.id == genre_id {
+                        return i as i32;
+                    }
+                }
+            }
+            -1
+        });
+    }
+
     // Connect the create-title callback
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_create_title(move |title, subtitle, isbn, publisher, publication_year, pages, language, genre, summary| {
+        ui.on_create_title(move |title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary| {
             println!("Creating title: {}", title);
 
             let request = CreateTitleRequest {
@@ -611,10 +708,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 language: language.to_string(),
                 dewey_code: None,
                 dewey_category: None,
-                genre: if genre.is_empty() {
+                genre_id: if genre_id.is_empty() {
                     None
                 } else {
-                    Some(genre.to_string())
+                    Some(genre_id.to_string())
                 },
                 summary: if summary.is_empty() {
                     None
@@ -640,7 +737,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publication_year, pages, language, genre, summary| {
+        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary| {
             println!("Updating title: {}", id);
 
             let request = UpdateTitleRequest {
@@ -681,10 +778,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                 },
                 dewey_code: None,
                 dewey_category: None,
-                genre: if genre.is_empty() {
+                genre_id: if genre_id.is_empty() {
                     None
                 } else {
-                    Some(genre.to_string())
+                    Some(genre_id.to_string())
                 },
                 summary: if summary.is_empty() {
                     None

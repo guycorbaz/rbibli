@@ -15,6 +15,7 @@ pub struct Title {
     pub dewey_code: Option<String>,
     pub dewey_category: Option<String>,
     pub genre: Option<String>,
+    pub genre_id: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
     #[serde(with = "chrono::serde::ts_seconds")]
@@ -43,7 +44,8 @@ pub struct CreateTitleRequest {
     pub language: String,
     pub dewey_code: Option<String>,
     pub dewey_category: Option<String>,
-    pub genre: Option<String>,
+    #[serde(alias = "genre")]
+    pub genre_id: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
 }
@@ -60,7 +62,8 @@ pub struct UpdateTitleRequest {
     pub language: Option<String>,
     pub dewey_code: Option<String>,
     pub dewey_category: Option<String>,
-    pub genre: Option<String>,
+    #[serde(alias = "genre")]
+    pub genre_id: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
 }

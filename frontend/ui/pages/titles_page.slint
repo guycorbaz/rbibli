@@ -1,5 +1,5 @@
 import { Page } from "page.slint";
-import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, ComboBox } from "std-widgets.slint";
 
 // Structure to hold title data
 export struct TitleData {
@@ -13,7 +13,14 @@ export struct TitleData {
     publication-year: string,
     pages: string,
     genre: string,
+    genre-id: string,
     summary: string,
+}
+
+// Structure for genre dropdown
+export struct GenreItem {
+    id: string,
+    name: string,
 }
 
 export component TitlesPage inherits Page {
@@ -22,6 +29,8 @@ export component TitlesPage inherits Page {
 
     // Property to hold the list of titles
     in-out property <[TitleData]> titles: [];
+    in-out property <[GenreItem]> genres: [];
+    in-out property <[string]> genre-names: [];
     in-out property <bool> show-create-dialog: false;
     in-out property <string> new-title: "";
     in-out property <string> new-subtitle: "";
@@ -30,7 +39,8 @@ export component TitlesPage inherits Page {
     in-out property <string> new-publication-year: "";
     in-out property <string> new-pages: "";
     in-out property <string> new-language: "fr";
-    in-out property <string> new-genre: "";
+    in-out property <int> new-genre-index: -1;
+    in-out property <string> new-genre-id: "";
     in-out property <string> new-summary: "";
 
     // Edit dialog properties
@@ -43,13 +53,15 @@ export component TitlesPage inherits Page {
     in-out property <string> edit-publication-year: "";
     in-out property <string> edit-pages: "";
     in-out property <string> edit-language: "";
-    in-out property <string> edit-genre: "";
+    in-out property <int> edit-genre-index: -1;
+    in-out property <string> edit-genre-id: "";
     in-out property <string> edit-summary: "";
 
     // Callback to request loading titles
     callback load-titles();
-    callback create-title(string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publication_year, pages, language, genre, summary
-    callback update-title(string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publication_year, pages, language, genre, summary
+    callback create-title(string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary
+    callback update-title(string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary
+    callback find-genre-index(string) -> int; // Find genre index by ID
 
     VerticalBox {
         alignment: stretch;
@@ -91,7 +103,8 @@ export component TitlesPage inherits Page {
                         root.new-publication-year = "";
                         root.new-pages = "";
                         root.new-language = "fr";
-                        root.new-genre = "";
+                        root.new-genre-index = -1;
+                        root.new-genre-id = "";
                         root.new-summary = "";
                     }
                 }
@@ -214,9 +227,9 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
-                    LineEdit {
-                        text <=> root.new-genre;
-                        placeholder-text: @tr("E.g., Fiction, Science");
+                    ComboBox {
+                        model: root.genre-names;
+                        current-index <=> root.new-genre-index;
                     }
                 }
 
@@ -253,17 +266,32 @@ export component TitlesPage inherits Page {
                         height: 35px;
                         enabled: root.new-title != "";
                         clicked => {
-                            root.create-title(
-                                root.new-title,
-                                root.new-subtitle,
-                                root.new-isbn,
-                                root.new-publisher,
-                                root.new-publication-year,
-                                root.new-pages,
-                                root.new-language,
-                                root.new-genre,
-                                root.new-summary
-                            );
+                            // Look up genre_id from index
+                            if (root.new-genre-index >= 0 && root.new-genre-index < root.genres.length) {
+                                root.create-title(
+                                    root.new-title,
+                                    root.new-subtitle,
+                                    root.new-isbn,
+                                    root.new-publisher,
+                                    root.new-publication-year,
+                                    root.new-pages,
+                                    root.new-language,
+                                    root.genres[root.new-genre-index].id,
+                                    root.new-summary
+                                );
+                            } else {
+                                root.create-title(
+                                    root.new-title,
+                                    root.new-subtitle,
+                                    root.new-isbn,
+                                    root.new-publisher,
+                                    root.new-publication-year,
+                                    root.new-pages,
+                                    root.new-language,
+                                    "",
+                                    root.new-summary
+                                );
+                            }
                             root.show-create-dialog = false;
                         }
                     }
@@ -387,9 +415,9 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
-                    LineEdit {
-                        text <=> root.edit-genre;
-                        placeholder-text: @tr("E.g., Fiction, Science");
+                    ComboBox {
+                        model: root.genre-names;
+                        current-index <=> root.edit-genre-index;
                     }
                 }
 
@@ -426,18 +454,34 @@ export component TitlesPage inherits Page {
                         height: 35px;
                         enabled: root.edit-title != "";
                         clicked => {
-                            root.update-title(
-                                root.edit-id,
-                                root.edit-title,
-                                root.edit-subtitle,
-                                root.edit-isbn,
-                                root.edit-publisher,
-                                root.edit-publication-year,
-                                root.edit-pages,
-                                root.edit-language,
-                                root.edit-genre,
-                                root.edit-summary
-                            );
+                            // Look up genre_id from index
+                            if (root.edit-genre-index >= 0 && root.edit-genre-index < root.genres.length) {
+                                root.update-title(
+                                    root.edit-id,
+                                    root.edit-title,
+                                    root.edit-subtitle,
+                                    root.edit-isbn,
+                                    root.edit-publisher,
+                                    root.edit-publication-year,
+                                    root.edit-pages,
+                                    root.edit-language,
+                                    root.genres[root.edit-genre-index].id,
+                                    root.edit-summary
+                                );
+                            } else {
+                                root.update-title(
+                                    root.edit-id,
+                                    root.edit-title,
+                                    root.edit-subtitle,
+                                    root.edit-isbn,
+                                    root.edit-publisher,
+                                    root.edit-publication-year,
+                                    root.edit-pages,
+                                    root.edit-language,
+                                    "",
+                                    root.edit-summary
+                                );
+                            }
                             root.show-edit-dialog = false;
                         }
                     }
@@ -530,7 +574,9 @@ export component TitlesPage inherits Page {
                                 root.edit-publication-year = title.publication-year;
                                 root.edit-pages = title.pages;
                                 root.edit-language = title.language;
-                                root.edit-genre = title.genre;
+                                root.edit-genre-id = title.genre-id;
+                                // Find the genre index for this genre_id
+                                root.edit-genre-index = root.find-genre-index(title.genre-id);
                                 root.edit-summary = title.summary;
                                 root.show-edit-dialog = true;
                             }
