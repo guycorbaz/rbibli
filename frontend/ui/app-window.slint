@@ -26,9 +26,10 @@
 // All text is internationalized using the @tr() macro for multi-language support.
 // ============================================================================
 
-import { Button, VerticalBox, ScrollView } from "std-widgets.slint";
+import { Button, VerticalBox, ScrollView, StyleMetrics } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
 import {AboutPage, TitlesPage, TitleData, GenreItem, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
+import { Styles } from "styles.slint";
 
 // AppWindow - Main application window component
 //
@@ -199,8 +200,8 @@ export component AppWindow inherits Window {
     // Window Configuration
     // ========================================================================
     // Minimum window dimensions to ensure usable interface
-    min-width: 700px;
-    min-height: 500px;
+    min-width: Styles.app_horizontal_size;
+    min-height: Styles.app_vertical_size;
 
     // Window title (internationalized)
     title: @tr("Personal Library");

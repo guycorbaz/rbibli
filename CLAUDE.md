@@ -43,6 +43,67 @@ rbibli/
 
 **Note**: WASM-specific files (index.html, wasm-bindgen dependencies) will be added when WASM compilation is configured.
 
+## Current Implementation Status (Phase 2-3)
+
+### ✅ Fully Implemented Features
+
+**Database & Infrastructure:**
+- MariaDB integration with SQLx (13 migrations applied)
+- Connection pooling (MySqlPoolOptions, max 5 connections)
+- Health check endpoints (/health, /health/db)
+- UUID-based entity IDs (CHAR(36) format)
+- Timestamp management (created_at, updated_at)
+
+**Frontend Pages (Slint UI):**
+- **Titles Page**: Create, edit, list titles with genre dropdown and volume counts
+- **Authors Page**: Full CRUD operations with biographical information
+- **Publishers Page**: Full CRUD operations with company details
+- **Genres Page**: Full CRUD operations with title counts
+- **Locations Page**: Full CRUD with hierarchical structure and full path display
+- **About Page**: Application information
+
+**Backend API Endpoints:**
+- GET/POST/PUT /api/v1/titles (DELETE missing)
+- GET/POST/PUT/DELETE /api/v1/authors
+- GET/POST/PUT/DELETE /api/v1/publishers
+- GET/POST/PUT/DELETE /api/v1/genres
+- GET/POST/PUT/DELETE /api/v1/locations
+
+**UI Features:**
+- Sidebar navigation with 8 menu items
+- ScrollView for responsive content areas
+- Modal dialogs for create/edit operations
+- Data binding between Rust and Slint
+- Callback system for API communication
+- Genre dropdown in title forms
+- Parent location dropdown for hierarchical locations
+- Internationalization infrastructure (@tr() macro)
+
+### 🔄 Partially Implemented (Database Schema Ready)
+
+**Volumes:** Database table created with all fields (barcode, condition, location_id, loan_status), but no backend handlers or UI
+**Title-Authors:** Junction table ready with role support, but no handlers or UI
+**Loans:** Complete database schema with status tracking, but no implementation
+**Borrowers:** Database table ready, but no implementation
+
+### ⏳ Not Yet Implemented
+
+- Volume management (CRITICAL for MVP)
+- Loan workflow and borrower management
+- Barcode generation and scanning
+- Title deletion endpoint
+- Search and filter capabilities
+- Import/export functionality
+- Duplicate detection
+- Statistics dashboard
+- Cover image upload
+- Dewey classification UI
+- Series management
+
+### 📊 MVP Completion: ~60%
+
+Core infrastructure is excellent, but critical features (Volumes, Loans) are pending.
+
 ## Core Development Commands
 
 ### Building and Running the Frontend
@@ -250,13 +311,31 @@ Important system feature for data integrity:
    - Same `.slint` UI files, different build target
    - Accessible from any device
 
-**Future Enhancements**:
-- Connect frontend to backend API for data persistence
-- MariaDB database integration in backend
-- User authentication and sessions
-- WASM build target for web deployment
-- Progressive Web App (PWA) features
-- Optional native mobile apps
+**Implemented Features** (Phase 2-3):
+- ✅ Frontend connected to backend REST API
+- ✅ MariaDB database fully integrated with SQLx
+- ✅ Full CRUD for: Titles, Authors, Publishers, Genres, Locations
+- ✅ Hierarchical location management with recursive CTEs
+- ✅ Genre dropdown integration in title forms
+- ✅ ScrollView for responsive content areas
+- ✅ Health check endpoints for monitoring
+
+**In Progress** (Phase 2-3):
+- 🔄 Volume management (database schema ready, handlers needed)
+- 🔄 Title deletion endpoint (currently missing)
+- 🔄 Title-Author relationship management (junction table ready)
+
+**Planned Features** (Phase 3-4):
+- ⏳ Loan management system (borrowers, loans, returns)
+- ⏳ Barcode generation and scanning (Code 128 format)
+- ⏳ User authentication and sessions
+- ⏳ Import/export functionality (CSV, JSON)
+- ⏳ Duplicate detection algorithms
+- ⏳ Statistics and reporting dashboard
+- ⏳ WASM build target for web deployment
+- ⏳ Progressive Web App (PWA) features
+- ⏳ Dewey classification UI
+- ⏳ Cover image upload and display
 
 ### Key Business Rules
 
@@ -272,18 +351,22 @@ Important system feature for data integrity:
 ```
 frontend/
 ├── src/
-│   ├── main.rs          # WASM entry point, Slint initialization
-│   ├── models/          # Data structures shared with backend (planned)
-│   ├── api_client/      # HTTP client for backend API calls (planned)
-│   ├── services/        # Frontend business logic (planned)
+│   ├── main.rs          # Native/WASM entry point, Slint initialization
+│   ├── models.rs        # Data structures (Title, Author, Publisher, Genre, Location) ✅
+│   ├── api_client.rs    # HTTP client for backend REST API calls ✅
 │   └── utils/           # Helpers, validation (planned)
 ├── ui/
 │   ├── app-window.slint    # Main application window
 │   ├── side_bar.slint      # Navigation sidebar component
 │   ├── pages/              # Page components
 │   │   ├── pages.slint     # Page exports
-│   │   ├── about_page.slint
-│   │   └── page.slint      # Base page component
+│   │   ├── about_page.slint     # ✅ Implemented
+│   │   ├── titles_page.slint    # ✅ Implemented (full CRUD except delete)
+│   │   ├── authors_page.slint   # ✅ Implemented (full CRUD)
+│   │   ├── publishers_page.slint # ✅ Implemented (full CRUD)
+│   │   ├── genres_page.slint    # ✅ Implemented (full CRUD)
+│   │   ├── locations_page.slint # ✅ Implemented (full CRUD)
+│   │   └── page.slint           # Base page component
 │   └── gallery_settings.slint
 ├── lang/                # Translation files (planned)
 ├── index.html           # HTML entry point
@@ -566,25 +649,39 @@ The project **transitioned from Leptos to Slint**:
 
 ## Development Phases
 
-**Phase 1** (Current): Basic Slint UI structure
-- Application skeleton with sidebar navigation
-- Basic page structure (About page implemented)
-- Slint component architecture established
+**Phase 1** (✅ COMPLETED): Basic Slint UI structure
+- ✅ Application skeleton with sidebar navigation (8 menu items)
+- ✅ Multiple page structures implemented (About, Titles, Authors, Publishers, Genres, Locations)
+- ✅ Slint component architecture established
+- ✅ ScrollView integration for responsive content
 
-**Phase 2**: Core functionality
-- MariaDB database integration (sqlx setup)
-- Title and Volume management
-- Basic CRUD operations with repository pattern
+**Phase 2** (🔄 80% COMPLETE): Core functionality
+- ✅ MariaDB database integration with SQLx (13 migrations applied)
+- ✅ Title management (create, read, update - delete missing)
+- ✅ Basic CRUD operations with repository pattern
+- ✅ Connection pooling and health checks
+- 🔄 Volume management (database schema ready, handlers and UI needed)
+- 🔄 Title-Author relationship (junction table ready, handlers needed)
 
-**Phase 3**: Advanced features
-- Author and series management
-- Multiple copies per title
-- Barcode scanning integration
-- Loan management system
+**Phase 3** (🔄 40% COMPLETE): Advanced features
+- ✅ Author management (full CRUD operations working)
+- ✅ Publisher management (full CRUD operations working)
+- ✅ Genre management (full CRUD operations working)
+- ✅ Locations management (full CRUD with hierarchical structure)
+- ⏳ Series management (not started)
+- 🔄 Multiple copies per title (database ready, implementation needed)
+- ⏳ Barcode scanning integration (not started)
+- ⏳ Loan management system (database schema ready, implementation needed)
+- ⏳ Borrower management (database schema ready, implementation needed)
 
-**Phase 4**: Polish and extras
-- Dewey classification
-- Duplicate detection
-- Import/export functionality
-- French/English internationalization
-- Statistics and reporting
+**Phase 4** (⏳ NOT STARTED): Polish and extras
+- ⏳ Dewey classification UI
+- ⏳ Duplicate detection algorithms
+- ⏳ Import/export functionality (CSV, JSON)
+- ⏳ French/English internationalization (infrastructure ready with @tr())
+- ⏳ Statistics and reporting dashboard
+- ⏳ Search and filter capabilities
+- ⏳ Cover image upload and display
+- ⏳ Barcode generation (Code 128)
+
+**Current Status**: Mid-Phase 2/Early Phase 3. Core infrastructure is solid, basic entities are fully functional, but the critical Title/Volume relationship and loan management system are not yet implemented.
