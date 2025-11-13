@@ -26,7 +26,7 @@
 // All text is internationalized using the @tr() macro for multi-language support.
 // ============================================================================
 
-import { Button, VerticalBox } from "std-widgets.slint";
+import { Button, VerticalBox, ScrollView } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
 import {AboutPage, TitlesPage, TitleData, GenreItem, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
 
@@ -228,9 +228,11 @@ export component AppWindow inherits Window {
         // ====================================================================
         // Pages are shown/hidden based on the sidebar's current-item property.
         // Each page receives data and callbacks from the AppWindow.
+        // Wrapped in ScrollView to provide scrollbars when content exceeds window size.
 
-        // PAGE 0: Titles Page - Manage books and titles in the library
-        if(side-bar.current-item == 0) : TitlesPage {
+        ScrollView {
+            // PAGE 0: Titles Page - Manage books and titles in the library
+            if(side-bar.current-item == 0) : TitlesPage {
             titles: root.titles;
             genres: root.genre-items;
             genre-names: root.genre-names;
@@ -317,6 +319,7 @@ export component AppWindow inherits Window {
         //if(side-bar.current-item == 6) : StatisticsPage {}
 
         // PAGE 7: About Page - Application information and version
-        if(side-bar.current-item == 7) : AboutPage {}
+            if(side-bar.current-item == 7) : AboutPage {}
+        }
     }
 }
