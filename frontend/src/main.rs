@@ -109,6 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             genre: t.title.genre.clone().unwrap_or_default().into(),
                             genre_id: t.title.genre_id.clone().unwrap_or_default().into(),
                             summary: t.title.summary.clone().unwrap_or_default().into(),
+                            cover_url: t.title.cover_url.clone().unwrap_or_default().into(),
                         })
                         .collect();
 
@@ -725,7 +726,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_create_title(move |title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary| {
+        ui.on_create_title(move |title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url| {
             println!("Creating title: {}", title);
 
             let request = CreateTitleRequest {
@@ -773,7 +774,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 } else {
                     Some(summary.to_string())
                 },
-                cover_url: None,
+                cover_url: if cover_url.is_empty() {
+                    None
+                } else {
+                    Some(cover_url.to_string())
+                },
             };
 
             match api_client.create_title(request) {
@@ -792,7 +797,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary| {
+        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url| {
             println!("Updating title: {}", id);
 
             let request = UpdateTitleRequest {
@@ -848,7 +853,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                 } else {
                     Some(summary.to_string())
                 },
-                cover_url: None,
+                cover_url: if cover_url.is_empty() {
+                    None
+                } else {
+                    Some(cover_url.to_string())
+                },
             };
 
             match api_client.update_title(&id.to_string(), request) {
@@ -1048,6 +1057,51 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to delete volume: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the upload-image callback
+    {
+        let load_titles = load_titles.clone();
+        let api_client = api_client.clone();
+        ui.on_upload_image(move |title_id| {
+            println!("Uploading image for title: {}", title_id);
+
+            // Open file dialog
+            let file_dialog = rfd::FileDialog::new()
+                .add_filter("Images", &["jpg", "jpeg", "png", "gif", "webp"])
+                .set_title("Select Cover Image");
+
+            if let Some(path) = file_dialog.pick_file() {
+                println!("Selected file: {:?}", path);
+
+                // Read the file
+                match std::fs::read(&path) {
+                    Ok(file_data) => {
+                        // Get the filename
+                        let filename = path
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or("image.jpg")
+                            .to_string();
+
+                        // Upload the image
+                        match api_client.upload_cover_image(title_id.to_string(), file_data, filename) {
+                            Ok(_) => {
+                                println!("Image uploaded successfully");
+                                // Reload titles to show the updated data
+                                load_titles();
+                            }
+                            Err(e) => {
+                                eprintln!("Failed to upload image: {}", e);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Failed to read file: {}", e);
+                    }
                 }
             }
         });

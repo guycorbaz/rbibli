@@ -1257,3 +1257,59 @@ impl Default for ApiClient {
         Self::new("http://localhost:8000".to_string())
     }
 }
+
+impl ApiClient {
+    /// Uploads a cover image for a title.
+    ///
+    /// This method uploads an image file to the backend API and associates it with a specific title.
+    /// The image is stored as a BLOB in the database. The method uses multipart/form-data encoding
+    /// to send both the title ID and the image file data.
+    ///
+    /// # Arguments
+    ///
+    /// * `title_id` - The UUID string of the title to attach the image to
+    /// * `image_data` - The raw bytes of the image file
+    /// * `filename` - The original filename of the image (used for MIME type detection)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Image was uploaded successfully
+    /// * `Err(Box<dyn Error>)` - Upload failed (network error, invalid data, title not found, etc.)
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use std::fs;
+    ///
+    /// let client = ApiClient::default();
+    /// let image_data = fs::read("cover.jpg").unwrap();
+    /// client.upload_cover_image("title-uuid".to_string(), image_data, "cover.jpg".to_string())?;
+    /// ```
+    pub fn upload_cover_image(
+        &self,
+        title_id: String,
+        image_data: Vec<u8>,
+        filename: String,
+    ) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/uploads/cover", self.base_url);
+
+        // Create multipart form
+        let part = reqwest::blocking::multipart::Part::bytes(image_data)
+            .file_name(filename);
+
+        let form = reqwest::blocking::multipart::Form::new()
+            .text("title_id", title_id)
+            .part("cover", part);
+
+        // Send the request
+        let response = self.client.post(&url).multipart(form).send()?;
+
+        if response.status().is_success() {
+            Ok(())
+        } else {
+            let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
+            Err(format!("Failed to upload image: {}", error_text).into())
+        }
+    }
+}

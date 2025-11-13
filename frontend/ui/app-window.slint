@@ -131,17 +131,22 @@ export component AppWindow inherits Window {
     callback load-titles();
 
     // Creates a new title in the library
-    // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary
-    callback create-title(string, string, string, string, string, string, string, string, string, string);
+    // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url
+    callback create-title(string, string, string, string, string, string, string, string, string, string, string);
 
     // Updates an existing title's information
-    // Parameters: id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary
-    callback update-title(string, string, string, string, string, string, string, string, string, string, string);
+    // Parameters: id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url
+    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string);
 
     // Deletes a title from the library
     // Parameter: id (UUID string)
     // Note: A title can only be deleted if it has no volumes (volume_count == 0)
     callback delete-title(string);
+
+    // Uploads a cover image for a title
+    // Parameter: title-id (UUID string)
+    // Opens a file dialog and uploads the selected image to the backend
+    callback upload-image(string);
 
     // Finds the index of a genre in the genre dropdown list
     // Parameter: genre-id (UUID string)
@@ -292,14 +297,17 @@ export component AppWindow inherits Window {
             load-titles => {
                 root.load-titles();
             }
-            create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary) => {
-                root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary);
+            create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url) => {
+                root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url);
             }
-            update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary) => {
-                root.update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary);
+            update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url) => {
+                root.update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url);
             }
             delete-title(id) => {
                 root.delete-title(id);
+            }
+            upload-image(title-id) => {
+                root.upload-image(title-id);
             }
             find-genre-index(genre-id) => {
                 return root.find-genre-index(genre-id);

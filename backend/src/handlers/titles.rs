@@ -69,6 +69,8 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             t.genre_id,
             t.summary,
             t.cover_url,
+            t.image_mime_type,
+            t.image_filename,
             t.created_at,
             t.updated_at,
             COUNT(v.id) as volume_count
@@ -76,7 +78,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
         LEFT JOIN volumes v ON t.id = v.title_id
         GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publisher_id, t.publication_year,
                  t.pages, t.language, t.dewey_code, t.dewey_category, t.genre_old, t.genre_id,
-                 t.summary, t.cover_url, t.created_at, t.updated_at
+                 t.summary, t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at
         ORDER BY t.title ASC
     "#;
 
@@ -123,6 +125,10 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
                             genre_id: row.get("genre_id"),
                             summary: row.get("summary"),
                             cover_url: row.get("cover_url"),
+                            // Don't fetch image_data in list queries for performance
+                            image_data: None,
+                            image_mime_type: row.get("image_mime_type"),
+                            image_filename: row.get("image_filename"),
                             created_at: chrono::DateTime::from_naive_utc_and_offset(created_at, chrono::Utc),
                             updated_at: chrono::DateTime::from_naive_utc_and_offset(updated_at, chrono::Utc),
                         },

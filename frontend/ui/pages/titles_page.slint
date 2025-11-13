@@ -17,6 +17,7 @@ export struct TitleData {
     genre: string,
     genre-id: string,
     summary: string,
+    cover-url: string,
 }
 
 // Structure for genre dropdown
@@ -69,6 +70,7 @@ export component TitlesPage inherits Page {
     in-out property <int> new-genre-index: -1;
     in-out property <string> new-genre-id: "";
     in-out property <string> new-summary: "";
+    in-out property <string> new-cover-url: "";
 
     // Edit dialog properties
     in-out property <bool> show-edit-dialog: false;
@@ -85,6 +87,7 @@ export component TitlesPage inherits Page {
     in-out property <int> edit-genre-index: -1;
     in-out property <string> edit-genre-id: "";
     in-out property <string> edit-summary: "";
+    in-out property <string> edit-cover-url: "";
 
     // Delete confirmation dialog properties
     in-out property <bool> show-delete-confirmation: false;
@@ -107,9 +110,10 @@ export component TitlesPage inherits Page {
 
     // Callback to request loading titles
     callback load-titles();
-    callback create-title(string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary
-    callback update-title(string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary
+    callback create-title(string, string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url
+    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url
     callback delete-title(string); // id
+    callback upload-image(string); // title_id
     callback find-genre-index(string) -> int; // Find genre index by ID
     callback find-publisher-index(string) -> int; // Find publisher index by ID
 
@@ -304,6 +308,19 @@ export component TitlesPage inherits Page {
 
                 HorizontalBox {
                     spacing: 10px;
+                    Text {
+                        text: @tr("Cover URL:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-cover-url;
+                        placeholder-text: @tr("https://example.com/cover.jpg");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
                     alignment: end;
 
                     Button {
@@ -337,7 +354,8 @@ export component TitlesPage inherits Page {
                                     root.new-pages,
                                     root.new-language,
                                     root.genres[root.new-genre-index].id,
-                                    root.new-summary
+                                    root.new-summary,
+                                    root.new-cover-url
                                 );
                             } else {
                                 root.create-title(
@@ -350,7 +368,8 @@ export component TitlesPage inherits Page {
                                     root.new-pages,
                                     root.new-language,
                                     "",
-                                    root.new-summary
+                                    root.new-summary,
+                                    root.new-cover-url
                                 );
                             }
                             root.show-create-dialog = false;
@@ -497,6 +516,19 @@ export component TitlesPage inherits Page {
 
                 HorizontalBox {
                     spacing: 10px;
+                    Text {
+                        text: @tr("Cover URL:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-cover-url;
+                        placeholder-text: @tr("https://example.com/cover.jpg");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
                     alignment: end;
 
                     Button {
@@ -531,7 +563,8 @@ export component TitlesPage inherits Page {
                                     root.edit-pages,
                                     root.edit-language,
                                     root.genres[root.edit-genre-index].id,
-                                    root.edit-summary
+                                    root.edit-summary,
+                                    root.edit-cover-url
                                 );
                             } else {
                                 root.update-title(
@@ -545,7 +578,8 @@ export component TitlesPage inherits Page {
                                     root.edit-pages,
                                     root.edit-language,
                                     "",
-                                    root.edit-summary
+                                    root.edit-summary,
+                                    root.edit-cover-url
                                 );
                             }
                             root.show-edit-dialog = false;
