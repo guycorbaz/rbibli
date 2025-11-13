@@ -5,3 +5,4 @@ pub mod publishers;
 pub mod genres;
 pub mod volumes;
 pub mod uploads;
+pub mod isbn_lookup;

@@ -1107,6 +1107,120 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect the fetch-from-isbn callback (for create dialog)
+    {
+        let api_client = api_client.clone();
+        let ui_weak = ui.as_weak();
+        ui.on_fetch_from_isbn(move |isbn| {
+            println!("Fetching book data from ISBN (create mode): {}", isbn);
+
+            let ui = match ui_weak.upgrade() {
+                Some(ui) => ui,
+                None => {
+                    eprintln!("Failed to upgrade UI weak reference");
+                    return;
+                }
+            };
+
+            match api_client.lookup_isbn(isbn.to_string()) {
+                Ok(book_data) => {
+                    println!("Successfully fetched book data: {}", book_data.title);
+
+                    // Populate the "new" form fields
+                    ui.set_new_title(book_data.title.into());
+                    ui.set_new_subtitle(book_data.subtitle.unwrap_or_default().into());
+                    ui.set_new_isbn(book_data.isbn.into());
+                    ui.set_new_publisher(book_data.publisher.clone().unwrap_or_default().into());
+
+                    if let Some(year) = book_data.publication_year {
+                        ui.set_new_publication_year(year.to_string().into());
+                    } else {
+                        ui.set_new_publication_year("".into());
+                    }
+
+                    if let Some(pages) = book_data.pages {
+                        ui.set_new_pages(pages.to_string().into());
+                    } else {
+                        ui.set_new_pages("".into());
+                    }
+
+                    if let Some(language) = &book_data.language {
+                        ui.set_new_language(language.clone().into());
+                    }
+
+                    ui.set_new_summary(book_data.summary.unwrap_or_default().into());
+
+                    if let Some(cover_data) = &book_data.cover_image_data {
+                        println!("Cover image data available ({} bytes base64)", cover_data.len());
+                        // TODO: Store this for upload after title creation
+                    }
+
+                    println!("Create form fields populated with book data");
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch book data: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the fetch-from-isbn-edit callback (for edit dialog)
+    {
+        let api_client = api_client.clone();
+        let ui_weak = ui.as_weak();
+        ui.on_fetch_from_isbn_edit(move |isbn| {
+            println!("Fetching book data from ISBN (edit mode): {}", isbn);
+
+            let ui = match ui_weak.upgrade() {
+                Some(ui) => ui,
+                None => {
+                    eprintln!("Failed to upgrade UI weak reference");
+                    return;
+                }
+            };
+
+            match api_client.lookup_isbn(isbn.to_string()) {
+                Ok(book_data) => {
+                    println!("Successfully fetched book data: {}", book_data.title);
+
+                    // Populate the "edit" form fields
+                    ui.set_edit_title(book_data.title.into());
+                    ui.set_edit_subtitle(book_data.subtitle.unwrap_or_default().into());
+                    ui.set_edit_isbn(book_data.isbn.into());
+                    ui.set_edit_publisher(book_data.publisher.clone().unwrap_or_default().into());
+
+                    if let Some(year) = book_data.publication_year {
+                        ui.set_edit_publication_year(year.to_string().into());
+                    } else {
+                        ui.set_edit_publication_year("".into());
+                    }
+
+                    if let Some(pages) = book_data.pages {
+                        ui.set_edit_pages(pages.to_string().into());
+                    } else {
+                        ui.set_edit_pages("".into());
+                    }
+
+                    if let Some(language) = &book_data.language {
+                        ui.set_edit_language(language.clone().into());
+                    }
+
+                    ui.set_edit_summary(book_data.summary.unwrap_or_default().into());
+
+                    if let Some(cover_data) = &book_data.cover_image_data {
+                        println!("Cover image data available ({} bytes base64)", cover_data.len());
+                        // TODO: Store this for upload after title update
+                    }
+
+                    println!("Edit form fields populated with book data");
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch book data: {}", e);
+                }
+            }
+        });
+    }
+
     // Load titles on startup
     load_titles();
 

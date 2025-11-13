@@ -305,3 +305,21 @@ pub struct UpdateVolumeRequest {
     pub loan_status: Option<LoanStatus>,
     pub individual_notes: Option<String>,
 }
+
+/// Response from ISBN lookup containing book data from Google Books API
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct IsbnLookupResponse {
+    pub title: String,
+    pub subtitle: Option<String>,
+    pub authors: Vec<String>,
+    pub publisher: Option<String>,
+    pub publication_year: Option<i32>,
+    pub pages: Option<i32>,
+    pub language: Option<String>,
+    pub isbn: String,
+    pub summary: Option<String>,
+    pub categories: Vec<String>,
+    /// Base64-encoded cover image data
+    pub cover_image_data: Option<String>,
+    pub cover_image_mime_type: Option<String>,
+}

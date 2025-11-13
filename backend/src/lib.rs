@@ -7,6 +7,7 @@ use std::net::TcpListener;
 // Module declarations
 pub mod models;
 pub mod handlers;
+pub mod google_books;
 
 
 // Application state that holds the database pool
@@ -192,6 +193,8 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/uploads/cover", web::post().to(handlers::uploads::upload_cover))
             .route("/api/v1/uploads/cover/{title_id}", web::get().to(handlers::uploads::get_cover))
             .route("/api/v1/uploads/cover/{title_id}", web::delete().to(handlers::uploads::delete_cover))
+            // API v1 routes - ISBN Lookup
+            .route("/api/v1/isbn/{isbn}", web::get().to(handlers::isbn_lookup::lookup_isbn))
             .route("/{name}", web::get().to(greet))
     })
     .listen(listener)?

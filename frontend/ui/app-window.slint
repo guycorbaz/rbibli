@@ -123,6 +123,25 @@ export component AppWindow inherits Window {
     // ID of the title whose volumes are currently expanded
     in-out property <string> expanded-title-id: "";
 
+    // Expose title form properties for ISBN lookup functionality
+    in-out property <string> new-title: "";
+    in-out property <string> new-subtitle: "";
+    in-out property <string> new-isbn: "";
+    in-out property <string> new-publisher: "";
+    in-out property <string> new-publication-year: "";
+    in-out property <string> new-pages: "";
+    in-out property <string> new-language: "fr";
+    in-out property <string> new-summary: "";
+
+    in-out property <string> edit-title: "";
+    in-out property <string> edit-subtitle: "";
+    in-out property <string> edit-isbn: "";
+    in-out property <string> edit-publisher: "";
+    in-out property <string> edit-publication-year: "";
+    in-out property <string> edit-pages: "";
+    in-out property <string> edit-language: "";
+    in-out property <string> edit-summary: "";
+
     // ========================================================================
     // Callbacks - Title Operations
     // ========================================================================
@@ -147,6 +166,16 @@ export component AppWindow inherits Window {
     // Parameter: title-id (UUID string)
     // Opens a file dialog and uploads the selected image to the backend
     callback upload-image(string);
+
+    // Fetches book data from ISBN (Google Books API) for create dialog
+    // Parameter: isbn (ISBN-10 or ISBN-13)
+    // Directly populates the "new" UI fields with the fetched data
+    callback fetch-from-isbn(string);
+
+    // Fetches book data from ISBN (Google Books API) for edit dialog
+    // Parameter: isbn (ISBN-10 or ISBN-13)
+    // Directly populates the "edit" UI fields with the fetched data
+    callback fetch-from-isbn-edit(string);
 
     // Finds the index of a genre in the genre dropdown list
     // Parameter: genre-id (UUID string)
@@ -294,6 +323,23 @@ export component AppWindow inherits Window {
             location-names: root.location-names;
             volumes <=> root.volumes;
             expanded-title-id <=> root.expanded-title-id;
+            // Bind form properties for ISBN lookup
+            new-title <=> root.new-title;
+            new-subtitle <=> root.new-subtitle;
+            new-isbn <=> root.new-isbn;
+            new-publisher <=> root.new-publisher;
+            new-publication-year <=> root.new-publication-year;
+            new-pages <=> root.new-pages;
+            new-language <=> root.new-language;
+            new-summary <=> root.new-summary;
+            edit-title <=> root.edit-title;
+            edit-subtitle <=> root.edit-subtitle;
+            edit-isbn <=> root.edit-isbn;
+            edit-publisher <=> root.edit-publisher;
+            edit-publication-year <=> root.edit-publication-year;
+            edit-pages <=> root.edit-pages;
+            edit-language <=> root.edit-language;
+            edit-summary <=> root.edit-summary;
             load-titles => {
                 root.load-titles();
             }
@@ -308,6 +354,12 @@ export component AppWindow inherits Window {
             }
             upload-image(title-id) => {
                 root.upload-image(title-id);
+            }
+            fetch-from-isbn(isbn) => {
+                root.fetch-from-isbn(isbn);
+            }
+            fetch-from-isbn-edit(isbn) => {
+                root.fetch-from-isbn-edit(isbn);
             }
             find-genre-index(genre-id) => {
                 return root.find-genre-index(genre-id);

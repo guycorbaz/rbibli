@@ -114,6 +114,8 @@ export component TitlesPage inherits Page {
     callback update-title(string, string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url
     callback delete-title(string); // id
     callback upload-image(string); // title_id
+    callback fetch-from-isbn(string); // isbn - fetches and populates create form fields
+    callback fetch-from-isbn-edit(string); // isbn - fetches and populates edit form fields
     callback find-genre-index(string) -> int; // Find genre index by ID
     callback find-publisher-index(string) -> int; // Find publisher index by ID
 
@@ -225,6 +227,13 @@ export component TitlesPage inherits Page {
                     LineEdit {
                         text <=> root.new-isbn;
                         placeholder-text: @tr("ISBN-13 or ISBN-10");
+                    }
+                    Button {
+                        text: @tr("Fetch from ISBN");
+                        enabled: root.new-isbn != "";
+                        clicked => {
+                            root.fetch-from-isbn(root.new-isbn);
+                        }
                     }
                 }
 
@@ -433,6 +442,13 @@ export component TitlesPage inherits Page {
                     LineEdit {
                         text <=> root.edit-isbn;
                         placeholder-text: @tr("ISBN-13 or ISBN-10");
+                    }
+                    Button {
+                        text: @tr("Fetch from ISBN");
+                        enabled: root.edit-isbn != "";
+                        clicked => {
+                            root.fetch-from-isbn-edit(root.edit-isbn);
+                        }
                     }
                 }
 

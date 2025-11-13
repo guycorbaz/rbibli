@@ -1,4 +1,4 @@
-use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest, Volume, CreateVolumeRequest, UpdateVolumeRequest};
+use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest, Volume, CreateVolumeRequest, UpdateVolumeRequest, IsbnLookupResponse};
 use std::error::Error;
 
 /// API client for communicating with the rbibli backend
@@ -1310,6 +1310,44 @@ impl ApiClient {
         } else {
             let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
             Err(format!("Failed to upload image: {}", error_text).into())
+        }
+    }
+
+    /// Looks up book information by ISBN from Google Books API.
+    ///
+    /// This method fetches comprehensive book metadata including title, authors, publisher,
+    /// description, and cover image from Google Books. The cover image is downloaded and
+    /// returned as base64-encoded data ready to be stored in the database.
+    ///
+    /// # Arguments
+    ///
+    /// * `isbn` - The ISBN-10 or ISBN-13 number (with or without hyphens)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(IsbnLookupResponse)` - Book data including base64-encoded cover image
+    /// * `Err(Box<dyn Error>)` - If ISBN is not found or lookup fails
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// let book = client.lookup_isbn("9780134685991".to_string())?;
+    /// println!("Found: {}", book.title);
+    /// ```
+    pub fn lookup_isbn(&self, isbn: String) -> Result<IsbnLookupResponse, Box<dyn Error>> {
+        let url = format!("{}/api/v1/isbn/{}", self.base_url, isbn);
+
+        let response = self.client.get(&url).send()?;
+
+        if response.status().is_success() {
+            let book_data: IsbnLookupResponse = response.json()?;
+            Ok(book_data)
+        } else {
+            let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
+            Err(format!("ISBN lookup failed: {}", error_text).into())
         }
     }
 }
