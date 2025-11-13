@@ -101,6 +101,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             subtitle: t.title.subtitle.clone().unwrap_or_default().into(),
                             isbn: t.title.isbn.clone().unwrap_or_default().into(),
                             publisher: t.title.publisher.clone().unwrap_or_default().into(),
+                            publisher_id: t.title.publisher_id.clone().unwrap_or_default().into(),
                             volume_count: t.volume_count as i32,
                             language: t.title.language.clone().into(),
                             publication_year: t.title.publication_year.map(|y| y.to_string()).unwrap_or_default().into(),
@@ -246,10 +247,32 @@ fn main() -> Result<(), Box<dyn Error>> {
                         })
                         .collect();
 
+                    // Convert to PublisherItem for dropdown usage in TitlesPage
+                    let publisher_items: Vec<PublisherItem> = publishers_data
+                        .iter()
+                        .map(|p| PublisherItem {
+                            id: p.publisher.id.clone().into(),
+                            name: p.publisher.name.clone().into(),
+                        })
+                        .collect();
+
+                    // Extract publisher names for ComboBox model
+                    // Include "(No publisher)" as first element
+                    let mut publisher_names: Vec<slint::SharedString> = vec!["(No publisher)".into()];
+                    publisher_names.extend(
+                        publishers_data
+                            .iter()
+                            .map(|p| p.publisher.name.clone().into())
+                    );
+
                     // Update the UI with the publishers
                     if let Some(ui) = ui_weak.upgrade() {
                         let model = Rc::new(slint::VecModel::from(slint_publishers));
                         ui.set_publishers(model.into());
+                        let items_model = Rc::new(slint::VecModel::from(publisher_items));
+                        ui.set_publisher_items(items_model.into());
+                        let names_model = Rc::new(slint::VecModel::from(publisher_names));
+                        ui.set_publisher_names(names_model.into());
                         println!("UI updated with publishers");
                     }
                 }
@@ -682,11 +705,27 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect the find-publisher-index callback
+    {
+        let ui_weak = ui.as_weak();
+        ui.on_find_publisher_index(move |publisher_id| {
+            if let Some(ui) = ui_weak.upgrade() {
+                let publisher_items = ui.get_publisher_items();
+                for (i, item) in publisher_items.iter().enumerate() {
+                    if item.id == publisher_id {
+                        return i as i32;
+                    }
+                }
+            }
+            -1
+        });
+    }
+
     // Connect the create-title callback
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_create_title(move |title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary| {
+        ui.on_create_title(move |title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary| {
             println!("Creating title: {}", title);
 
             let request = CreateTitleRequest {
@@ -705,6 +744,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                     None
                 } else {
                     Some(publisher.to_string())
+                },
+                publisher_id: if publisher_id.is_empty() {
+                    None
+                } else {
+                    Some(publisher_id.to_string())
                 },
                 publication_year: if publication_year.is_empty() {
                     None
@@ -748,7 +792,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary| {
+        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary| {
             println!("Updating title: {}", id);
 
             let request = UpdateTitleRequest {
@@ -771,6 +815,11 @@ fn main() -> Result<(), Box<dyn Error>> {
                     None
                 } else {
                     Some(publisher.to_string())
+                },
+                publisher_id: if publisher_id.is_empty() {
+                    None
+                } else {
+                    Some(publisher_id.to_string())
                 },
                 publication_year: if publication_year.is_empty() {
                     None

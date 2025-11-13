@@ -28,7 +28,7 @@
 
 import { Button, VerticalBox, ScrollView, StyleMetrics } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, GenreItem, VolumeData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, VolumeData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
 import { Styles } from "styles.slint";
 
 // AppWindow - Main application window component
@@ -102,6 +102,12 @@ export component AppWindow inherits Window {
     // Array of publishers with company details
     in-out property <[PublisherData]> publishers: [];
 
+    // Array of publisher items formatted for dropdown selection
+    in-out property <[PublisherItem]> publisher-items: [];
+
+    // Array of publisher names for ComboBox widgets
+    in-out property <[string]> publisher-names: [];
+
     // Array of genres with title counts
     in-out property <[GenreData]> genres: [];
 
@@ -125,12 +131,12 @@ export component AppWindow inherits Window {
     callback load-titles();
 
     // Creates a new title in the library
-    // Parameters: title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary
-    callback create-title(string, string, string, string, string, string, string, string, string);
+    // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary
+    callback create-title(string, string, string, string, string, string, string, string, string, string);
 
     // Updates an existing title's information
-    // Parameters: id, title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary
-    callback update-title(string, string, string, string, string, string, string, string, string, string);
+    // Parameters: id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary
+    callback update-title(string, string, string, string, string, string, string, string, string, string, string);
 
     // Deletes a title from the library
     // Parameter: id (UUID string)
@@ -141,6 +147,11 @@ export component AppWindow inherits Window {
     // Parameter: genre-id (UUID string)
     // Returns: Index position in the dropdown, or -1 if not found
     callback find-genre-index(string) -> int;
+
+    // Finds the index of a publisher in the publisher dropdown list
+    // Parameter: publisher-id (UUID string)
+    // Returns: Index position in the dropdown, or -1 if not found
+    callback find-publisher-index(string) -> int;
 
     // ========================================================================
     // Callbacks - Volume Operations
@@ -272,6 +283,8 @@ export component AppWindow inherits Window {
             titles: root.titles;
             genres: root.genre-items;
             genre-names: root.genre-names;
+            publishers: root.publisher-items;
+            publisher-names: root.publisher-names;
             locations: root.locations;
             location-names: root.location-names;
             volumes <=> root.volumes;
@@ -279,17 +292,20 @@ export component AppWindow inherits Window {
             load-titles => {
                 root.load-titles();
             }
-            create-title(title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary) => {
-                root.create-title(title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary);
+            create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary) => {
+                root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary);
             }
-            update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary) => {
-                root.update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary);
+            update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary) => {
+                root.update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary);
             }
             delete-title(id) => {
                 root.delete-title(id);
             }
             find-genre-index(genre-id) => {
                 return root.find-genre-index(genre-id);
+            }
+            find-publisher-index(publisher-id) => {
+                return root.find-publisher-index(publisher-id);
             }
             load-volumes(title-id) => {
                 root.load-volumes(title-id);

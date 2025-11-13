@@ -9,6 +9,7 @@ export struct TitleData {
     subtitle: string,
     isbn: string,
     publisher: string,
+    publisher-id: string,
     volume-count: int,
     language: string,
     publication-year: string,
@@ -20,6 +21,12 @@ export struct TitleData {
 
 // Structure for genre dropdown
 export struct GenreItem {
+    id: string,
+    name: string,
+}
+
+// Structure for publisher dropdown
+export struct PublisherItem {
     id: string,
     name: string,
 }
@@ -45,6 +52,8 @@ export component TitlesPage inherits Page {
     in-out property <[TitleData]> titles: [];
     in-out property <[GenreItem]> genres: [];
     in-out property <[string]> genre-names: [];
+    in-out property <[PublisherItem]> publishers: [];
+    in-out property <[string]> publisher-names: [];
     in-out property <[LocationData]> locations: [];
     in-out property <[string]> location-names: [];
     in-out property <bool> show-create-dialog: false;
@@ -52,6 +61,8 @@ export component TitlesPage inherits Page {
     in-out property <string> new-subtitle: "";
     in-out property <string> new-isbn: "";
     in-out property <string> new-publisher: "";
+    in-out property <int> new-publisher-index: -1;
+    in-out property <string> new-publisher-id: "";
     in-out property <string> new-publication-year: "";
     in-out property <string> new-pages: "";
     in-out property <string> new-language: "fr";
@@ -66,6 +77,8 @@ export component TitlesPage inherits Page {
     in-out property <string> edit-subtitle: "";
     in-out property <string> edit-isbn: "";
     in-out property <string> edit-publisher: "";
+    in-out property <int> edit-publisher-index: -1;
+    in-out property <string> edit-publisher-id: "";
     in-out property <string> edit-publication-year: "";
     in-out property <string> edit-pages: "";
     in-out property <string> edit-language: "";
@@ -94,10 +107,11 @@ export component TitlesPage inherits Page {
 
     // Callback to request loading titles
     callback load-titles();
-    callback create-title(string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary
-    callback update-title(string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary
+    callback create-title(string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary
+    callback update-title(string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary
     callback delete-title(string); // id
     callback find-genre-index(string) -> int; // Find genre index by ID
+    callback find-publisher-index(string) -> int; // Find publisher index by ID
 
     // Volume callbacks
     callback load-volumes(string); // title-id
@@ -217,9 +231,9 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
-                    LineEdit {
-                        text <=> root.new-publisher;
-                        placeholder-text: @tr("Publisher name");
+                    ComboBox {
+                        model: root.publisher-names;
+                        current-index <=> root.new-publisher-index;
                     }
                 }
 
@@ -308,6 +322,9 @@ export component TitlesPage inherits Page {
                         height: 35px;
                         enabled: root.new-title != "";
                         clicked => {
+                            // Look up publisher_id from index
+                            root.new-publisher-id = (root.new-publisher-index > 0 && root.new-publisher-index <= root.publishers.length) ? root.publishers[root.new-publisher-index - 1].id : "";
+
                             // Look up genre_id from index
                             if (root.new-genre-index >= 0 && root.new-genre-index < root.genres.length) {
                                 root.create-title(
@@ -315,6 +332,7 @@ export component TitlesPage inherits Page {
                                     root.new-subtitle,
                                     root.new-isbn,
                                     root.new-publisher,
+                                    root.new-publisher-id,
                                     root.new-publication-year,
                                     root.new-pages,
                                     root.new-language,
@@ -327,6 +345,7 @@ export component TitlesPage inherits Page {
                                     root.new-subtitle,
                                     root.new-isbn,
                                     root.new-publisher,
+                                    root.new-publisher-id,
                                     root.new-publication-year,
                                     root.new-pages,
                                     root.new-language,
@@ -405,9 +424,9 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
-                    LineEdit {
-                        text <=> root.edit-publisher;
-                        placeholder-text: @tr("Publisher name");
+                    ComboBox {
+                        model: root.publisher-names;
+                        current-index <=> root.edit-publisher-index;
                     }
                 }
 
@@ -496,6 +515,9 @@ export component TitlesPage inherits Page {
                         height: 35px;
                         enabled: root.edit-title != "";
                         clicked => {
+                            // Look up publisher_id from index
+                            root.edit-publisher-id = (root.edit-publisher-index > 0 && root.edit-publisher-index <= root.publishers.length) ? root.publishers[root.edit-publisher-index - 1].id : "";
+
                             // Look up genre_id from index
                             if (root.edit-genre-index >= 0 && root.edit-genre-index < root.genres.length) {
                                 root.update-title(
@@ -504,6 +526,7 @@ export component TitlesPage inherits Page {
                                     root.edit-subtitle,
                                     root.edit-isbn,
                                     root.edit-publisher,
+                                    root.edit-publisher-id,
                                     root.edit-publication-year,
                                     root.edit-pages,
                                     root.edit-language,
@@ -517,6 +540,7 @@ export component TitlesPage inherits Page {
                                     root.edit-subtitle,
                                     root.edit-isbn,
                                     root.edit-publisher,
+                                    root.edit-publisher-id,
                                     root.edit-publication-year,
                                     root.edit-pages,
                                     root.edit-language,
@@ -839,8 +863,11 @@ export component TitlesPage inherits Page {
                                         root.edit-pages = title.pages;
                                         root.edit-language = title.language;
                                         root.edit-genre-id = title.genre-id;
+                                        root.edit-publisher-id = title.publisher-id;
                                         // Find the genre index for this genre_id
                                         root.edit-genre-index = root.find-genre-index(title.genre-id);
+                                        // Find the publisher index for this publisher_id
+                                        root.edit-publisher-index = root.find-publisher-index(title.publisher-id);
                                         root.edit-summary = title.summary;
                                         root.show-edit-dialog = true;
                                     }

@@ -59,6 +59,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             t.subtitle,
             t.isbn,
             t.publisher_old as publisher,
+            t.publisher_id,
             t.publication_year,
             t.pages,
             t.language,
@@ -73,7 +74,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             COUNT(v.id) as volume_count
         FROM titles t
         LEFT JOIN volumes v ON t.id = v.title_id
-        GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publication_year,
+        GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publisher_id, t.publication_year,
                  t.pages, t.language, t.dewey_code, t.dewey_category, t.genre_old, t.genre_id,
                  t.summary, t.cover_url, t.created_at, t.updated_at
         ORDER BY t.title ASC
@@ -112,6 +113,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
                             subtitle: row.get("subtitle"),
                             isbn: row.get("isbn"),
                             publisher: row.get("publisher"),
+                            publisher_id: row.get("publisher_id"),
                             publication_year: row.get("publication_year"),
                             pages: row.get("pages"),
                             language: row.get("language"),
@@ -208,10 +210,10 @@ pub async fn create_title(
     let new_id = Uuid::new_v4();
 
     let query = r#"
-        INSERT INTO titles (id, title, subtitle, isbn, publisher_old, publication_year, pages,
+        INSERT INTO titles (id, title, subtitle, isbn, publisher_old, publisher_id, publication_year, pages,
                            language, dewey_code, dewey_category, genre_id, summary, cover_url,
                            created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     "#;
 
     match sqlx::query(query)
@@ -220,6 +222,7 @@ pub async fn create_title(
         .bind(&req.subtitle)
         .bind(&req.isbn)
         .bind(&req.publisher)
+        .bind(&req.publisher_id)
         .bind(req.publication_year)
         .bind(req.pages)
         .bind(&req.language)
@@ -337,6 +340,10 @@ pub async fn update_title(
         update_parts.push("publisher_old = ?");
         has_updates = true;
     }
+    if req.publisher_id.is_some() {
+        update_parts.push("publisher_id = ?");
+        has_updates = true;
+    }
     if req.publication_year.is_some() {
         update_parts.push("publication_year = ?");
         has_updates = true;
@@ -400,6 +407,9 @@ pub async fn update_title(
     }
     if let Some(ref publisher) = req.publisher {
         query_builder = query_builder.bind(publisher);
+    }
+    if let Some(ref publisher_id) = req.publisher_id {
+        query_builder = query_builder.bind(publisher_id);
     }
     if let Some(publication_year) = req.publication_year {
         query_builder = query_builder.bind(publication_year);
