@@ -63,7 +63,7 @@ rbibli/
 - **About Page**: Application information
 
 **Backend API Endpoints:**
-- GET/POST/PUT /api/v1/titles (DELETE missing)
+- GET/POST/PUT/DELETE /api/v1/titles (full CRUD with business rules)
 - GET/POST/PUT/DELETE /api/v1/authors
 - GET/POST/PUT/DELETE /api/v1/publishers
 - GET/POST/PUT/DELETE /api/v1/genres
@@ -73,6 +73,7 @@ rbibli/
 - Sidebar navigation with 8 menu items
 - ScrollView for responsive content areas
 - Modal dialogs for create/edit operations
+- Confirmation dialogs for destructive operations (delete with confirmation)
 - Data binding between Rust and Slint
 - Callback system for API communication
 - Genre dropdown in title forms
@@ -91,7 +92,6 @@ rbibli/
 - Volume management (CRITICAL for MVP)
 - Loan workflow and borrower management
 - Barcode generation and scanning
-- Title deletion endpoint
 - Search and filter capabilities
 - Import/export functionality
 - Duplicate detection
@@ -100,9 +100,9 @@ rbibli/
 - Dewey classification UI
 - Series management
 
-### 📊 MVP Completion: ~60%
+### 📊 MVP Completion: ~65%
 
-Core infrastructure is excellent, but critical features (Volumes, Loans) are pending.
+Core infrastructure and all primary entity management (Titles, Authors, Publishers, Genres, Locations) are fully implemented. Critical features remaining: Volumes and Loans.
 
 ## Core Development Commands
 
@@ -314,15 +314,16 @@ Important system feature for data integrity:
 **Implemented Features** (Phase 2-3):
 - ✅ Frontend connected to backend REST API
 - ✅ MariaDB database fully integrated with SQLx
-- ✅ Full CRUD for: Titles, Authors, Publishers, Genres, Locations
+- ✅ Full CRUD for: Titles (with confirmation dialog), Authors, Publishers, Genres, Locations
+- ✅ Business rule enforcement: titles with volumes cannot be deleted
 - ✅ Hierarchical location management with recursive CTEs
 - ✅ Genre dropdown integration in title forms
 - ✅ ScrollView for responsive content areas
+- ✅ Confirmation dialogs for destructive operations
 - ✅ Health check endpoints for monitoring
 
 **In Progress** (Phase 2-3):
 - 🔄 Volume management (database schema ready, handlers needed)
-- 🔄 Title deletion endpoint (currently missing)
 - 🔄 Title-Author relationship management (junction table ready)
 
 **Planned Features** (Phase 3-4):
@@ -340,7 +341,7 @@ Important system feature for data integrity:
 ### Key Business Rules
 
 1. **Titles can exist without volumes** (wishlist functionality)
-2. **Cannot delete title if any volume is currently loaned**
+2. **Cannot delete title if it has any volumes** (enforced at backend with 409 Conflict response)
 3. **Volume barcodes must be globally unique** (VOL-XXXXXX format)
 4. **Dewey classification applies at title level**, inherited by volumes
 5. **Loan status must match volume availability** (referential integrity)
@@ -361,7 +362,7 @@ frontend/
 │   ├── pages/              # Page components
 │   │   ├── pages.slint     # Page exports
 │   │   ├── about_page.slint     # ✅ Implemented
-│   │   ├── titles_page.slint    # ✅ Implemented (full CRUD except delete)
+│   │   ├── titles_page.slint    # ✅ Implemented (full CRUD with confirmation)
 │   │   ├── authors_page.slint   # ✅ Implemented (full CRUD)
 │   │   ├── publishers_page.slint # ✅ Implemented (full CRUD)
 │   │   ├── genres_page.slint    # ✅ Implemented (full CRUD)
@@ -655,9 +656,9 @@ The project **transitioned from Leptos to Slint**:
 - ✅ Slint component architecture established
 - ✅ ScrollView integration for responsive content
 
-**Phase 2** (🔄 80% COMPLETE): Core functionality
+**Phase 2** (🔄 85% COMPLETE): Core functionality
 - ✅ MariaDB database integration with SQLx (13 migrations applied)
-- ✅ Title management (create, read, update - delete missing)
+- ✅ Title management (full CRUD with confirmation dialog and business rules)
 - ✅ Basic CRUD operations with repository pattern
 - ✅ Connection pooling and health checks
 - 🔄 Volume management (database schema ready, handlers and UI needed)

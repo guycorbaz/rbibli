@@ -88,7 +88,7 @@
 
 ## Missing Features by Category
 
-## 1. Title Management (🔄 ~75% Complete)
+## 1. Title Management (✅ ~85% Complete)
 
 ### 1.1 Data Models - ✅ IMPLEMENTED
 - [x] ✅ Title struct/model (frontend & backend)
@@ -98,27 +98,33 @@
 - [x] ✅ Timestamps: created_at, updated_at
 - [ ] ⏳ cover_url (field exists but upload not implemented)
 
-### 1.2 UI Pages - 🔄 PARTIALLY IMPLEMENTED
+### 1.2 UI Pages - ✅ MOSTLY IMPLEMENTED
 - [x] ✅ **Titles list page** with volume counts and data grid
 - [x] ✅ **Add title form** with all fields (modal dialog)
 - [x] ✅ **Edit title form** with pre-populated data (modal dialog)
+- [x] ✅ **Delete title button** with confirmation dialog (only enabled if volume_count == 0)
+- [x] ✅ **Delete confirmation dialog** showing title name before deletion
 - [x] ✅ **Genre dropdown** in create/edit forms
 - [x] ✅ Title card/row display in list
 - [ ] ⏳ Title detail page (not implemented yet)
 - [ ] ⏳ Title search/filter interface (not implemented)
-- [ ] ⏳ Delete title button with confirmation (backend missing)
 
-### 1.3 Backend API - 🔄 MOSTLY IMPLEMENTED
+### 1.3 Backend API - ✅ FULL CRUD IMPLEMENTED
 - [x] ✅ `GET /api/v1/titles` - List all titles with volume counts (LEFT JOIN)
 - [x] ✅ `POST /api/v1/titles` - Create title with UUID generation
 - [x] ✅ `GET /api/v1/titles/{id}` - Get title details
 - [x] ✅ `PUT /api/v1/titles/{id}` - Update title (partial updates supported)
-- [ ] ⏳ `DELETE /api/v1/titles/{id}` - **MISSING** (need to implement)
+- [x] ✅ **`DELETE /api/v1/titles/{id}`** - Delete title (only if volume_count == 0)
+  - Returns 409 Conflict if title has volumes
+  - Returns 404 if title not found
+  - Returns 200 on successful deletion
 - [ ] ⏳ `GET /api/v1/titles/wishlist` - Wishlist filter (can use volume_count=0)
 
 ### 1.4 Features - 🔄 PARTIALLY IMPLEMENTED
 - [x] ✅ **Genre association** (genre_id FK, dropdown working)
 - [x] ✅ **Publisher association** (publisher_id FK field exists)
+- [x] ✅ **Title deletion with business rules** (cannot delete if volumes exist)
+- [x] ✅ **Confirmation dialog** for destructive actions
 - [x] ✅ Database relationships (titles.genre_id → genres, titles.publisher_id → publishers)
 - [x] ✅ Volume count display (calculated via LEFT JOIN with volumes)
 - [ ] 🔄 **Authors association** (junction table ready, handlers/UI missing)
@@ -132,15 +138,17 @@ Users can:
 - ✅ View all titles with their volume counts
 - ✅ Create new titles with all metadata (title, subtitle, ISBN, publisher, year, pages, language, genre, summary)
 - ✅ Edit existing titles
+- ✅ **Delete titles** (with confirmation dialog, only if no volumes exist)
 - ✅ Select genre from dropdown
 - ✅ Data persists in MariaDB
 - ✅ Volume counts update automatically
+- ✅ Business rule enforcement: cannot delete titles with volumes
 
-### 1.6 Critical Missing Items 🔴
-- Delete title functionality (backend endpoint + UI button)
+### 1.6 Remaining Items ⏳
 - Author assignment to titles (database ready, need handlers + UI)
 - Search/filter capabilities
 - Title detail view page
+- Input validation (ISBN format, required fields)
 
 ---
 

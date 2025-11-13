@@ -6,13 +6,13 @@ The backend is a REST API built with **actix-web** and **tokio** for async opera
 
 ## Current Status (Updated: 2025-01-13)
 
-**Phase 2-3: Actively Developed (~60% Complete)**
+**Phase 2-3: Actively Developed (~65% Complete)**
 
-The backend has a solid foundation with MariaDB integration and comprehensive CRUD operations for core entities. The database schema is complete for all planned features, but Volume and Loan management handlers are not yet implemented.
+The backend has a solid foundation with MariaDB integration and comprehensive CRUD operations for core entities. All primary entity management (Titles, Authors, Publishers, Genres, Locations) now have full CRUD operations. The database schema is complete for all planned features, but Volume and Loan management handlers are not yet implemented.
 
 ### ✅ Fully Implemented
 - Health check endpoints (/health, /health/db)
-- Titles API (GET, POST, PUT - DELETE missing)
+- Titles API (full CRUD with business rule validation)
 - Authors API (full CRUD)
 - Publishers API (full CRUD)
 - Genres API (full CRUD)
@@ -56,14 +56,14 @@ Health check endpoints to verify the backend and database are running. Used by m
 - 200 OK: Service is healthy
 - 500 Internal Server Error: Service or database is down
 
-### Titles Management ✅ (DELETE missing)
+### Titles Management ✅ (Full CRUD)
 
 ```
 GET    /api/v1/titles              - ✅ List all titles with volume counts
 POST   /api/v1/titles              - ✅ Create a new title
 GET    /api/v1/titles/{id}         - ✅ Get title details
 PUT    /api/v1/titles/{id}         - ✅ Update title information (partial updates supported)
-DELETE /api/v1/titles/{id}         - ⏳ NOT IMPLEMENTED (planned)
+DELETE /api/v1/titles/{id}         - ✅ Delete a title (only if no volumes exist)
 GET    /api/v1/titles/wishlist     - ⏳ NOT IMPLEMENTED (can filter volume_count=0)
 ```
 
@@ -71,8 +71,29 @@ GET    /api/v1/titles/wishlist     - ⏳ NOT IMPLEMENTED (can filter volume_coun
 - LEFT JOIN with volumes to include volume_count in list
 - Genre and publisher foreign key relationships
 - Partial updates (only changed fields are updated)
+- **Business rule enforcement**: Titles with volumes cannot be deleted
 - UUID-based IDs
 - Created/updated timestamps
+
+**DELETE Endpoint Details:**
+- **Business Rule**: A title can only be deleted if it has no volumes (volume_count == 0)
+- **Response Codes**:
+  - `200 OK`: Title successfully deleted
+  - `404 Not Found`: Title ID does not exist
+  - `409 Conflict`: Title has volumes and cannot be deleted (returns volume_count)
+- **Conflict Response Format**:
+  ```json
+  {
+    "error": {
+      "code": "HAS_VOLUMES",
+      "message": "Cannot delete title with existing volumes",
+      "details": {
+        "volume_count": 3
+      }
+    }
+  }
+  ```
+- **Implementation**: Checks volume count before deletion using LEFT JOIN query
 
 ### Authors Management ✅ (Full CRUD)
 
