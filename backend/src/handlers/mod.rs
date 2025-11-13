@@ -6,3 +6,6 @@ pub mod genres;
 pub mod volumes;
 pub mod uploads;
 pub mod isbn_lookup;
+pub mod borrower_groups;
+pub mod borrowers;
+pub mod loans;

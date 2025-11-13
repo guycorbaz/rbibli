@@ -28,7 +28,7 @@
 
 import { Button, VerticalBox, ScrollView, StyleMetrics } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, VolumeData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, VolumeData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData, LoansPage, LoanData, BorrowerData, BorrowerGroupData} from "pages/pages.slint";
 import { Styles } from "styles.slint";
 
 // AppWindow - Main application window component
@@ -277,6 +277,78 @@ export component AppWindow inherits Window {
     callback delete-genre(string);
 
     // ========================================================================
+    // Data Properties - Loans Management
+    // ========================================================================
+
+    // Array of active loans with full details
+    in-out property <[LoanData]> active-loans: [];
+
+    // Array of borrowers with group information
+    in-out property <[BorrowerData]> borrowers: [];
+
+    // Array of borrower groups with loan policies
+    in-out property <[BorrowerGroupData]> borrower-groups: [];
+
+    // Array of borrower names for ComboBox
+    in-out property <[string]> borrower-names: [];
+
+    // Array of group names for ComboBox
+    in-out property <[string]> group-names: [];
+
+    // ========================================================================
+    // Callbacks - Loans Operations
+    // ========================================================================
+
+    // Triggers loading of all active loans from the backend
+    callback load-active-loans();
+
+    // Creates a new loan by barcode scanning
+    // Parameters: borrower-id, barcode
+    callback create-loan(string, string);
+
+    // Returns a loaned volume
+    // Parameter: loan-id (UUID string)
+    callback return-loan(string);
+
+    // ========================================================================
+    // Callbacks - Borrowers Operations
+    // ========================================================================
+
+    // Triggers loading of all borrowers from the backend
+    callback load-borrowers();
+
+    // Creates a new borrower
+    // Parameters: name, email, phone, address, city, zip, group-id
+    callback create-borrower(string, string, string, string, string, string, string);
+
+    // Updates an existing borrower's information
+    // Parameters: id, name, email, phone, address, city, zip, group-id
+    callback update-borrower(string, string, string, string, string, string, string, string);
+
+    // Deletes a borrower by ID
+    // Parameter: id (UUID string)
+    callback delete-borrower(string);
+
+    // ========================================================================
+    // Callbacks - Borrower Groups Operations
+    // ========================================================================
+
+    // Triggers loading of all borrower groups from the backend
+    callback load-borrower-groups();
+
+    // Creates a new borrower group
+    // Parameters: name, loan-duration-days, description
+    callback create-borrower-group(string, int, string);
+
+    // Updates an existing borrower group's information
+    // Parameters: id, name, loan-duration-days, description
+    callback update-borrower-group(string, string, int, string);
+
+    // Deletes a borrower group by ID
+    // Parameter: id (UUID string)
+    callback delete-borrower-group(string);
+
+    // ========================================================================
     // Window Configuration
     // ========================================================================
     // Minimum window dimensions to ensure usable interface
@@ -443,8 +515,48 @@ export component AppWindow inherits Window {
             }
         }
 
-        // PAGE 5: Loans Page - Manage book loans (NOT YET IMPLEMENTED)
-        //if(side-bar.current-item == 5) : LoansPage {}
+        // PAGE 5: Loans Page - Manage book loans, borrowers, and groups
+        if(side-bar.current-item == 5) : LoansPage {
+            active-loans: root.active-loans;
+            borrowers: root.borrowers;
+            borrower-groups: root.borrower-groups;
+            borrower-names: root.borrower-names;
+            group-names: root.group-names;
+
+            load-active-loans => {
+                root.load-active-loans();
+            }
+            load-borrowers => {
+                root.load-borrowers();
+            }
+            load-borrower-groups => {
+                root.load-borrower-groups();
+            }
+            create-loan(borrower-id, barcode) => {
+                root.create-loan(borrower-id, barcode);
+            }
+            return-loan(loan-id) => {
+                root.return-loan(loan-id);
+            }
+            create-borrower(name, email, phone, address, city, zip, group-id) => {
+                root.create-borrower(name, email, phone, address, city, zip, group-id);
+            }
+            update-borrower(id, name, email, phone, address, city, zip, group-id) => {
+                root.update-borrower(id, name, email, phone, address, city, zip, group-id);
+            }
+            delete-borrower(id) => {
+                root.delete-borrower(id);
+            }
+            create-borrower-group(name, loan-duration-days, description) => {
+                root.create-borrower-group(name, loan-duration-days, description);
+            }
+            update-borrower-group(id, name, loan-duration-days, description) => {
+                root.update-borrower-group(id, name, loan-duration-days, description);
+            }
+            delete-borrower-group(id) => {
+                root.delete-borrower-group(id);
+            }
+        }
 
         // PAGE 6: Statistics Page - View library statistics (NOT YET IMPLEMENTED)
         //if(side-bar.current-item == 6) : StatisticsPage {}

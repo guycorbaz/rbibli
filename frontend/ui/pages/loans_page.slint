@@ -1,0 +1,815 @@
+// ============================================================================
+// loans_page.slint
+// ============================================================================
+// Loans management page for the rbibli personal library application.
+//
+// This page provides a complete interface for managing book loans, borrowers,
+// and borrower groups. It allows users to:
+// - View active and overdue loans
+// - Create new loans by scanning barcodes
+// - Return loaned volumes
+// - Manage borrowers and their contact information
+// - Manage borrower groups with loan duration policies
+//
+// The page uses a tabbed interface with four sections:
+// 1. Active Loans - View and return currently loaned volumes
+// 2. Create Loan - Scan barcode to create new loans
+// 3. Borrowers - Manage library members who can borrow books
+// 4. Groups - Manage borrower groups with loan policies
+//
+// All text is internationalized using @tr() for multi-language support.
+// ============================================================================
+
+import { Page } from "page.slint";
+import { ListView, ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, ComboBox, TextEdit, TabWidget } from "std-widgets.slint";
+
+// BorrowerGroupData - Data structure for borrower groups
+export struct BorrowerGroupData {
+    id: string,
+    name: string,
+    loan-duration-days: int,
+    description: string,
+}
+
+// BorrowerData - Data structure for borrowers
+export struct BorrowerData {
+    id: string,
+    name: string,
+    email: string,
+    phone: string,
+    address: string,
+    city: string,
+    zip: string,
+    group-id: string,
+    group-name: string,
+    loan-duration-days: int,
+}
+
+// LoanData - Data structure for active loans
+export struct LoanData {
+    id: string,
+    title: string,
+    barcode: string,
+    borrower-name: string,
+    borrower-email: string,
+    loan-date: string,
+    due-date: string,
+    is-overdue: bool,
+}
+
+// LoansPage - Loans management page component
+export component LoansPage inherits Page {
+    title: @tr("Loans Management");
+    description: @tr("Manage book loans, borrowers, and loan policies");
+
+    // Data properties
+    in-out property <[LoanData]> active-loans: [];
+    in-out property <[BorrowerData]> borrowers: [];
+    in-out property <[BorrowerGroupData]> borrower-groups: [];
+    in-out property <[string]> borrower-names: [];
+    in-out property <[string]> group-names: [];
+
+    // Callbacks
+    callback load-active-loans();
+    callback load-borrowers();
+    callback load-borrower-groups();
+    callback create-loan(string /* borrower-id */, string /* barcode */);
+    callback return-loan(string /* loan-id */);
+    callback create-borrower(string /* name */, string /* email */, string /* phone */, string /* address */, string /* city */, string /* zip */, string /* group-id */);
+    callback update-borrower(string /* id */, string /* name */, string /* email */, string /* phone */, string /* address */, string /* city */, string /* zip */, string /* group-id */);
+    callback delete-borrower(string /* id */);
+    callback create-borrower-group(string /* name */, int /* loan-duration-days */, string /* description */);
+    callback update-borrower-group(string /* id */, string /* name */, int /* loan-duration-days */, string /* description */);
+    callback delete-borrower-group(string /* id */);
+
+    // Create loan form state
+    in-out property <int> new-loan-borrower-index: 0;
+    in-out property <string> new-loan-barcode: "";
+    in-out property <string> new-loan-message: "";
+
+    // Create borrower form state
+    in-out property <bool> show-create-borrower-dialog: false;
+    in-out property <string> new-borrower-name: "";
+    in-out property <string> new-borrower-email: "";
+    in-out property <string> new-borrower-phone: "";
+    in-out property <string> new-borrower-address: "";
+    in-out property <string> new-borrower-city: "";
+    in-out property <string> new-borrower-zip: "";
+    in-out property <int> new-borrower-group-index: 0;
+
+    // Edit borrower form state
+    in-out property <bool> show-edit-borrower-dialog: false;
+    in-out property <string> edit-borrower-id: "";
+    in-out property <string> edit-borrower-name: "";
+    in-out property <string> edit-borrower-email: "";
+    in-out property <string> edit-borrower-phone: "";
+    in-out property <string> edit-borrower-address: "";
+    in-out property <string> edit-borrower-city: "";
+    in-out property <string> edit-borrower-zip: "";
+    in-out property <int> edit-borrower-group-index: 0;
+
+    // Create borrower group form state
+    in-out property <bool> show-create-group-dialog: false;
+    in-out property <string> new-group-name: "";
+    in-out property <string> new-group-duration: "21";
+    in-out property <string> new-group-description: "";
+
+    VerticalBox {
+        padding: 20px;
+        spacing: 10px;
+
+        // Main tabbed interface
+        TabWidget {
+            // TAB 1: Active Loans
+            Tab {
+                title: @tr("Active Loans");
+
+                VerticalBox {
+                    spacing: 10px;
+                    padding: 10px;
+
+                    // Header with refresh button
+                    HorizontalBox {
+                        alignment: space-between;
+
+                        Text {
+                            text: @tr("Active Loans");
+                            font-size: 18px;
+                            font-weight: 700;
+                        }
+
+                        Button {
+                            text: @tr("Refresh");
+                            clicked => {
+                                root.load-active-loans();
+                            }
+                        }
+                    }
+
+                    // Empty state or loans list
+                    if root.active-loans.length == 0: VerticalBox {
+                        alignment: center;
+                        Text {
+                            text: @tr("No active loans");
+                            font-size: 16px;
+                            color: #888;
+                        }
+                    }
+
+                    if root.active-loans.length > 0: ScrollView {
+                        VerticalBox {
+                            spacing: 8px;
+
+                            for loan[index] in root.active-loans: Rectangle {
+                                height: 120px;
+                                border-radius: 8px;
+                                background: Math.mod(index, 2) == 0 ? #f8f8f8 : #ffffff;
+                                border-width: 1px;
+                                border-color: loan.is-overdue ? #ff0000 : #e0e0e0;
+
+                                HorizontalBox {
+                                    padding: 15px;
+                                    spacing: 15px;
+
+                                    VerticalBox {
+                                        spacing: 5px;
+                                        horizontal-stretch: 1;
+
+                                        Text {
+                                            text: loan.title;
+                                            font-size: 16px;
+                                            font-weight: 700;
+                                        }
+
+                                        Text {
+                                            text: "Barcode: " + loan.barcode;
+                                            font-size: 14px;
+                                            color: #666;
+                                        }
+
+                                        Text {
+                                            text: "Borrower: " + loan.borrower-name;
+                                            font-size: 14px;
+                                            color: #666;
+                                        }
+
+                                        HorizontalBox {
+                                            spacing: 20px;
+
+                                            Text {
+                                                text: "Due: " + loan.due-date;
+                                                font-size: 13px;
+                                                color: loan.is-overdue ? #ff0000 : #666;
+                                                font-weight: loan.is-overdue ? 700 : 400;
+                                            }
+
+                                            if loan.is-overdue: Text {
+                                                text: "OVERDUE";
+                                                font-size: 13px;
+                                                color: #ff0000;
+                                                font-weight: 700;
+                                            }
+                                        }
+                                    }
+
+                                    Button {
+                                        text: @tr("Return");
+                                        primary: true;
+                                        clicked => {
+                                            root.return-loan(loan.id);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // TAB 2: Create Loan
+            Tab {
+                title: @tr("Create Loan");
+
+                VerticalBox {
+                    spacing: 15px;
+                    padding: 20px;
+                    alignment: start;
+
+                    Text {
+                        text: @tr("Create New Loan");
+                        font-size: 18px;
+                        font-weight: 700;
+                    }
+
+                    Text {
+                        text: @tr("Select a borrower and scan the volume barcode to create a loan");
+                        font-size: 14px;
+                        color: #666;
+                    }
+
+                    // Borrower selection
+                    HorizontalBox {
+                        spacing: 10px;
+
+                        Text {
+                            text: @tr("Borrower:");
+                            vertical-alignment: center;
+                            min-width: 100px;
+                        }
+
+                        ComboBox {
+                            model: root.borrower-names;
+                            current-index <=> root.new-loan-borrower-index;
+                        }
+
+                        Button {
+                            text: @tr("Refresh");
+                            clicked => {
+                                root.load-borrowers();
+                            }
+                        }
+                    }
+
+                    // Barcode input
+                    HorizontalBox {
+                        spacing: 10px;
+
+                        Text {
+                            text: @tr("Barcode:");
+                            vertical-alignment: center;
+                            min-width: 100px;
+                        }
+
+                        LineEdit {
+                            text <=> root.new-loan-barcode;
+                            placeholder-text: @tr("Scan or enter barcode (e.g., VOL-000001)");
+                        }
+                    }
+
+                    // Status message
+                    if root.new-loan-message != "": Rectangle {
+                        height: 40px;
+                        background: #e8f4f8;
+                        border-radius: 4px;
+                        border-width: 1px;
+                        border-color: #0088cc;
+
+                        Text {
+                            text: root.new-loan-message;
+                            vertical-alignment: center;
+                            horizontal-alignment: center;
+                            color: #0088cc;
+                        }
+                    }
+
+                    // Create button
+                    Button {
+                        text: @tr("Create Loan");
+                        primary: true;
+                        enabled: root.new-loan-barcode != "" && root.borrowers.length > 0;
+                        clicked => {
+                            if root.borrowers.length > 0 {
+                                root.create-loan(root.borrowers[root.new-loan-borrower-index].id, root.new-loan-barcode);
+                                root.new-loan-barcode = "";
+                            }
+                        }
+                    }
+                }
+            }
+
+            // TAB 3: Borrowers
+            Tab {
+                title: @tr("Borrowers");
+
+                VerticalBox {
+                    spacing: 10px;
+                    padding: 10px;
+
+                    // Header with refresh and new buttons
+                    HorizontalBox {
+                        alignment: space-between;
+                        spacing: 10px;
+
+                        Text {
+                            text: @tr("Borrowers");
+                            font-size: 18px;
+                            font-weight: 700;
+                        }
+
+                        HorizontalBox {
+                            spacing: 10px;
+
+                            Button {
+                                text: @tr("Refresh");
+                                clicked => {
+                                    root.load-borrowers();
+                                }
+                            }
+
+                            Button {
+                                text: @tr("New Borrower");
+                                primary: true;
+                                clicked => {
+                                    root.show-create-borrower-dialog = true;
+                                    root.new-borrower-name = "";
+                                    root.new-borrower-email = "";
+                                    root.new-borrower-phone = "";
+                                    root.new-borrower-group-index = 0;
+                                }
+                            }
+                        }
+                    }
+
+                    // Create borrower dialog
+                    if root.show-create-borrower-dialog: Rectangle {
+                        background: rgba(0, 0, 0, 0.5);
+
+                        Rectangle {
+                            width: 500px;
+                            height: 550px;
+                            background: white;
+                            border-radius: 8px;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+
+                            VerticalBox {
+                                padding: 20px;
+                                spacing: 15px;
+
+                                Text {
+                                    text: @tr("Create New Borrower");
+                                    font-size: 18px;
+                                    font-weight: 700;
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Name:"); min-width: 100px; }
+                                    LineEdit { text <=> root.new-borrower-name; placeholder-text: @tr("Full name"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Email:"); min-width: 100px; }
+                                    LineEdit { text <=> root.new-borrower-email; placeholder-text: @tr("email@example.com"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Phone:"); min-width: 100px; }
+                                    LineEdit { text <=> root.new-borrower-phone; placeholder-text: @tr("+33 1 23 45 67 89"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Address:"); min-width: 100px; }
+                                    LineEdit { text <=> root.new-borrower-address; placeholder-text: @tr("Street address"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("City:"); min-width: 100px; }
+                                    LineEdit { text <=> root.new-borrower-city; placeholder-text: @tr("City"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("ZIP:"); min-width: 100px; }
+                                    LineEdit { text <=> root.new-borrower-zip; placeholder-text: @tr("Postal code"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Group:"); min-width: 100px; }
+                                    ComboBox {
+                                        model: root.group-names;
+                                        current-index <=> root.new-borrower-group-index;
+                                    }
+                                }
+
+                                HorizontalBox {
+                                    alignment: end;
+                                    spacing: 10px;
+
+                                    Button {
+                                        text: @tr("Cancel");
+                                        clicked => {
+                                            root.show-create-borrower-dialog = false;
+                                        }
+                                    }
+
+                                    Button {
+                                        text: @tr("Create");
+                                        primary: true;
+                                        enabled: root.new-borrower-name != "" && root.borrower-groups.length > 0;
+                                        clicked => {
+                                            if root.borrower-groups.length > 0 {
+                                                root.create-borrower(
+                                                    root.new-borrower-name,
+                                                    root.new-borrower-email,
+                                                    root.new-borrower-phone,
+                                                    root.new-borrower-address,
+                                                    root.new-borrower-city,
+                                                    root.new-borrower-zip,
+                                                    root.borrower-groups[root.new-borrower-group-index].id
+                                                );
+                                                root.show-create-borrower-dialog = false;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Edit borrower dialog
+                    if root.show-edit-borrower-dialog: Rectangle {
+                        background: rgba(0, 0, 0, 0.5);
+
+                        Rectangle {
+                            width: 500px;
+                            height: 550px;
+                            background: white;
+                            border-radius: 8px;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+
+                            VerticalBox {
+                                padding: 20px;
+                                spacing: 15px;
+
+                                Text {
+                                    text: @tr("Edit Borrower");
+                                    font-size: 18px;
+                                    font-weight: 700;
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Name:"); min-width: 100px; }
+                                    LineEdit { text <=> root.edit-borrower-name; placeholder-text: @tr("Full name"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Email:"); min-width: 100px; }
+                                    LineEdit { text <=> root.edit-borrower-email; placeholder-text: @tr("email@example.com"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Phone:"); min-width: 100px; }
+                                    LineEdit { text <=> root.edit-borrower-phone; placeholder-text: @tr("+33 1 23 45 67 89"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Address:"); min-width: 100px; }
+                                    LineEdit { text <=> root.edit-borrower-address; placeholder-text: @tr("Street address"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("City:"); min-width: 100px; }
+                                    LineEdit { text <=> root.edit-borrower-city; placeholder-text: @tr("City"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("ZIP:"); min-width: 100px; }
+                                    LineEdit { text <=> root.edit-borrower-zip; placeholder-text: @tr("Postal code"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Group:"); min-width: 100px; }
+                                    ComboBox {
+                                        model: root.group-names;
+                                        current-index <=> root.edit-borrower-group-index;
+                                    }
+                                }
+
+                                HorizontalBox {
+                                    alignment: end;
+                                    spacing: 10px;
+
+                                    Button {
+                                        text: @tr("Cancel");
+                                        clicked => {
+                                            root.show-edit-borrower-dialog = false;
+                                        }
+                                    }
+
+                                    Button {
+                                        text: @tr("Update");
+                                        primary: true;
+                                        enabled: root.edit-borrower-name != "" && root.borrower-groups.length > 0;
+                                        clicked => {
+                                            if root.borrower-groups.length > 0 {
+                                                root.update-borrower(
+                                                    root.edit-borrower-id,
+                                                    root.edit-borrower-name,
+                                                    root.edit-borrower-email,
+                                                    root.edit-borrower-phone,
+                                                    root.edit-borrower-address,
+                                                    root.edit-borrower-city,
+                                                    root.edit-borrower-zip,
+                                                    root.borrower-groups[root.edit-borrower-group-index].id
+                                                );
+                                                root.show-edit-borrower-dialog = false;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Borrowers list
+                    if root.borrowers.length == 0: VerticalBox {
+                        alignment: center;
+                        Text {
+                            text: @tr("No borrowers yet");
+                            font-size: 16px;
+                            color: #888;
+                        }
+                    }
+
+                    if root.borrowers.length > 0: ScrollView {
+                        VerticalBox {
+                            spacing: 8px;
+
+                            for borrower[index] in root.borrowers: Rectangle {
+                                height: 100px;
+                                border-radius: 8px;
+                                background: Math.mod(index, 2) == 0 ? #f8f8f8 : #ffffff;
+                                border-width: 1px;
+                                border-color: #e0e0e0;
+
+                                HorizontalBox {
+                                    padding: 15px;
+                                    spacing: 15px;
+
+                                    VerticalBox {
+                                        spacing: 5px;
+                                        horizontal-stretch: 1;
+
+                                        Text {
+                                            text: borrower.name;
+                                            font-size: 16px;
+                                            font-weight: 700;
+                                        }
+
+                                        if borrower.email != "": Text {
+                                            text: "Email: " + borrower.email;
+                                            font-size: 13px;
+                                            color: #666;
+                                        }
+
+                                        if borrower.phone != "": Text {
+                                            text: "Phone: " + borrower.phone;
+                                            font-size: 13px;
+                                            color: #666;
+                                        }
+
+                                        Text {
+                                            text: "Group: " + borrower.group-name;
+                                            font-size: 13px;
+                                            color: #0088cc;
+                                        }
+                                    }
+
+                                    VerticalBox {
+                                        spacing: 5px;
+
+                                        Button {
+                                            text: @tr("Edit");
+                                            clicked => {
+                                                root.edit-borrower-id = borrower.id;
+                                                root.edit-borrower-name = borrower.name;
+                                                root.edit-borrower-email = borrower.email;
+                                                root.edit-borrower-phone = borrower.phone;
+                                                root.edit-borrower-address = borrower.address;
+                                                root.edit-borrower-city = borrower.city;
+                                                root.edit-borrower-zip = borrower.zip;
+                                                root.edit-borrower-group-index = 0;
+                                                root.show-edit-borrower-dialog = true;
+                                            }
+                                        }
+
+                                        Button {
+                                            text: @tr("Delete");
+                                            clicked => {
+                                                root.delete-borrower(borrower.id);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // TAB 4: Borrower Groups
+            Tab {
+                title: @tr("Groups");
+
+                VerticalBox {
+                    spacing: 10px;
+                    padding: 10px;
+
+                    // Header with refresh and new buttons
+                    HorizontalBox {
+                        alignment: space-between;
+                        spacing: 10px;
+
+                        Text {
+                            text: @tr("Borrower Groups");
+                            font-size: 18px;
+                            font-weight: 700;
+                        }
+
+                        HorizontalBox {
+                            spacing: 10px;
+
+                            Button {
+                                text: @tr("Refresh");
+                                clicked => {
+                                    root.load-borrower-groups();
+                                }
+                            }
+
+                            Button {
+                                text: @tr("New Group");
+                                primary: true;
+                                clicked => {
+                                    root.show-create-group-dialog = true;
+                                    root.new-group-name = "";
+                                    root.new-group-duration = "21";
+                                    root.new-group-description = "";
+                                }
+                            }
+                        }
+                    }
+
+                    // Create group dialog
+                    if root.show-create-group-dialog: Rectangle {
+                        background: rgba(0, 0, 0, 0.5);
+
+                        Rectangle {
+                            width: 500px;
+                            height: 350px;
+                            background: white;
+                            border-radius: 8px;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+
+                            VerticalBox {
+                                padding: 20px;
+                                spacing: 15px;
+
+                                Text {
+                                    text: @tr("Create New Group");
+                                    font-size: 18px;
+                                    font-weight: 700;
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Name:"); min-width: 120px; }
+                                    LineEdit { text <=> root.new-group-name; placeholder-text: @tr("Group name"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Loan Duration:"); min-width: 120px; }
+                                    LineEdit { text <=> root.new-group-duration; placeholder-text: "21"; input-type: number; }
+                                    Text { text: @tr("days"); vertical-alignment: center; }
+                                }
+
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: @tr("Description:"); }
+                                    TextEdit {
+                                        text <=> root.new-group-description;
+                                        height: 80px;
+                                    }
+                                }
+
+                                HorizontalBox {
+                                    alignment: end;
+                                    spacing: 10px;
+
+                                    Button {
+                                        text: @tr("Cancel");
+                                        clicked => {
+                                            root.show-create-group-dialog = false;
+                                        }
+                                    }
+
+                                    Button {
+                                        text: @tr("Create");
+                                        primary: true;
+                                        enabled: root.new-group-name != "" && root.new-group-duration != "";
+                                        clicked => {
+                                            root.create-borrower-group(
+                                                root.new-group-name,
+                                                root.new-group-duration.to-float(),
+                                                root.new-group-description
+                                            );
+                                            root.show-create-group-dialog = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Groups list
+                    if root.borrower-groups.length == 0: VerticalBox {
+                        alignment: center;
+                        Text {
+                            text: @tr("No groups available");
+                            font-size: 16px;
+                            color: #888;
+                        }
+                    }
+
+                    if root.borrower-groups.length > 0: ScrollView {
+                        VerticalBox {
+                            spacing: 8px;
+
+                            for group[index] in root.borrower-groups: Rectangle {
+                                height: 80px;
+                                border-radius: 8px;
+                                background: Math.mod(index, 2) == 0 ? #f8f8f8 : #ffffff;
+                                border-width: 1px;
+                                border-color: #e0e0e0;
+
+                                HorizontalBox {
+                                    padding: 15px;
+                                    spacing: 15px;
+
+                                    VerticalBox {
+                                        spacing: 5px;
+                                        horizontal-stretch: 1;
+
+                                        Text {
+                                            text: group.name;
+                                            font-size: 16px;
+                                            font-weight: 700;
+                                        }
+
+                                        Text {
+                                            text: "Loan duration: " + group.loan-duration-days + " days";
+                                            font-size: 14px;
+                                            color: #0088cc;
+                                        }
+
+                                        if group.description != "": Text {
+                                            text: group.description;
+                                            font-size: 13px;
+                                            color: #666;
+                                        }
+                                    }
+
+                                    Button {
+                                        text: @tr("Delete");
+                                        clicked => {
+                                            root.delete-borrower-group(group.id);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

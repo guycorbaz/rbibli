@@ -195,6 +195,21 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/uploads/cover/{title_id}", web::delete().to(handlers::uploads::delete_cover))
             // API v1 routes - ISBN Lookup
             .route("/api/v1/isbn/{isbn}", web::get().to(handlers::isbn_lookup::lookup_isbn))
+            // API v1 routes - Borrower Groups
+            .route("/api/v1/borrower-groups", web::get().to(handlers::borrower_groups::list_borrower_groups))
+            .route("/api/v1/borrower-groups", web::post().to(handlers::borrower_groups::create_borrower_group))
+            .route("/api/v1/borrower-groups/{id}", web::put().to(handlers::borrower_groups::update_borrower_group))
+            .route("/api/v1/borrower-groups/{id}", web::delete().to(handlers::borrower_groups::delete_borrower_group))
+            // API v1 routes - Borrowers
+            .route("/api/v1/borrowers", web::get().to(handlers::borrowers::list_borrowers))
+            .route("/api/v1/borrowers", web::post().to(handlers::borrowers::create_borrower))
+            .route("/api/v1/borrowers/{id}", web::put().to(handlers::borrowers::update_borrower))
+            .route("/api/v1/borrowers/{id}", web::delete().to(handlers::borrowers::delete_borrower))
+            // API v1 routes - Loans
+            .route("/api/v1/loans", web::get().to(handlers::loans::list_active_loans))
+            .route("/api/v1/loans", web::post().to(handlers::loans::create_loan_by_barcode))
+            .route("/api/v1/loans/overdue", web::get().to(handlers::loans::list_overdue_loans))
+            .route("/api/v1/loans/{id}/return", web::post().to(handlers::loans::return_loan))
             .route("/{name}", web::get().to(greet))
     })
     .listen(listener)?

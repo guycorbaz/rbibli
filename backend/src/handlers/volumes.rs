@@ -1,5 +1,5 @@
 use actix_web::{web, HttpResponse, Responder};
-use crate::models::{Volume, VolumeCondition, LoanStatus, CreateVolumeRequest, UpdateVolumeRequest};
+use crate::models::{Volume, VolumeCondition, VolumeLoanStatus, CreateVolumeRequest, UpdateVolumeRequest};
 use crate::AppState;
 use log::{info, warn, error, debug};
 use sqlx::Row;
@@ -78,14 +78,14 @@ pub async fn list_volumes_by_title(
 
                     let loan_status_str: String = row.get("loan_status");
                     let loan_status = match loan_status_str.as_str() {
-                        "available" => LoanStatus::Available,
-                        "loaned" => LoanStatus::Loaned,
-                        "overdue" => LoanStatus::Overdue,
-                        "lost" => LoanStatus::Lost,
-                        "maintenance" => LoanStatus::Maintenance,
+                        "available" => VolumeLoanStatus::Available,
+                        "loaned" => VolumeLoanStatus::Loaned,
+                        "overdue" => VolumeLoanStatus::Overdue,
+                        "lost" => VolumeLoanStatus::Lost,
+                        "maintenance" => VolumeLoanStatus::Maintenance,
                         _ => {
                             warn!("Unknown loan status: {}", loan_status_str);
-                            LoanStatus::Available
+                            VolumeLoanStatus::Available
                         }
                     };
 
@@ -198,12 +198,12 @@ pub async fn get_volume(
 
             let loan_status_str: String = row.get("loan_status");
             let loan_status = match loan_status_str.as_str() {
-                "available" => LoanStatus::Available,
-                "loaned" => LoanStatus::Loaned,
-                "overdue" => LoanStatus::Overdue,
-                "lost" => LoanStatus::Lost,
-                "maintenance" => LoanStatus::Maintenance,
-                _ => LoanStatus::Available,
+                "available" => VolumeLoanStatus::Available,
+                "loaned" => VolumeLoanStatus::Loaned,
+                "overdue" => VolumeLoanStatus::Overdue,
+                "lost" => VolumeLoanStatus::Lost,
+                "maintenance" => VolumeLoanStatus::Maintenance,
+                _ => VolumeLoanStatus::Available,
             };
 
             let created_at: chrono::NaiveDateTime = row.get("created_at");
@@ -449,11 +449,11 @@ pub async fn update_volume(
     }
     if let Some(ref loan_status) = req.loan_status {
         let status_str = match loan_status {
-            LoanStatus::Available => "available",
-            LoanStatus::Loaned => "loaned",
-            LoanStatus::Overdue => "overdue",
-            LoanStatus::Lost => "lost",
-            LoanStatus::Maintenance => "maintenance",
+            VolumeLoanStatus::Available => "available",
+            VolumeLoanStatus::Loaned => "loaned",
+            VolumeLoanStatus::Overdue => "overdue",
+            VolumeLoanStatus::Lost => "lost",
+            VolumeLoanStatus::Maintenance => "maintenance",
         };
         query_builder = query_builder.bind(status_str);
     }

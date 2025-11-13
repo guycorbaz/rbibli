@@ -4,6 +4,8 @@ pub mod author;
 pub mod publisher;
 pub mod genre;
 pub mod volume;
+pub mod borrower;
+pub mod loan;
 
 pub use title::{Title, TitleWithCount, CreateTitleRequest, UpdateTitleRequest};
 pub use location::{Location, LocationWithPath, CreateLocationRequest, UpdateLocationRequest};
@@ -18,5 +20,13 @@ pub use genre::{
     Genre, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest
 };
 pub use volume::{
-    Volume, VolumeCondition, LoanStatus, CreateVolumeRequest, UpdateVolumeRequest
+    Volume, VolumeCondition, LoanStatus as VolumeLoanStatus, CreateVolumeRequest, UpdateVolumeRequest
+};
+pub use borrower::{
+    BorrowerGroup, Borrower, BorrowerWithGroup,
+    CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
+    CreateBorrowerRequest, UpdateBorrowerRequest
+};
+pub use loan::{
+    Loan, LoanStatus, LoanDetail, CreateLoanRequest, ReturnLoanRequest
 };

@@ -1,4 +1,12 @@
-use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest, Volume, CreateVolumeRequest, UpdateVolumeRequest, IsbnLookupResponse};
+use crate::models::{
+    TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest,
+    AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest,
+    UpdatePublisherRequest, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest,
+    Volume, CreateVolumeRequest, UpdateVolumeRequest, IsbnLookupResponse,
+    BorrowerGroup, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
+    BorrowerWithGroup, CreateBorrowerRequest, UpdateBorrowerRequest,
+    LoanDetail, CreateLoanRequest, CreateLoanResponse
+};
 use std::error::Error;
 
 /// API client for communicating with the rbibli backend
@@ -1349,5 +1357,359 @@ impl ApiClient {
             let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
             Err(format!("ISBN lookup failed: {}", error_text).into())
         }
+    }
+
+    // ========== Borrower Groups API ==========
+
+    /// Fetches all borrower groups from the backend API.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<BorrowerGroup>)` - A vector of borrower groups on success
+    /// * `Err(Box<dyn Error>)` - An error if the request fails
+    pub fn get_borrower_groups(&self) -> Result<Vec<BorrowerGroup>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/borrower-groups", self.base_url);
+
+        println!("Fetching borrower groups from: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let groups: Vec<BorrowerGroup> = response.json()?;
+        println!("Successfully fetched {} borrower groups", groups.len());
+
+        Ok(groups)
+    }
+
+    /// Creates a new borrower group.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - The borrower group data including name, loan duration, and description
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The ID of the created group
+    /// * `Err(Box<dyn Error>)` - An error if creation fails
+    pub fn create_borrower_group(&self, request: &CreateBorrowerGroupRequest) -> Result<String, Box<dyn Error>> {
+        let url = format!("{}/api/v1/borrower-groups", self.base_url);
+
+        println!("Creating borrower group: {}", request.name);
+
+        let response = self.client
+            .post(&url)
+            .json(request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to create borrower group: {}", error_text).into());
+        }
+
+        let result: serde_json::Value = response.json()?;
+        let id = result["id"].as_str().unwrap_or("").to_string();
+
+        println!("Successfully created borrower group: {}", id);
+        Ok(id)
+    }
+
+    /// Updates an existing borrower group.
+    ///
+    /// # Arguments
+    ///
+    /// * `group_id` - The ID of the group to update
+    /// * `request` - The updated group data
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Update was successful
+    /// * `Err(Box<dyn Error>)` - An error if update fails
+    pub fn update_borrower_group(&self, group_id: &str, request: &UpdateBorrowerGroupRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/borrower-groups/{}", self.base_url, group_id);
+
+        println!("Updating borrower group: {}", group_id);
+
+        let response = self.client
+            .put(&url)
+            .json(request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to update borrower group: {}", error_text).into());
+        }
+
+        println!("Successfully updated borrower group: {}", group_id);
+        Ok(())
+    }
+
+    /// Deletes a borrower group.
+    ///
+    /// # Arguments
+    ///
+    /// * `group_id` - The ID of the group to delete
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Deletion was successful
+    /// * `Err(Box<dyn Error>)` - An error if deletion fails
+    pub fn delete_borrower_group(&self, group_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/borrower-groups/{}", self.base_url, group_id);
+
+        println!("Deleting borrower group: {}", group_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to delete borrower group: {}", error_text).into());
+        }
+
+        println!("Successfully deleted borrower group: {}", group_id);
+        Ok(())
+    }
+
+    // ========== Borrowers API ==========
+
+    /// Fetches all borrowers with their group information from the backend API.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<BorrowerWithGroup>)` - A vector of borrowers with group info on success
+    /// * `Err(Box<dyn Error>)` - An error if the request fails
+    pub fn get_borrowers(&self) -> Result<Vec<BorrowerWithGroup>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/borrowers", self.base_url);
+
+        println!("Fetching borrowers from: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let borrowers: Vec<BorrowerWithGroup> = response.json()?;
+        println!("Successfully fetched {} borrowers", borrowers.len());
+
+        Ok(borrowers)
+    }
+
+    /// Creates a new borrower.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - The borrower data including name, email, phone, and group
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The ID of the created borrower
+    /// * `Err(Box<dyn Error>)` - An error if creation fails
+    pub fn create_borrower(&self, request: &CreateBorrowerRequest) -> Result<String, Box<dyn Error>> {
+        let url = format!("{}/api/v1/borrowers", self.base_url);
+
+        println!("Creating borrower: {}", request.name);
+
+        let response = self.client
+            .post(&url)
+            .json(request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to create borrower: {}", error_text).into());
+        }
+
+        let result: serde_json::Value = response.json()?;
+        let id = result["id"].as_str().unwrap_or("").to_string();
+
+        println!("Successfully created borrower: {}", id);
+        Ok(id)
+    }
+
+    /// Updates an existing borrower.
+    ///
+    /// # Arguments
+    ///
+    /// * `borrower_id` - The ID of the borrower to update
+    /// * `request` - The updated borrower data
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Update was successful
+    /// * `Err(Box<dyn Error>)` - An error if update fails
+    pub fn update_borrower(&self, borrower_id: &str, request: &UpdateBorrowerRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/borrowers/{}", self.base_url, borrower_id);
+
+        println!("Updating borrower: {}", borrower_id);
+
+        let response = self.client
+            .put(&url)
+            .json(request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to update borrower: {}", error_text).into());
+        }
+
+        println!("Successfully updated borrower: {}", borrower_id);
+        Ok(())
+    }
+
+    /// Deletes a borrower.
+    ///
+    /// # Arguments
+    ///
+    /// * `borrower_id` - The ID of the borrower to delete
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Deletion was successful
+    /// * `Err(Box<dyn Error>)` - An error if deletion fails
+    pub fn delete_borrower(&self, borrower_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/borrowers/{}", self.base_url, borrower_id);
+
+        println!("Deleting borrower: {}", borrower_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to delete borrower: {}", error_text).into());
+        }
+
+        println!("Successfully deleted borrower: {}", borrower_id);
+        Ok(())
+    }
+
+    // ========== Loans API ==========
+
+    /// Fetches all active loans from the backend API.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<LoanDetail>)` - A vector of active loans with full details
+    /// * `Err(Box<dyn Error>)` - An error if the request fails
+    pub fn get_active_loans(&self) -> Result<Vec<LoanDetail>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/loans", self.base_url);
+
+        println!("Fetching active loans from: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let loans: Vec<LoanDetail> = response.json()?;
+        println!("Successfully fetched {} active loans", loans.len());
+
+        Ok(loans)
+    }
+
+    /// Fetches all overdue loans from the backend API.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<LoanDetail>)` - A vector of overdue loans with full details
+    /// * `Err(Box<dyn Error>)` - An error if the request fails
+    pub fn get_overdue_loans(&self) -> Result<Vec<LoanDetail>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/loans/overdue", self.base_url);
+
+        println!("Fetching overdue loans from: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let loans: Vec<LoanDetail> = response.json()?;
+        println!("Successfully fetched {} overdue loans", loans.len());
+
+        Ok(loans)
+    }
+
+    /// Creates a new loan by scanning a barcode.
+    ///
+    /// This method performs the full loan workflow:
+    /// 1. Finds the volume by barcode
+    /// 2. Validates the volume is loanable and available
+    /// 3. Gets the borrower's group loan duration
+    /// 4. Creates the loan record
+    /// 5. Updates the volume status to loaned
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - Contains borrower_id and barcode
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(CreateLoanResponse)` - The created loan details including due date
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - Volume is not found
+    ///   - Volume is not loanable (damaged)
+    ///   - Volume is already loaned
+    ///   - Borrower is not found
+    pub fn create_loan_by_barcode(&self, request: &CreateLoanRequest) -> Result<CreateLoanResponse, Box<dyn Error>> {
+        let url = format!("{}/api/v1/loans", self.base_url);
+
+        println!("Creating loan for borrower: {}, barcode: {}", request.borrower_id, request.barcode);
+
+        let response = self.client
+            .post(&url)
+            .json(request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to create loan: {}", error_text).into());
+        }
+
+        let result: CreateLoanResponse = response.json()?;
+        println!("Successfully created loan: {}", result.id);
+
+        Ok(result)
+    }
+
+    /// Returns a loaned volume.
+    ///
+    /// This method processes a return by:
+    /// 1. Updating the loan record with return date and status
+    /// 2. Updating the volume status to available
+    ///
+    /// # Arguments
+    ///
+    /// * `loan_id` - The ID of the loan to return
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Return was processed successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - Loan is not found
+    ///   - Loan is already returned
+    pub fn return_loan(&self, loan_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/loans/{}/return", self.base_url, loan_id);
+
+        println!("Returning loan: {}", loan_id);
+
+        let response = self.client
+            .post(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to return loan: {}", error_text).into());
+        }
+
+        println!("Successfully returned loan: {}", loan_id);
+        Ok(())
     }
 }

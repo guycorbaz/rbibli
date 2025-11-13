@@ -9,7 +9,12 @@ mod models;
 mod api_client;
 
 use api_client::ApiClient;
-use models::{CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, CreateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest, CreateGenreRequest, UpdateGenreRequest};
+use models::{
+    CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, CreateAuthorRequest,
+    CreatePublisherRequest, UpdatePublisherRequest, CreateGenreRequest, UpdateGenreRequest,
+    CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest, CreateBorrowerRequest,
+    UpdateBorrowerRequest, CreateLoanRequest
+};
 use slint::Model;
 
 slint::include_modules!();
@@ -1235,6 +1240,385 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Load genres on startup
     load_genres();
+
+    // ========================================================================
+    // LOAN MANAGEMENT: Borrower Groups
+    // ========================================================================
+
+    // Function to load borrower groups and populate the UI
+    let load_borrower_groups = {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+
+        move || {
+            println!("Loading borrower groups from backend...");
+
+            match api_client.get_borrower_groups() {
+                Ok(groups_data) => {
+                    println!("Successfully fetched {} borrower groups", groups_data.len());
+
+                    // Convert backend BorrowerGroup to Slint BorrowerGroupData
+                    let slint_groups: Vec<BorrowerGroupData> = groups_data
+                        .iter()
+                        .map(|g| BorrowerGroupData {
+                            id: g.id.clone().into(),
+                            name: g.name.clone().into(),
+                            loan_duration_days: g.loan_duration_days,
+                            description: g.description.clone().unwrap_or_default().into(),
+                        })
+                        .collect();
+
+                    // Create group names array for ComboBox
+                    let group_names: Vec<slint::SharedString> = groups_data
+                        .iter()
+                        .map(|g| format!("{} ({} days)", g.name, g.loan_duration_days).into())
+                        .collect();
+
+                    // Update the UI
+                    if let Some(ui) = ui_weak.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_groups));
+                        ui.set_borrower_groups(model.into());
+
+                        let names_model = Rc::new(slint::VecModel::from(group_names));
+                        ui.set_group_names(names_model.into());
+
+                        println!("UI updated with borrower groups");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch borrower groups: {}", e);
+                }
+            }
+        }
+    };
+
+    // Connect load-borrower-groups callback
+    {
+        let load_borrower_groups = load_borrower_groups.clone();
+        ui.on_load_borrower_groups(move || {
+            load_borrower_groups();
+        });
+    }
+
+    // Handle create borrower group callback
+    {
+        let load_borrower_groups = load_borrower_groups.clone();
+        let api_client = api_client.clone();
+        ui.on_create_borrower_group(move |name, loan_duration_days, description| {
+            println!("Creating borrower group: {}", name);
+
+            let request = CreateBorrowerGroupRequest {
+                name: name.to_string(),
+                loan_duration_days: loan_duration_days as i32,
+                description: if description.is_empty() { None } else { Some(description.to_string()) },
+            };
+
+            match api_client.create_borrower_group(&request) {
+                Ok(id) => {
+                    println!("Successfully created borrower group with ID: {}", id);
+                    load_borrower_groups();
+                }
+                Err(e) => {
+                    eprintln!("Failed to create borrower group: {}", e);
+                }
+            }
+        });
+    }
+
+    // Handle update borrower group callback
+    {
+        let load_borrower_groups = load_borrower_groups.clone();
+        let api_client = api_client.clone();
+        ui.on_update_borrower_group(move |id, name, loan_duration_days, description| {
+            println!("Updating borrower group: {}", id);
+
+            let request = UpdateBorrowerGroupRequest {
+                name: if name.is_empty() { None } else { Some(name.to_string()) },
+                loan_duration_days: Some(loan_duration_days as i32),
+                description: if description.is_empty() { None } else { Some(description.to_string()) },
+            };
+
+            match api_client.update_borrower_group(&id.to_string(), &request) {
+                Ok(_) => {
+                    println!("Successfully updated borrower group");
+                    load_borrower_groups();
+                }
+                Err(e) => {
+                    eprintln!("Failed to update borrower group: {}", e);
+                }
+            }
+        });
+    }
+
+    // Handle delete borrower group callback
+    {
+        let load_borrower_groups = load_borrower_groups.clone();
+        let api_client = api_client.clone();
+        ui.on_delete_borrower_group(move |id| {
+            println!("Deleting borrower group: {}", id);
+
+            match api_client.delete_borrower_group(&id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully deleted borrower group");
+                    load_borrower_groups();
+                }
+                Err(e) => {
+                    eprintln!("Failed to delete borrower group: {}", e);
+                }
+            }
+        });
+    }
+
+    // ========================================================================
+    // LOAN MANAGEMENT: Borrowers
+    // ========================================================================
+
+    // Function to load borrowers and populate the UI
+    let load_borrowers = {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+
+        move || {
+            println!("Loading borrowers from backend...");
+
+            match api_client.get_borrowers() {
+                Ok(borrowers_data) => {
+                    println!("Successfully fetched {} borrowers", borrowers_data.len());
+
+                    // Convert backend BorrowerWithGroup to Slint BorrowerData
+                    let slint_borrowers: Vec<BorrowerData> = borrowers_data
+                        .iter()
+                        .map(|b| BorrowerData {
+                            id: b.borrower.id.clone().into(),
+                            name: b.borrower.name.clone().into(),
+                            email: b.borrower.email.clone().unwrap_or_default().into(),
+                            phone: b.borrower.phone.clone().unwrap_or_default().into(),
+                            address: b.borrower.address.clone().unwrap_or_default().into(),
+                            city: b.borrower.city.clone().unwrap_or_default().into(),
+                            zip: b.borrower.zip.clone().unwrap_or_default().into(),
+                            group_id: b.borrower.group_id.clone().unwrap_or_default().into(),
+                            group_name: b.group_name.clone().unwrap_or_default().into(),
+                            loan_duration_days: b.loan_duration_days.unwrap_or(21),
+                        })
+                        .collect();
+
+                    // Create borrower names array for ComboBox
+                    let borrower_names: Vec<slint::SharedString> = borrowers_data
+                        .iter()
+                        .map(|b| {
+                            let group_name = b.group_name.clone().unwrap_or_else(|| "No Group".to_string());
+                            format!("{} ({})", b.borrower.name, group_name).into()
+                        })
+                        .collect();
+
+                    // Update the UI
+                    if let Some(ui) = ui_weak.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_borrowers));
+                        ui.set_borrowers(model.into());
+
+                        let names_model = Rc::new(slint::VecModel::from(borrower_names));
+                        ui.set_borrower_names(names_model.into());
+
+                        println!("UI updated with borrowers");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch borrowers: {}", e);
+                }
+            }
+        }
+    };
+
+    // Connect load-borrowers callback
+    {
+        let load_borrowers = load_borrowers.clone();
+        ui.on_load_borrowers(move || {
+            load_borrowers();
+        });
+    }
+
+    // Handle create borrower callback
+    {
+        let load_borrowers = load_borrowers.clone();
+        let api_client = api_client.clone();
+        ui.on_create_borrower(move |name, email, phone, address, city, zip, group_id| {
+            println!("Creating borrower: {}", name);
+
+            let request = CreateBorrowerRequest {
+                name: name.to_string(),
+                email: if email.is_empty() { None } else { Some(email.to_string()) },
+                phone: if phone.is_empty() { None } else { Some(phone.to_string()) },
+                address: if address.is_empty() { None } else { Some(address.to_string()) },
+                city: if city.is_empty() { None } else { Some(city.to_string()) },
+                zip: if zip.is_empty() { None } else { Some(zip.to_string()) },
+                group_id: if group_id.is_empty() { None } else { Some(group_id.to_string()) },
+            };
+
+            match api_client.create_borrower(&request) {
+                Ok(id) => {
+                    println!("Successfully created borrower with ID: {}", id);
+                    load_borrowers();
+                }
+                Err(e) => {
+                    eprintln!("Failed to create borrower: {}", e);
+                }
+            }
+        });
+    }
+
+    // Handle update borrower callback
+    {
+        let load_borrowers = load_borrowers.clone();
+        let api_client = api_client.clone();
+        ui.on_update_borrower(move |id, name, email, phone, address, city, zip, group_id| {
+            println!("Updating borrower: {}", id);
+
+            let request = UpdateBorrowerRequest {
+                name: if name.is_empty() { None } else { Some(name.to_string()) },
+                email: if email.is_empty() { None } else { Some(email.to_string()) },
+                phone: if phone.is_empty() { None } else { Some(phone.to_string()) },
+                address: if address.is_empty() { None } else { Some(address.to_string()) },
+                city: if city.is_empty() { None } else { Some(city.to_string()) },
+                zip: if zip.is_empty() { None } else { Some(zip.to_string()) },
+                group_id: if group_id.is_empty() { None } else { Some(group_id.to_string()) },
+            };
+
+            match api_client.update_borrower(&id.to_string(), &request) {
+                Ok(_) => {
+                    println!("Successfully updated borrower");
+                    load_borrowers();
+                }
+                Err(e) => {
+                    eprintln!("Failed to update borrower: {}", e);
+                }
+            }
+        });
+    }
+
+    // Handle delete borrower callback
+    {
+        let load_borrowers = load_borrowers.clone();
+        let api_client = api_client.clone();
+        ui.on_delete_borrower(move |id| {
+            println!("Deleting borrower: {}", id);
+
+            match api_client.delete_borrower(&id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully deleted borrower");
+                    load_borrowers();
+                }
+                Err(e) => {
+                    eprintln!("Failed to delete borrower: {}", e);
+                }
+            }
+        });
+    }
+
+    // ========================================================================
+    // LOAN MANAGEMENT: Loans
+    // ========================================================================
+
+    // Function to load active loans and populate the UI
+    let load_active_loans = {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+
+        move || {
+            println!("Loading active loans from backend...");
+
+            match api_client.get_active_loans() {
+                Ok(loans_data) => {
+                    println!("Successfully fetched {} active loans", loans_data.len());
+
+                    // Convert backend LoanDetail to Slint LoanData
+                    let slint_loans: Vec<LoanData> = loans_data
+                        .iter()
+                        .map(|l| LoanData {
+                            id: l.loan.id.to_string().into(),
+                            title: l.title.clone().into(),
+                            barcode: l.barcode.clone().into(),
+                            borrower_name: l.borrower_name.clone().into(),
+                            borrower_email: l.borrower_email.clone().unwrap_or_default().into(),
+                            loan_date: l.loan.loan_date.format("%Y-%m-%d").to_string().into(),
+                            due_date: l.loan.due_date.format("%Y-%m-%d").to_string().into(),
+                            is_overdue: l.is_overdue,
+                        })
+                        .collect();
+
+                    // Update the UI
+                    if let Some(ui) = ui_weak.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_loans));
+                        ui.set_active_loans(model.into());
+                        println!("UI updated with active loans");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch active loans: {}", e);
+                }
+            }
+        }
+    };
+
+    // Connect load-active-loans callback
+    {
+        let load_active_loans = load_active_loans.clone();
+        ui.on_load_active_loans(move || {
+            load_active_loans();
+        });
+    }
+
+    // Handle create loan callback
+    {
+        let load_active_loans = load_active_loans.clone();
+        let api_client = api_client.clone();
+        ui.on_create_loan(move |borrower_id, barcode| {
+            println!("Creating loan - Borrower: {}, Barcode: {}", borrower_id, barcode);
+
+            let request = CreateLoanRequest {
+                borrower_id: borrower_id.to_string(),
+                barcode: barcode.to_string(),
+            };
+
+            match api_client.create_loan_by_barcode(&request) {
+                Ok(response) => {
+                    let due_date = chrono::DateTime::from_timestamp(response.due_date, 0)
+                        .map(|dt| dt.format("%Y-%m-%d").to_string())
+                        .unwrap_or_else(|| "Unknown".to_string());
+
+                    println!("Successfully created loan with ID: {}", response.id);
+                    println!("Due date: {}, Duration: {} days", due_date, response.loan_duration_days);
+                    load_active_loans();
+                }
+                Err(e) => {
+                    eprintln!("Failed to create loan: {}", e);
+                }
+            }
+        });
+    }
+
+    // Handle return loan callback
+    {
+        let load_active_loans = load_active_loans.clone();
+        let api_client = api_client.clone();
+        ui.on_return_loan(move |loan_id| {
+            println!("Returning loan: {}", loan_id);
+
+            match api_client.return_loan(&loan_id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully returned loan");
+                    load_active_loans();
+                }
+                Err(e) => {
+                    eprintln!("Failed to return loan: {}", e);
+                }
+            }
+        });
+    }
+
+    // Load loan management data on startup
+    load_borrower_groups();
+    load_borrowers();
+    load_active_loans();
 
     ui.run()?;
 

@@ -1,0 +1,193 @@
+use actix_web::{web, HttpResponse, Responder};
+use crate::models::{BorrowerWithGroup, CreateBorrowerRequest, UpdateBorrowerRequest};
+use crate::AppState;
+use log::{info, error};
+use sqlx::Row;
+use uuid::Uuid;
+
+/// GET /api/v1/borrowers - List all borrowers with group info
+pub async fn list_borrowers(data: web::Data<AppState>) -> impl Responder {
+    info!("GET /api/v1/borrowers - Fetching all borrowers");
+
+    let query = "
+        SELECT
+            b.id, b.name, b.email, b.phone, b.address, b.city, b.zip, b.group_id, b.created_at, b.updated_at,
+            g.name as group_name, g.loan_duration_days
+        FROM borrowers b
+        LEFT JOIN borrower_groups g ON b.group_id = g.id
+        ORDER BY b.name
+    ";
+
+    match sqlx::query(query).fetch_all(&data.db_pool).await {
+        Ok(rows) => {
+            let borrowers: Vec<BorrowerWithGroup> = rows
+                .iter()
+                .map(|row| {
+                    let id: String = row.get("id");
+                    let created_at: chrono::NaiveDateTime = row.get("created_at");
+                    let updated_at: chrono::NaiveDateTime = row.get("updated_at");
+
+                    BorrowerWithGroup {
+                        borrower: crate::models::Borrower {
+                            id: Uuid::parse_str(&id).unwrap(),
+                            name: row.get("name"),
+                            email: row.get("email"),
+                            phone: row.get("phone"),
+                            address: row.get("address"),
+                            city: row.get("city"),
+                            zip: row.get("zip"),
+                            group_id: row.get("group_id"),
+                            created_at: chrono::DateTime::from_naive_utc_and_offset(created_at, chrono::Utc),
+                            updated_at: chrono::DateTime::from_naive_utc_and_offset(updated_at, chrono::Utc),
+                        },
+                        group_name: row.get("group_name"),
+                        loan_duration_days: row.get("loan_duration_days"),
+                    }
+                })
+                .collect();
+
+            info!("Successfully fetched {} borrowers", borrowers.len());
+            HttpResponse::Ok().json(borrowers)
+        }
+        Err(e) => {
+            error!("Failed to fetch borrowers: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to fetch borrowers"
+            }))
+        }
+    }
+}
+
+/// POST /api/v1/borrowers - Create a new borrower
+pub async fn create_borrower(
+    request: web::Json<CreateBorrowerRequest>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    info!("POST /api/v1/borrowers - Creating borrower: {}", request.name);
+
+    let id = Uuid::new_v4().to_string();
+
+    match sqlx::query(
+        "INSERT INTO borrowers (id, name, email, phone, address, city, zip, group_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+    )
+    .bind(&id)
+    .bind(&request.name)
+    .bind(&request.email)
+    .bind(&request.phone)
+    .bind(&request.address)
+    .bind(&request.city)
+    .bind(&request.zip)
+    .bind(&request.group_id)
+    .execute(&data.db_pool)
+    .await
+    {
+        Ok(_) => {
+            info!("Successfully created borrower: {}", request.name);
+            HttpResponse::Created().json(serde_json::json!({ "id": id }))
+        }
+        Err(e) => {
+            error!("Failed to create borrower: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to create borrower"
+            }))
+        }
+    }
+}
+
+/// PUT /api/v1/borrowers/{id} - Update a borrower
+pub async fn update_borrower(
+    id: web::Path<String>,
+    request: web::Json<UpdateBorrowerRequest>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    info!("PUT /api/v1/borrowers/{} - Updating borrower", id);
+
+    let mut query_builder = sqlx::QueryBuilder::new("UPDATE borrowers SET ");
+    let mut updates = Vec::new();
+
+    if let Some(name) = &request.name {
+        updates.push(format!("name = '{}'", name));
+    }
+    if let Some(email) = &request.email {
+        updates.push(format!("email = '{}'", email));
+    }
+    if let Some(phone) = &request.phone {
+        updates.push(format!("phone = '{}'", phone));
+    }
+    if let Some(address) = &request.address {
+        updates.push(format!("address = '{}'", address));
+    }
+    if let Some(city) = &request.city {
+        updates.push(format!("city = '{}'", city));
+    }
+    if let Some(zip) = &request.zip {
+        updates.push(format!("zip = '{}'", zip));
+    }
+    if let Some(group_id) = &request.group_id {
+        updates.push(format!("group_id = '{}'", group_id));
+    }
+
+    if updates.is_empty() {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "No fields to update"
+        }));
+    }
+
+    query_builder.push(updates.join(", "));
+    query_builder.push(" WHERE id = '");
+    query_builder.push(id.as_str());
+    query_builder.push("'");
+
+    match query_builder.build().execute(&data.db_pool).await {
+        Ok(result) => {
+            if result.rows_affected() == 0 {
+                HttpResponse::NotFound().json(serde_json::json!({
+                    "error": "Borrower not found"
+                }))
+            } else {
+                info!("Successfully updated borrower: {}", id);
+                HttpResponse::Ok().json(serde_json::json!({ "id": id.as_str() }))
+            }
+        }
+        Err(e) => {
+            error!("Failed to update borrower: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to update borrower"
+            }))
+        }
+    }
+}
+
+/// DELETE /api/v1/borrowers/{id} - Delete a borrower
+pub async fn delete_borrower(
+    id: web::Path<String>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    info!("DELETE /api/v1/borrowers/{} - Deleting borrower", id);
+
+    match sqlx::query("DELETE FROM borrowers WHERE id = ?")
+        .bind(id.as_str())
+        .execute(&data.db_pool)
+        .await
+    {
+        Ok(result) => {
+            if result.rows_affected() == 0 {
+                HttpResponse::NotFound().json(serde_json::json!({
+                    "error": "Borrower not found"
+                }))
+            } else {
+                info!("Successfully deleted borrower: {}", id);
+                HttpResponse::Ok().json(serde_json::json!({
+                    "message": "Borrower deleted successfully"
+                }))
+            }
+        }
+        Err(e) => {
+            error!("Failed to delete borrower: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to delete borrower"
+            }))
+        }
+    }
+}

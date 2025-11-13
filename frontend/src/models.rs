@@ -323,3 +323,175 @@ pub struct IsbnLookupResponse {
     pub cover_image_data: Option<String>,
     pub cover_image_mime_type: Option<String>,
 }
+
+/// BorrowerGroup represents a group of borrowers with specific loan policies
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BorrowerGroup {
+    pub id: String,
+    pub name: String,
+    pub loan_duration_days: i32,
+    pub description: Option<String>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub updated_at: DateTime<Utc>,
+}
+
+/// CreateBorrowerGroupRequest for creating a new borrower group
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateBorrowerGroupRequest {
+    pub name: String,
+    pub loan_duration_days: i32,
+    pub description: Option<String>,
+}
+
+/// UpdateBorrowerGroupRequest for updating a borrower group
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateBorrowerGroupRequest {
+    pub name: Option<String>,
+    pub loan_duration_days: Option<i32>,
+    pub description: Option<String>,
+}
+
+/// Borrower represents a person who can borrow volumes
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Borrower {
+    pub id: String,
+    pub name: String,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub address: Option<String>,
+    pub city: Option<String>,
+    pub zip: Option<String>,
+    pub group_id: Option<String>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub updated_at: DateTime<Utc>,
+}
+
+/// BorrowerWithGroup includes the group information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BorrowerWithGroup {
+    #[serde(flatten)]
+    pub borrower: Borrower,
+    pub group_name: Option<String>,
+    pub loan_duration_days: Option<i32>,
+}
+
+/// CreateBorrowerRequest for creating a new borrower
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateBorrowerRequest {
+    pub name: String,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub address: Option<String>,
+    pub city: Option<String>,
+    pub zip: Option<String>,
+    pub group_id: Option<String>,
+}
+
+/// UpdateBorrowerRequest for updating a borrower
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateBorrowerRequest {
+    pub name: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub address: Option<String>,
+    pub city: Option<String>,
+    pub zip: Option<String>,
+    pub group_id: Option<String>,
+}
+
+/// LoanRecordStatus represents the status of a loan record
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum LoanRecordStatus {
+    #[serde(rename = "active")]
+    Active,
+    #[serde(rename = "returned")]
+    Returned,
+    #[serde(rename = "overdue")]
+    Overdue,
+}
+
+impl std::fmt::Display for LoanRecordStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoanRecordStatus::Active => write!(f, "Active"),
+            LoanRecordStatus::Returned => write!(f, "Returned"),
+            LoanRecordStatus::Overdue => write!(f, "Overdue"),
+        }
+    }
+}
+
+/// Loan represents a loan record
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Loan {
+    pub id: String,
+    pub title_id: String,
+    pub volume_id: String,
+    pub borrower_id: String,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub loan_date: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub due_date: DateTime<Utc>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(with = "optional_ts_seconds")]
+    pub return_date: Option<DateTime<Utc>>,
+    pub status: LoanRecordStatus,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Helper module for optional timestamp serialization
+mod optional_ts_seconds {
+    use chrono::{DateTime, Utc};
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S>(date: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match date {
+            Some(dt) => serializer.serialize_i64(dt.timestamp()),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let opt: Option<i64> = Option::deserialize(deserializer)?;
+        Ok(opt.map(|ts| DateTime::from_timestamp(ts, 0).unwrap()))
+    }
+}
+
+/// LoanDetail includes full information about a loan
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoanDetail {
+    #[serde(flatten)]
+    pub loan: Loan,
+    pub title: String,
+    pub barcode: String,
+    pub borrower_name: String,
+    pub borrower_email: Option<String>,
+    pub is_overdue: bool,
+}
+
+/// CreateLoanRequest for creating a loan by barcode
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateLoanRequest {
+    pub borrower_id: String,
+    pub barcode: String,
+}
+
+/// Response from creating a loan
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateLoanResponse {
+    pub id: String,
+    pub due_date: i64,
+    pub loan_duration_days: i32,
+}
