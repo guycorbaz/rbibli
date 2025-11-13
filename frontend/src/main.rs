@@ -151,10 +151,21 @@ fn main() -> Result<(), Box<dyn Error>> {
                         })
                         .collect();
 
+                    // Extract location full paths for ComboBox model
+                    // Include "(No location)" as first element
+                    let mut location_names: Vec<slint::SharedString> = vec!["(No location)".into()];
+                    location_names.extend(
+                        locations_data
+                            .iter()
+                            .map(|l| l.full_path.clone().into())
+                    );
+
                     // Update the UI with the locations
                     if let Some(ui) = ui_weak.upgrade() {
                         let model = Rc::new(slint::VecModel::from(slint_locations));
                         ui.set_locations(model.into());
+                        let names_model = Rc::new(slint::VecModel::from(location_names));
+                        ui.set_location_names(names_model.into());
                         println!("UI updated with locations");
                     }
                 }
@@ -817,6 +828,177 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to delete title: {}", e);
+                }
+            }
+        });
+    }
+
+    // ==================================================================
+    // Volume Callback Handlers
+    // ==================================================================
+
+    // Handle load volumes callback
+    {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+        ui.on_load_volumes(move |title_id| {
+            println!("Loading volumes for title: {}", title_id);
+
+            match api_client.get_volumes_for_title(&title_id.to_string()) {
+                Ok(volumes) => {
+                    println!("Successfully fetched {} volumes", volumes.len());
+
+                    // Get locations to lookup location names
+                    let locations = match api_client.get_locations() {
+                        Ok(locs) => locs,
+                        Err(e) => {
+                            eprintln!("Failed to fetch locations: {}", e);
+                            Vec::new()
+                        }
+                    };
+
+                    // Convert volumes to Slint format
+                    let slint_volumes: Vec<VolumeData> = volumes
+                        .into_iter()
+                        .map(|v| {
+                            // Lookup location name from ID
+                            let location_name = if let Some(ref loc_id) = v.location_id {
+                                locations
+                                    .iter()
+                                    .find(|loc| &loc.location.id == loc_id)
+                                    .map(|loc| loc.full_path.clone())
+                                    .unwrap_or_default()
+                            } else {
+                                String::new()
+                            };
+
+                            VolumeData {
+                                id: v.id.into(),
+                                title_id: v.title_id.into(),
+                                copy_number: v.copy_number,
+                                barcode: v.barcode.into(),
+                                condition: v.condition.to_string().into(),
+                                location_id: v.location_id.unwrap_or_default().into(),
+                                location_name: location_name.into(),
+                                loan_status: v.loan_status.to_string().into(),
+                                individual_notes: v.individual_notes.unwrap_or_default().into(),
+                            }
+                        })
+                        .collect();
+
+                    let ui = ui_weak.unwrap();
+                    let model = Rc::new(slint::VecModel::from(slint_volumes));
+                    ui.set_volumes(model.into());
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch volumes: {}", e);
+                }
+            }
+        });
+    }
+
+    // Handle create volume callback
+    {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+        ui.on_create_volume(move |title_id, barcode, condition, location_id, notes| {
+            println!("Creating volume for title: {}", title_id);
+
+            let condition_enum = match condition.as_str() {
+                "Excellent" => models::VolumeCondition::Excellent,
+                "Good" => models::VolumeCondition::Good,
+                "Fair" => models::VolumeCondition::Fair,
+                "Poor" => models::VolumeCondition::Poor,
+                "Damaged" => models::VolumeCondition::Damaged,
+                _ => models::VolumeCondition::Good,
+            };
+
+            let request = models::CreateVolumeRequest {
+                title_id: title_id.to_string(),
+                barcode: barcode.to_string(),
+                condition: condition_enum,
+                location_id: if location_id.is_empty() { None } else { Some(location_id.to_string()) },
+                individual_notes: if notes.is_empty() { None } else { Some(notes.to_string()) },
+            };
+
+            match api_client.create_volume(request) {
+                Ok(_) => {
+                    println!("Successfully created volume");
+                    // Reload volumes for this title
+                    let ui = ui_weak.unwrap();
+                    ui.invoke_load_volumes(title_id);
+                }
+                Err(e) => {
+                    eprintln!("Failed to create volume: {}", e);
+                }
+            }
+        });
+    }
+
+    // Handle update volume callback
+    {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+        ui.on_update_volume(move |id, barcode, condition, location_id, notes| {
+            println!("Updating volume: {}", id);
+
+            let condition_enum = if !condition.is_empty() {
+                Some(match condition.as_str() {
+                    "Excellent" => models::VolumeCondition::Excellent,
+                    "Good" => models::VolumeCondition::Good,
+                    "Fair" => models::VolumeCondition::Fair,
+                    "Poor" => models::VolumeCondition::Poor,
+                    "Damaged" => models::VolumeCondition::Damaged,
+                    _ => models::VolumeCondition::Good,
+                })
+            } else {
+                None
+            };
+
+            let request = models::UpdateVolumeRequest {
+                barcode: if barcode.is_empty() { None } else { Some(barcode.to_string()) },
+                condition: condition_enum,
+                location_id: if location_id.is_empty() { None } else { Some(location_id.to_string()) },
+                loan_status: None,
+                individual_notes: if notes.is_empty() { None } else { Some(notes.to_string()) },
+            };
+
+            match api_client.update_volume(&id.to_string(), request) {
+                Ok(_) => {
+                    println!("Successfully updated volume");
+                    // Reload volumes for the current expanded title
+                    let ui = ui_weak.unwrap();
+                    let expanded_title_id = ui.get_expanded_title_id();
+                    if !expanded_title_id.is_empty() {
+                        ui.invoke_load_volumes(expanded_title_id);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to update volume: {}", e);
+                }
+            }
+        });
+    }
+
+    // Handle delete volume callback
+    {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+        ui.on_delete_volume(move |id| {
+            println!("Deleting volume: {}", id);
+
+            match api_client.delete_volume(&id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully deleted volume");
+                    // Reload volumes for the current expanded title
+                    let ui = ui_weak.unwrap();
+                    let expanded_title_id = ui.get_expanded_title_id();
+                    if !expanded_title_id.is_empty() {
+                        ui.invoke_load_volumes(expanded_title_id);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to delete volume: {}", e);
                 }
             }
         });

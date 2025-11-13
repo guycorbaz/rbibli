@@ -28,7 +28,7 @@
 
 import { Button, VerticalBox, ScrollView, StyleMetrics } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, GenreItem, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, GenreItem, VolumeData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData} from "pages/pages.slint";
 import { Styles } from "styles.slint";
 
 // AppWindow - Main application window component
@@ -93,6 +93,9 @@ export component AppWindow inherits Window {
     // Array of storage locations with hierarchical paths
     in-out property <[LocationData]> locations: [];
 
+    // Array of location names (full paths) for ComboBox widgets
+    in-out property <[string]> location-names: [];
+
     // Array of authors with biographical information
     in-out property <[AuthorData]> authors: [];
 
@@ -107,6 +110,12 @@ export component AppWindow inherits Window {
 
     // Array of genre names for ComboBox widgets
     in-out property <[string]> genre-names: [];
+
+    // Array of volumes for the currently expanded title
+    in-out property <[VolumeData]> volumes: [];
+
+    // ID of the title whose volumes are currently expanded
+    in-out property <string> expanded-title-id: "";
 
     // ========================================================================
     // Callbacks - Title Operations
@@ -132,6 +141,27 @@ export component AppWindow inherits Window {
     // Parameter: genre-id (UUID string)
     // Returns: Index position in the dropdown, or -1 if not found
     callback find-genre-index(string) -> int;
+
+    // ========================================================================
+    // Callbacks - Volume Operations
+    // ========================================================================
+
+    // Triggers loading of volumes for a specific title
+    // Parameter: title-id (UUID string)
+    callback load-volumes(string);
+
+    // Creates a new volume for a title
+    // Parameters: title-id, barcode, condition, location-id, notes
+    callback create-volume(string, string, string, string, string);
+
+    // Updates an existing volume's information
+    // Parameters: id, barcode, condition, location-id, notes
+    callback update-volume(string, string, string, string, string);
+
+    // Deletes a volume from the library
+    // Parameter: id (UUID string)
+    // Note: A volume can only be deleted if it is not loaned or overdue
+    callback delete-volume(string);
 
     // ========================================================================
     // Callbacks - Location Operations
@@ -242,6 +272,10 @@ export component AppWindow inherits Window {
             titles: root.titles;
             genres: root.genre-items;
             genre-names: root.genre-names;
+            locations: root.locations;
+            location-names: root.location-names;
+            volumes <=> root.volumes;
+            expanded-title-id <=> root.expanded-title-id;
             load-titles => {
                 root.load-titles();
             }
@@ -256,6 +290,18 @@ export component AppWindow inherits Window {
             }
             find-genre-index(genre-id) => {
                 return root.find-genre-index(genre-id);
+            }
+            load-volumes(title-id) => {
+                root.load-volumes(title-id);
+            }
+            create-volume(title-id, barcode, condition, location-id, notes) => {
+                root.create-volume(title-id, barcode, condition, location-id, notes);
+            }
+            update-volume(id, barcode, condition, location-id, notes) => {
+                root.update-volume(id, barcode, condition, location-id, notes);
+            }
+            delete-volume(id) => {
+                root.delete-volume(id);
             }
         }
 

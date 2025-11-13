@@ -1,5 +1,6 @@
 import { Page } from "page.slint";
 import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, ComboBox } from "std-widgets.slint";
+import { LocationData } from "locations_page.slint";
 
 // Structure to hold title data
 export struct TitleData {
@@ -23,6 +24,19 @@ export struct GenreItem {
     name: string,
 }
 
+// Structure to hold volume data
+export struct VolumeData {
+    id: string,
+    title-id: string,
+    copy-number: int,
+    barcode: string,
+    condition: string,
+    location-id: string,
+    location-name: string,  // Full path of location for display
+    loan-status: string,
+    individual-notes: string,
+}
+
 export component TitlesPage inherits Page {
     title: @tr("Titles");
     description: @tr("Manage your book titles and volumes");
@@ -31,6 +45,8 @@ export component TitlesPage inherits Page {
     in-out property <[TitleData]> titles: [];
     in-out property <[GenreItem]> genres: [];
     in-out property <[string]> genre-names: [];
+    in-out property <[LocationData]> locations: [];
+    in-out property <[string]> location-names: [];
     in-out property <bool> show-create-dialog: false;
     in-out property <string> new-title: "";
     in-out property <string> new-subtitle: "";
@@ -62,12 +78,32 @@ export component TitlesPage inherits Page {
     in-out property <string> delete-title-id: "";
     in-out property <string> delete-title-name: "";
 
+    // Volume-related properties
+    in-out property <[VolumeData]> volumes: [];
+    in-out property <string> expanded-title-id: "";  // Which title has volumes expanded
+    in-out property <bool> show-volume-create-dialog: false;
+    in-out property <bool> show-volume-delete-confirmation: false;
+    in-out property <string> volume-create-title-id: "";
+    in-out property <string> volume-barcode: "";
+    in-out property <string> volume-condition: "Good";
+    in-out property <int> volume-location-index: -1;  // Index in locations dropdown
+    in-out property <string> volume-location-id: "";
+    in-out property <string> volume-notes: "";
+    in-out property <string> delete-volume-id: "";
+    in-out property <string> delete-volume-barcode: "";
+
     // Callback to request loading titles
     callback load-titles();
     callback create-title(string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary
     callback update-title(string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary
     callback delete-title(string); // id
     callback find-genre-index(string) -> int; // Find genre index by ID
+
+    // Volume callbacks
+    callback load-volumes(string); // title-id
+    callback create-volume(string, string, string, string, string); // title-id, barcode, condition, location-id, notes
+    callback update-volume(string, string, string, string, string); // id, barcode, condition, location-id, notes
+    callback delete-volume(string); // id
 
     VerticalBox {
         alignment: stretch;
@@ -549,6 +585,167 @@ export component TitlesPage inherits Page {
             }
         }
 
+        // Volume creation dialog
+        if show-volume-create-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+            width: 600px;
+            height: 450px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 15px;
+
+                Text {
+                    text: @tr("Add New Volume");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Barcode:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.volume-barcode;
+                        placeholder-text: @tr("VOL-XXXXXX");
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Condition:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    ComboBox {
+                        model: ["Excellent", "Good", "Fair", "Poor", "Damaged"];
+                        current-value <=> root.volume-condition;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Location:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    ComboBox {
+                        model: root.location-names;
+                        current-index <=> root.volume-location-index;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Notes:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.volume-notes;
+                        height: 80px;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-volume-create-dialog = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Create");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.volume-barcode != "";
+                        clicked => {
+                            // Convert location index to location ID
+                            // Index 0 = "(No location)" so we subtract 1 for actual locations
+                            root.create-volume(
+                                root.volume-create-title-id,
+                                root.volume-barcode,
+                                root.volume-condition,
+                                root.volume-location-index > 0 ? root.locations[root.volume-location-index - 1].id : "",
+                                root.volume-notes
+                            );
+                            root.show-volume-create-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Volume delete confirmation dialog
+        if show-volume-delete-confirmation: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #cc0000;
+            border-radius: 8px;
+            width: 500px;
+            height: 200px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 20px;
+
+                Text {
+                    text: @tr("Delete Volume?");
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #cc0000;
+                }
+
+                Text {
+                    text: @tr("Are you sure you want to delete this volume?\n\nBarcode: ") + root.delete-volume-barcode;
+                    font-size: 14px;
+                    color: #333;
+                    wrap: word-wrap;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-volume-delete-confirmation = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Delete");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.delete-volume(root.delete-volume-id);
+                            root.show-volume-delete-confirmation = false;
+                        }
+                    }
+                }
+            }
+        }
+
         // List of titles
         if titles.length == 0 && !show-create-dialog && !show-edit-dialog && !show-delete-confirmation: Text {
             text: @tr("No titles found. Click Refresh to load titles from the backend.");
@@ -556,101 +753,255 @@ export component TitlesPage inherits Page {
         }
 
         if titles.length > 0: ListView {
-            for title[index] in titles: Rectangle {
-                height: 80px;
-                border-width: 1px;
-                border-color: #ddd;
-                border-radius: 4px;
-                background: Math.mod(index, 2) == 0 ? #fafafa : white;
+            for title[index] in titles: VerticalBox {
+                spacing: 0px;
 
-                HorizontalLayout {
-                    padding: 8px;
-                    spacing: 10px;
+                // Title row
+                Rectangle {
+                    height: 80px;
+                    border-width: 1px;
+                    border-color: #ddd;
+                    border-radius: 4px;
+                    background: Math.mod(index, 2) == 0 ? #fafafa : white;
 
-                    VerticalLayout {
-                        alignment: start;
-                        spacing: 4px;
+                    HorizontalLayout {
+                        padding: 8px;
+                        spacing: 10px;
 
-                        Text {
-                            text: title.title;
-                            font-size: 15px;
-                            font-weight: 600;
-                            overflow: elide;
-                        }
+                        VerticalLayout {
+                            alignment: start;
+                            spacing: 4px;
 
-                        if title.subtitle != "": Text {
-                            text: title.subtitle;
-                            font-size: 13px;
-                            color: #666;
-                            overflow: elide;
-                        }
-
-                        HorizontalBox {
-                            spacing: 15px;
-
-                            if title.isbn != "": Text {
-                                text: "ISBN: " + title.isbn;
-                                font-size: 11px;
-                                color: #888;
-                            }
-
-                            if title.publisher != "": Text {
-                                text: title.publisher;
-                                font-size: 11px;
-                                color: #888;
+                            Text {
+                                text: title.title;
+                                font-size: 15px;
+                                font-weight: 600;
                                 overflow: elide;
                             }
 
-                            Text {
-                                text: "Volumes: " + title.volume-count;
-                                font-size: 11px;
-                                color: #0066cc;
-                                font-weight: 600;
+                            if title.subtitle != "": Text {
+                                text: title.subtitle;
+                                font-size: 13px;
+                                color: #666;
+                                overflow: elide;
                             }
 
-                            Text {
-                                text: title.language;
-                                font-size: 11px;
-                                color: #888;
+                            HorizontalBox {
+                                spacing: 15px;
+
+                                if title.isbn != "": Text {
+                                    text: "ISBN: " + title.isbn;
+                                    font-size: 11px;
+                                    color: #888;
+                                }
+
+                                if title.publisher != "": Text {
+                                    text: title.publisher;
+                                    font-size: 11px;
+                                    color: #888;
+                                    overflow: elide;
+                                }
+
+                                Text {
+                                    text: "Volumes: " + title.volume-count;
+                                    font-size: 11px;
+                                    color: #0066cc;
+                                    font-weight: 600;
+                                }
+
+                                Text {
+                                    text: title.language;
+                                    font-size: 11px;
+                                    color: #888;
+                                }
+                            }
+                        }
+
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 5px;
+                            width: 180px;
+
+                            HorizontalBox {
+                                spacing: 5px;
+
+                                Button {
+                                    text: @tr("Edit");
+                                    min-width: 80px;
+                                    height: 32px;
+                                    clicked => {
+                                        root.edit-id = title.id;
+                                        root.edit-title = title.title;
+                                        root.edit-subtitle = title.subtitle;
+                                        root.edit-isbn = title.isbn;
+                                        root.edit-publisher = title.publisher;
+                                        root.edit-publication-year = title.publication-year;
+                                        root.edit-pages = title.pages;
+                                        root.edit-language = title.language;
+                                        root.edit-genre-id = title.genre-id;
+                                        // Find the genre index for this genre_id
+                                        root.edit-genre-index = root.find-genre-index(title.genre-id);
+                                        root.edit-summary = title.summary;
+                                        root.show-edit-dialog = true;
+                                    }
+                                }
+
+                                Button {
+                                    text: @tr("Delete");
+                                    min-width: 80px;
+                                    height: 32px;
+                                    enabled: title.volume-count == 0;
+                                    clicked => {
+                                        root.delete-title-id = title.id;
+                                        root.delete-title-name = title.title;
+                                        root.show-delete-confirmation = true;
+                                    }
+                                }
+                            }
+
+                            Button {
+                                text: root.expanded-title-id == title.id ? @tr("▲ Hide Volumes") : @tr("▼ Show Volumes");
+                                min-width: 170px;
+                                height: 32px;
+                                clicked => {
+                                    if (root.expanded-title-id == title.id) {
+                                        root.expanded-title-id = "";
+                                        root.volumes = [];
+                                    } else {
+                                        root.expanded-title-id = title.id;
+                                        root.load-volumes(title.id);
+                                    }
+                                }
                             }
                         }
                     }
+                }
 
-                    VerticalLayout {
-                        alignment: center;
-                        spacing: 5px;
-                        width: 90px;
+                // Expanded volumes section
+                if root.expanded-title-id == title.id: Rectangle {
+                    border-width: 1px;
+                    border-color: #ccc;
+                    background: #f5f5f5;
 
-                        Button {
-                            text: @tr("Edit");
-                            min-width: 80px;
-                            height: 32px;
-                            clicked => {
-                                root.edit-id = title.id;
-                                root.edit-title = title.title;
-                                root.edit-subtitle = title.subtitle;
-                                root.edit-isbn = title.isbn;
-                                root.edit-publisher = title.publisher;
-                                root.edit-publication-year = title.publication-year;
-                                root.edit-pages = title.pages;
-                                root.edit-language = title.language;
-                                root.edit-genre-id = title.genre-id;
-                                // Find the genre index for this genre_id
-                                root.edit-genre-index = root.find-genre-index(title.genre-id);
-                                root.edit-summary = title.summary;
-                                root.show-edit-dialog = true;
+                    VerticalBox {
+                        padding: 10px;
+                        spacing: 8px;
+
+                        HorizontalBox {
+                            spacing: 10px;
+                            alignment: space-between;
+
+                            Text {
+                                text: @tr("Volumes for this title:");
+                                font-size: 13px;
+                                font-weight: 600;
+                            }
+
+                            Button {
+                                text: @tr("+ Add Volume");
+                                primary: true;
+                                min-width: 120px;
+                                height: 30px;
+                                clicked => {
+                                    root.volume-create-title-id = title.id;
+                                    root.volume-barcode = "";
+                                    root.volume-condition = "Good";
+                                    root.volume-location-index = 0;  // Default to "(No location)"
+                                    root.volume-location-id = "";
+                                    root.volume-notes = "";
+                                    root.show-volume-create-dialog = true;
+                                }
                             }
                         }
 
-                        Button {
-                            text: @tr("Delete");
-                            min-width: 80px;
-                            height: 32px;
-                            enabled: title.volume-count == 0;
-                            clicked => {
-                                root.delete-title-id = title.id;
-                                root.delete-title-name = title.title;
-                                root.show-delete-confirmation = true;
+                        if root.volumes.length == 0: Text {
+                            text: @tr("No volumes found for this title.");
+                            font-size: 12px;
+                            color: #888;
+                        }
+
+                        if root.volumes.length > 0: VerticalBox {
+                            spacing: 5px;
+
+                            for volume in root.volumes: Rectangle {
+                                height: 80px;
+                                background: white;
+                                border-width: 1px;
+                                border-color: #ddd;
+                                border-radius: 3px;
+
+                                HorizontalLayout {
+                                    padding: 8px;
+                                    spacing: 10px;
+
+                                    VerticalLayout {
+                                        alignment: start;
+                                        spacing: 3px;
+
+                                        HorizontalBox {
+                                            spacing: 15px;
+
+                                            Text {
+                                                text: "Copy #" + volume.copy-number;
+                                                font-size: 13px;
+                                                font-weight: 600;
+                                            }
+
+                                            Text {
+                                                text: "Barcode: " + volume.barcode;
+                                                font-size: 12px;
+                                                color: #444;
+                                            }
+
+                                            Text {
+                                                text: "Condition: " + volume.condition;
+                                                font-size: 12px;
+                                                color: #666;
+                                            }
+
+                                            Text {
+                                                text: "Status: " + volume.loan-status;
+                                                font-size: 12px;
+                                                color: volume.loan-status == "Available" ? #008800 : #cc0000;
+                                                font-weight: 600;
+                                            }
+                                        }
+
+                                        HorizontalBox {
+                                            spacing: 15px;
+
+                                            if volume.location-name != "": Text {
+                                                text: "📍 " + volume.location-name;
+                                                font-size: 12px;
+                                                color: #0066cc;
+                                            }
+                                        }
+
+                                        if volume.individual-notes != "": Text {
+                                            text: @tr("Notes: ") + volume.individual-notes;
+                                            font-size: 11px;
+                                            color: #666;
+                                            overflow: elide;
+                                        }
+                                    }
+
+                                    VerticalLayout {
+                                        alignment: center;
+                                        width: 90px;
+
+                                        Button {
+                                            text: @tr("Delete");
+                                            min-width: 80px;
+                                            height: 32px;
+                                            enabled: volume.loan-status != "Loaned" && volume.loan-status != "Overdue";
+                                            clicked => {
+                                                root.delete-volume-id = volume.id;
+                                                root.delete-volume-barcode = volume.barcode;
+                                                root.show-volume-delete-confirmation = true;
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

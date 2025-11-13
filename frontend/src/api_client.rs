@@ -1,4 +1,4 @@
-use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest};
+use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest, Volume, CreateVolumeRequest, UpdateVolumeRequest};
 use std::error::Error;
 
 /// API client for communicating with the rbibli backend
@@ -1070,6 +1070,156 @@ impl ApiClient {
         }
 
         println!("Successfully deleted genre: {}", genre_id);
+
+        Ok(())
+    }
+
+    // ========================================================================
+    // Volume Operations
+    // ========================================================================
+
+    /// Fetches all volumes for a specific title from the backend API.
+    ///
+    /// This method makes a GET request to `/api/v1/titles/{title_id}/volumes` to retrieve
+    /// all physical volumes (copies) associated with a specific title.
+    ///
+    /// # Arguments
+    ///
+    /// * `title_id` - The UUID of the title to fetch volumes for
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<Volume>)` - A vector of volumes for the title on success
+    /// * `Err(Box<dyn Error>)` - An error if the request fails
+    pub fn get_volumes_for_title(&self, title_id: &str) -> Result<Vec<Volume>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/titles/{}/volumes", self.base_url, title_id);
+
+        println!("Fetching volumes for title: {}", title_id);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let volumes: Vec<Volume> = response.json()?;
+
+        println!("Successfully fetched {} volumes", volumes.len());
+
+        Ok(volumes)
+    }
+
+    /// Creates a new volume for a title.
+    ///
+    /// This method makes a POST request to `/api/v1/volumes` to create a new physical
+    /// volume. The copy_number is automatically calculated by the backend.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - A `CreateVolumeRequest` containing:
+    ///   - `title_id`: The title this volume belongs to
+    ///   - `barcode`: Unique barcode (VOL-XXXXXX format)
+    ///   - `condition`: Physical condition of the volume
+    ///   - `location_id`: Optional location where volume is stored
+    ///   - `individual_notes`: Optional notes about this specific volume
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Volume created successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The barcode is invalid or already exists (409 Conflict)
+    ///   - The HTTP request fails
+    ///   - The title ID is not found
+    pub fn create_volume(&self, request: CreateVolumeRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/volumes", self.base_url);
+
+        println!("Creating volume with barcode: {}", request.barcode);
+
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to create volume: {}", error_text).into());
+        }
+
+        println!("Successfully created volume");
+
+        Ok(())
+    }
+
+    /// Updates an existing volume's information.
+    ///
+    /// This method makes a PUT request to `/api/v1/volumes/{id}` to update
+    /// a volume's details. Only provided fields will be updated (partial update).
+    ///
+    /// # Arguments
+    ///
+    /// * `volume_id` - The UUID of the volume to update
+    /// * `request` - An `UpdateVolumeRequest` with fields to update
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Volume updated successfully
+    /// * `Err(Box<dyn Error>)` - An error if the request fails or volume not found
+    pub fn update_volume(&self, volume_id: &str, request: UpdateVolumeRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/volumes/{}", self.base_url, volume_id);
+
+        println!("Updating volume: {}", volume_id);
+
+        let response = self.client
+            .put(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to update volume: {}", error_text).into());
+        }
+
+        println!("Successfully updated volume: {}", volume_id);
+
+        Ok(())
+    }
+
+    /// Deletes a volume from the library.
+    ///
+    /// This method makes a DELETE request to `/api/v1/volumes/{id}` to permanently
+    /// remove a physical volume from the system.
+    ///
+    /// # Arguments
+    ///
+    /// * `volume_id` - The UUID of the volume to delete
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Volume deleted successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The volume is currently loaned or overdue (409 Conflict)
+    ///   - The volume ID is not found (404)
+    ///   - The HTTP request fails
+    ///
+    /// # Business Rules
+    ///
+    /// A volume cannot be deleted if it is currently loaned or overdue.
+    /// The backend will return a 409 Conflict error in this case.
+    pub fn delete_volume(&self, volume_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/volumes/{}", self.base_url, volume_id);
+
+        println!("Deleting volume: {}", volume_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to delete volume: {}", error_text).into());
+        }
+
+        println!("Successfully deleted volume: {}", volume_id);
 
         Ok(())
     }

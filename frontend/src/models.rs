@@ -211,3 +211,94 @@ pub struct UpdateGenreRequest {
     pub name: Option<String>,
     pub description: Option<String>,
 }
+
+/// VolumeCondition represents the physical condition of a volume
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum VolumeCondition {
+    #[serde(rename = "Excellent")]
+    Excellent,
+    #[serde(rename = "Good")]
+    Good,
+    #[serde(rename = "Fair")]
+    Fair,
+    #[serde(rename = "Poor")]
+    Poor,
+    #[serde(rename = "Damaged")]
+    Damaged,
+}
+
+impl std::fmt::Display for VolumeCondition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VolumeCondition::Excellent => write!(f, "Excellent"),
+            VolumeCondition::Good => write!(f, "Good"),
+            VolumeCondition::Fair => write!(f, "Fair"),
+            VolumeCondition::Poor => write!(f, "Poor"),
+            VolumeCondition::Damaged => write!(f, "Damaged"),
+        }
+    }
+}
+
+/// LoanStatus represents the current loan status of a volume
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum LoanStatus {
+    #[serde(rename = "Available")]
+    Available,
+    #[serde(rename = "Loaned")]
+    Loaned,
+    #[serde(rename = "Overdue")]
+    Overdue,
+    #[serde(rename = "Lost")]
+    Lost,
+    #[serde(rename = "Maintenance")]
+    Maintenance,
+}
+
+impl std::fmt::Display for LoanStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LoanStatus::Available => write!(f, "Available"),
+            LoanStatus::Loaned => write!(f, "Loaned"),
+            LoanStatus::Overdue => write!(f, "Overdue"),
+            LoanStatus::Lost => write!(f, "Lost"),
+            LoanStatus::Maintenance => write!(f, "Maintenance"),
+        }
+    }
+}
+
+/// Volume represents a physical copy of a title
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Volume {
+    pub id: String,
+    pub title_id: String,
+    pub copy_number: i32,
+    pub barcode: String,
+    pub condition: VolumeCondition,
+    pub location_id: Option<String>,
+    pub loan_status: LoanStatus,
+    pub individual_notes: Option<String>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub updated_at: DateTime<Utc>,
+}
+
+/// CreateVolumeRequest for creating a new volume
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateVolumeRequest {
+    pub title_id: String,
+    pub barcode: String,
+    pub condition: VolumeCondition,
+    pub location_id: Option<String>,
+    pub individual_notes: Option<String>,
+}
+
+/// UpdateVolumeRequest for updating an existing volume
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateVolumeRequest {
+    pub barcode: Option<String>,
+    pub condition: Option<VolumeCondition>,
+    pub location_id: Option<String>,
+    pub loan_status: Option<LoanStatus>,
+    pub individual_notes: Option<String>,
+}
