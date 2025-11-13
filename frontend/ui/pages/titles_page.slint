@@ -61,6 +61,7 @@ export component TitlesPage inherits Page {
     callback load-titles();
     callback create-title(string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary
     callback update-title(string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary
+    callback delete-title(string); // id
     callback find-genre-index(string) -> int; // Find genre index by ID
 
     VerticalBox {
@@ -579,6 +580,16 @@ export component TitlesPage inherits Page {
                                 root.edit-genre-index = root.find-genre-index(title.genre-id);
                                 root.edit-summary = title.summary;
                                 root.show-edit-dialog = true;
+                            }
+                        }
+
+                        Button {
+                            text: @tr("Delete");
+                            min-width: 80px;
+                            height: 32px;
+                            enabled: title.volume-count == 0;
+                            clicked => {
+                                root.delete-title(title.id);
                             }
                         }
                     }

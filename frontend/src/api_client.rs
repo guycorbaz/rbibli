@@ -221,6 +221,64 @@ impl ApiClient {
         Ok(())
     }
 
+    /// Deletes a title from the library.
+    ///
+    /// This method makes a DELETE request to `/api/v1/titles/{id}` to remove a title
+    /// from the library database. A title can only be deleted if it has no physical
+    /// volumes (copies) associated with it. This business rule prevents accidental
+    /// deletion of titles that still have physical inventory.
+    ///
+    /// # Arguments
+    ///
+    /// * `title_id` - The UUID of the title to delete
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - The title was successfully deleted
+    /// * `Err(Box<dyn Error>)` - An error occurred:
+    ///   - The HTTP request failed
+    ///   - The title was not found (404)
+    ///   - The title has volumes and cannot be deleted (409 Conflict)
+    ///   - The server returned another error
+    ///
+    /// # Business Rules
+    ///
+    /// - A title can only be deleted if it has 0 volumes
+    /// - If the title has volumes, a 409 Conflict error is returned
+    /// - All volumes must be deleted before the title can be deleted
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// let title_id = "550e8400-e29b-41d4-a716-446655440000";
+    ///
+    /// match client.delete_title(title_id) {
+    ///     Ok(()) => println!("Title deleted successfully"),
+    ///     Err(e) => eprintln!("Failed to delete title: {}", e),
+    /// }
+    /// ```
+    pub fn delete_title(&self, title_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/titles/{}", self.base_url, title_id);
+
+        println!("Deleting title: {}", title_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to delete title: {}", error_text).into());
+        }
+
+        println!("Successfully deleted title: {}", title_id);
+
+        Ok(())
+    }
+
     /// Fetches all storage locations with their full hierarchical paths.
     ///
     /// This method makes a GET request to `/api/v1/locations` to retrieve all physical

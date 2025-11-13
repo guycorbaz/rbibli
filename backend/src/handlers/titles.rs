@@ -459,3 +459,152 @@ pub async fn update_title(
         }
     }
 }
+
+/// Deletes a title from the library.
+///
+/// **Endpoint**: `DELETE /api/v1/titles/{id}`
+///
+/// This handler deletes a title from the database. A title can only be deleted if it has
+/// no physical volumes (copies) associated with it. This business rule ensures that
+/// physical inventory is not lost by accidentally deleting a title that still has copies.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `id` - Path parameter containing the title's UUID to delete
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` (200) if the title was successfully deleted
+/// * `HttpResponse::NotFound` (404) if no title exists with the given ID
+/// * `HttpResponse::Conflict` (409) if the title has volumes and cannot be deleted
+/// * `HttpResponse::InternalServerError` (500) if the database operation fails
+///
+/// # Response Format
+///
+/// Success:
+/// ```json
+/// {
+///   "message": "Title deleted successfully"
+/// }
+/// ```
+///
+/// Error (has volumes):
+/// ```json
+/// {
+///   "error": {
+///     "code": "HAS_VOLUMES",
+///     "message": "Cannot delete title with existing volumes",
+///     "details": {
+///       "volume_count": 3
+///     }
+///   }
+/// }
+/// ```
+///
+/// # Business Rules
+///
+/// - A title can only be deleted if `volume_count == 0`
+/// - Titles with volumes must have all volumes deleted first
+/// - This prevents accidental data loss of physical inventory
+pub async fn delete_title(
+    data: web::Data<AppState>,
+    id: web::Path<String>,
+) -> impl Responder {
+    info!("DELETE /api/v1/titles/{} - Attempting to delete title", id);
+
+    // First, check if the title has any volumes
+    let check_query = r#"
+        SELECT COUNT(v.id) as volume_count
+        FROM titles t
+        LEFT JOIN volumes v ON t.id = v.title_id
+        WHERE t.id = ?
+        GROUP BY t.id
+    "#;
+
+    match sqlx::query(check_query)
+        .bind(id.as_str())
+        .fetch_optional(&data.db_pool)
+        .await
+    {
+        Ok(Some(row)) => {
+            let volume_count: i64 = row.get("volume_count");
+
+            if volume_count > 0 {
+                warn!("Cannot delete title {} - has {} volumes", id, volume_count);
+                return HttpResponse::Conflict().json(serde_json::json!({
+                    "error": {
+                        "code": "HAS_VOLUMES",
+                        "message": "Cannot delete title with existing volumes",
+                        "details": {
+                            "volume_count": volume_count
+                        }
+                    }
+                }));
+            }
+
+            // Title has no volumes, proceed with deletion
+            debug!("Title {} has no volumes, proceeding with deletion", id);
+        }
+        Ok(None) => {
+            // Title not found
+            warn!("Title {} not found", id);
+            return HttpResponse::NotFound().json(serde_json::json!({
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": "Title not found"
+                }
+            }));
+        }
+        Err(e) => {
+            error!("Database error while checking title volumes: {}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to check title volumes",
+                    "details": {
+                        "error": e.to_string()
+                    }
+                }
+            }));
+        }
+    }
+
+    // Delete the title
+    let delete_query = "DELETE FROM titles WHERE id = ?";
+
+    match sqlx::query(delete_query)
+        .bind(id.as_str())
+        .execute(&data.db_pool)
+        .await
+    {
+        Ok(result) => {
+            if result.rows_affected() == 0 {
+                warn!("Title {} not found during deletion", id);
+                HttpResponse::NotFound().json(serde_json::json!({
+                    "error": {
+                        "code": "NOT_FOUND",
+                        "message": "Title not found"
+                    }
+                }))
+            } else {
+                info!("Successfully deleted title {}", id);
+                HttpResponse::Ok().json(serde_json::json!({
+                    "message": "Title deleted successfully"
+                }))
+            }
+        }
+        Err(e) => {
+            error!("Database error while deleting title: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to delete title",
+                    "details": {
+                        "error": e.to_string()
+                    }
+                }
+            }))
+        }
+    }
+}

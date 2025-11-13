@@ -123,6 +123,11 @@ export component AppWindow inherits Window {
     // Parameters: id, title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary
     callback update-title(string, string, string, string, string, string, string, string, string, string);
 
+    // Deletes a title from the library
+    // Parameter: id (UUID string)
+    // Note: A title can only be deleted if it has no volumes (volume_count == 0)
+    callback delete-title(string);
+
     // Finds the index of a genre in the genre dropdown list
     // Parameter: genre-id (UUID string)
     // Returns: Index position in the dropdown, or -1 if not found
@@ -245,6 +250,9 @@ export component AppWindow inherits Window {
             }
             update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary) => {
                 root.update-title(id, title, subtitle, isbn, publisher, publication-year, pages, language, genre-id, summary);
+            }
+            delete-title(id) => {
+                root.delete-title(id);
             }
             find-genre-index(genre-id) => {
                 return root.find-genre-index(genre-id);

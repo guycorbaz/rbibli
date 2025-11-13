@@ -803,6 +803,25 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Handle delete title callback
+    {
+        let load_titles = load_titles.clone();
+        let api_client = api_client.clone();
+        ui.on_delete_title(move |id| {
+            println!("Deleting title: {}", id);
+
+            match api_client.delete_title(&id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully deleted title");
+                    load_titles();
+                }
+                Err(e) => {
+                    eprintln!("Failed to delete title: {}", e);
+                }
+            }
+        });
+    }
+
     // Load titles on startup
     load_titles();
 
