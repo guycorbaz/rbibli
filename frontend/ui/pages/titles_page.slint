@@ -57,6 +57,11 @@ export component TitlesPage inherits Page {
     in-out property <string> edit-genre-id: "";
     in-out property <string> edit-summary: "";
 
+    // Delete confirmation dialog properties
+    in-out property <bool> show-delete-confirmation: false;
+    in-out property <string> delete-title-id: "";
+    in-out property <string> delete-title-name: "";
+
     // Callback to request loading titles
     callback load-titles();
     callback create-title(string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publication_year, pages, language, genre_id, summary
@@ -490,8 +495,62 @@ export component TitlesPage inherits Page {
             }
         }
 
+        // Delete confirmation dialog
+        if show-delete-confirmation: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #cc0000;
+            border-radius: 8px;
+            width: 500px;
+            height: 200px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 20px;
+
+                Text {
+                    text: @tr("Delete Title?");
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #cc0000;
+                }
+
+                Text {
+                    text: @tr("Are you sure you want to delete this title?\n\n") + "\"" + root.delete-title-name + "\"";
+                    font-size: 14px;
+                    color: #333;
+                    wrap: word-wrap;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-delete-confirmation = false;
+                        }
+                    }
+
+                    Button {
+                        text: @tr("Delete");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.delete-title(root.delete-title-id);
+                            root.show-delete-confirmation = false;
+                        }
+                    }
+                }
+            }
+        }
+
         // List of titles
-        if titles.length == 0 && !show-create-dialog && !show-edit-dialog: Text {
+        if titles.length == 0 && !show-create-dialog && !show-edit-dialog && !show-delete-confirmation: Text {
             text: @tr("No titles found. Click Refresh to load titles from the backend.");
             color: #888;
         }
@@ -589,7 +648,9 @@ export component TitlesPage inherits Page {
                             height: 32px;
                             enabled: title.volume-count == 0;
                             clicked => {
-                                root.delete-title(title.id);
+                                root.delete-title-id = title.id;
+                                root.delete-title-name = title.title;
+                                root.show-delete-confirmation = true;
                             }
                         }
                     }
