@@ -6,6 +6,7 @@ pub mod genre;
 pub mod volume;
 pub mod borrower;
 pub mod loan;
+pub mod dewey;
 
 pub use title::{Title, TitleWithCount, CreateTitleRequest, UpdateTitleRequest};
 pub use location::{Location, LocationWithPath, CreateLocationRequest, UpdateLocationRequest};
@@ -29,4 +30,7 @@ pub use borrower::{
 };
 pub use loan::{
     Loan, LoanStatus, LoanDetail, CreateLoanRequest, ReturnLoanRequest
+};
+pub use dewey::{
+    DeweyClassification, DeweySearchResult, DeweySearchQuery, DeweyBrowseQuery
 };

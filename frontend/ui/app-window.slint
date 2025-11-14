@@ -131,6 +131,8 @@ export component AppWindow inherits Window {
     in-out property <string> new-publication-year: "";
     in-out property <string> new-pages: "";
     in-out property <string> new-language: "fr";
+    in-out property <string> new-dewey-code: "";
+    in-out property <string> new-dewey-category: "";
     in-out property <string> new-summary: "";
 
     in-out property <string> edit-title: "";
@@ -140,6 +142,8 @@ export component AppWindow inherits Window {
     in-out property <string> edit-publication-year: "";
     in-out property <string> edit-pages: "";
     in-out property <string> edit-language: "";
+    in-out property <string> edit-dewey-code: "";
+    in-out property <string> edit-dewey-category: "";
     in-out property <string> edit-summary: "";
 
     // ========================================================================
@@ -150,12 +154,16 @@ export component AppWindow inherits Window {
     callback load-titles();
 
     // Creates a new title in the library
-    // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url
-    callback create-title(string, string, string, string, string, string, string, string, string, string, string);
+    // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category
+    callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string);
 
     // Updates an existing title's information
-    // Parameters: id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url
-    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string);
+    // Parameters: id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category
+    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string);
+
+    // Search Dewey classification
+    callback search-dewey(string);
+    callback search-dewey-edit(string);
 
     // Deletes a title from the library
     // Parameter: id (UUID string)
@@ -403,6 +411,8 @@ export component AppWindow inherits Window {
             new-publication-year <=> root.new-publication-year;
             new-pages <=> root.new-pages;
             new-language <=> root.new-language;
+            new-dewey-code <=> root.new-dewey-code;
+            new-dewey-category <=> root.new-dewey-category;
             new-summary <=> root.new-summary;
             edit-title <=> root.edit-title;
             edit-subtitle <=> root.edit-subtitle;
@@ -411,15 +421,23 @@ export component AppWindow inherits Window {
             edit-publication-year <=> root.edit-publication-year;
             edit-pages <=> root.edit-pages;
             edit-language <=> root.edit-language;
+            edit-dewey-code <=> root.edit-dewey-code;
+            edit-dewey-category <=> root.edit-dewey-category;
             edit-summary <=> root.edit-summary;
             load-titles => {
                 root.load-titles();
             }
-            create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url) => {
-                root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url);
+            create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category) => {
+                root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category);
             }
-            update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url) => {
-                root.update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url);
+            update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category) => {
+                root.update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category);
+            }
+            search-dewey(query) => {
+                root.search-dewey(query);
+            }
+            search-dewey-edit(query) => {
+                root.search-dewey-edit(query);
             }
             delete-title(id) => {
                 root.delete-title(id);

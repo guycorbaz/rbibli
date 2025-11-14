@@ -5,7 +5,8 @@ use crate::models::{
     Volume, CreateVolumeRequest, UpdateVolumeRequest, IsbnLookupResponse,
     BorrowerGroup, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
     BorrowerWithGroup, CreateBorrowerRequest, UpdateBorrowerRequest,
-    LoanDetail, CreateLoanRequest, CreateLoanResponse
+    LoanDetail, CreateLoanRequest, CreateLoanResponse,
+    DeweySearchResult
 };
 use std::error::Error;
 
@@ -1711,5 +1712,73 @@ impl ApiClient {
 
         println!("Successfully returned loan: {}", loan_id);
         Ok(())
+    }
+
+    // ========================================================================
+    // Dewey Classification API Methods
+    // ========================================================================
+
+    /// Search Dewey classifications by keyword
+    ///
+    /// # Arguments
+    ///
+    /// * `query` - Search query string (e.g., "mathematics", "poetry")
+    /// * `limit` - Maximum number of results to return (default: 20)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<DeweySearchResult>)` - List of matching classifications
+    /// * `Err` - If the request fails
+    pub fn search_dewey(&self, query: &str, limit: Option<i32>) -> Result<Vec<DeweySearchResult>, Box<dyn Error>> {
+        let limit = limit.unwrap_or(20);
+        let url = format!("{}/api/v1/dewey/search?q={}&limit={}",
+            self.base_url,
+            urlencoding::encode(query),
+            limit
+        );
+
+        println!("Searching Dewey: query='{}', limit={}", query, limit);
+
+        let response = self.client
+            .get(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to search Dewey: {}", error_text).into());
+        }
+
+        let results: Vec<DeweySearchResult> = response.json()?;
+        println!("Found {} Dewey classifications", results.len());
+        Ok(results)
+    }
+
+    /// Get Dewey classification by code
+    ///
+    /// # Arguments
+    ///
+    /// * `code` - Dewey code (e.g., "515", "813.5")
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(DeweySearchResult)` - The classification details
+    /// * `Err` - If the request fails or classification not found
+    pub fn get_dewey_by_code(&self, code: &str) -> Result<DeweySearchResult, Box<dyn Error>> {
+        let url = format!("{}/api/v1/dewey/{}", self.base_url, code);
+
+        println!("Getting Dewey classification: {}", code);
+
+        let response = self.client
+            .get(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to get Dewey classification: {}", error_text).into());
+        }
+
+        let classification: DeweySearchResult = response.json()?;
+        println!("Found classification: {} - {}", classification.code, classification.name);
+        Ok(classification)
     }
 }

@@ -113,6 +113,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                             pages: t.title.pages.map(|p| p.to_string()).unwrap_or_default().into(),
                             genre: t.title.genre.clone().unwrap_or_default().into(),
                             genre_id: t.title.genre_id.clone().unwrap_or_default().into(),
+                            dewey_code: t.title.dewey_code.clone().unwrap_or_default().into(),
+                            dewey_category: t.title.dewey_category.clone().unwrap_or_default().into(),
                             summary: t.title.summary.clone().unwrap_or_default().into(),
                             cover_url: t.title.cover_url.clone().unwrap_or_default().into(),
                         })
@@ -731,7 +733,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_create_title(move |title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url| {
+        ui.on_create_title(move |title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url, dewey_code, dewey_category| {
             println!("Creating title: {}", title);
 
             let request = CreateTitleRequest {
@@ -767,8 +769,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                     pages.parse::<i32>().ok()
                 },
                 language: language.to_string(),
-                dewey_code: None,
-                dewey_category: None,
+                dewey_code: if dewey_code.is_empty() {
+                    None
+                } else {
+                    Some(dewey_code.to_string())
+                },
+                dewey_category: if dewey_category.is_empty() {
+                    None
+                } else {
+                    Some(dewey_category.to_string())
+                },
                 genre_id: if genre_id.is_empty() {
                     None
                 } else {
@@ -802,7 +812,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url| {
+        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url, dewey_code, dewey_category| {
             println!("Updating title: {}", id);
 
             let request = UpdateTitleRequest {
@@ -846,8 +856,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 } else {
                     Some(language.to_string())
                 },
-                dewey_code: None,
-                dewey_category: None,
+                dewey_code: if dewey_code.is_empty() {
+                    None
+                } else {
+                    Some(dewey_code.to_string())
+                },
+                dewey_category: if dewey_category.is_empty() {
+                    None
+                } else {
+                    Some(dewey_category.to_string())
+                },
                 genre_id: if genre_id.is_empty() {
                     None
                 } else {
@@ -872,6 +890,64 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to update title: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the search-dewey callback (for create dialog)
+    {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+        ui.on_search_dewey(move |query| {
+            println!("Searching Dewey: {}", query);
+
+            match api_client.search_dewey(&query.to_string(), Some(20)) {
+                Ok(results) => {
+                    println!("Found {} Dewey classifications", results.len());
+
+                    // Auto-select the first result if available
+                    if let Some(first) = results.first() {
+                        if let Some(ui) = ui_weak.upgrade() {
+                            ui.set_new_dewey_code(first.code.clone().into());
+                            ui.set_new_dewey_category(first.name.clone().into());
+                            println!("Selected: {} - {}", first.code, first.name);
+                        }
+                    } else {
+                        println!("No results found for query: {}", query);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Dewey search failed: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the search-dewey-edit callback (for edit dialog)
+    {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+        ui.on_search_dewey_edit(move |query| {
+            println!("Searching Dewey (edit): {}", query);
+
+            match api_client.search_dewey(&query.to_string(), Some(20)) {
+                Ok(results) => {
+                    println!("Found {} Dewey classifications", results.len());
+
+                    // Auto-select the first result if available
+                    if let Some(first) = results.first() {
+                        if let Some(ui) = ui_weak.upgrade() {
+                            ui.set_edit_dewey_code(first.code.clone().into());
+                            ui.set_edit_dewey_category(first.name.clone().into());
+                            println!("Selected: {} - {}", first.code, first.name);
+                        }
+                    } else {
+                        println!("No results found for query: {}", query);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Dewey search failed: {}", e);
                 }
             }
         });

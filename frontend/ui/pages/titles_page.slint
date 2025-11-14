@@ -16,6 +16,8 @@ export struct TitleData {
     pages: string,
     genre: string,
     genre-id: string,
+    dewey-code: string,
+    dewey-category: string,
     summary: string,
     cover-url: string,
 }
@@ -69,6 +71,9 @@ export component TitlesPage inherits Page {
     in-out property <string> new-language: "fr";
     in-out property <int> new-genre-index: -1;
     in-out property <string> new-genre-id: "";
+    in-out property <string> new-dewey-code: "";
+    in-out property <string> new-dewey-category: "";
+    in-out property <string> new-dewey-search-query: "";
     in-out property <string> new-summary: "";
     in-out property <string> new-cover-url: "";
 
@@ -86,6 +91,9 @@ export component TitlesPage inherits Page {
     in-out property <string> edit-language: "";
     in-out property <int> edit-genre-index: -1;
     in-out property <string> edit-genre-id: "";
+    in-out property <string> edit-dewey-code: "";
+    in-out property <string> edit-dewey-category: "";
+    in-out property <string> edit-dewey-search-query: "";
     in-out property <string> edit-summary: "";
     in-out property <string> edit-cover-url: "";
 
@@ -110,11 +118,13 @@ export component TitlesPage inherits Page {
 
     // Callback to request loading titles
     callback load-titles();
-    callback create-title(string, string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url
-    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url
+    callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url, dewey_code, dewey_category
+    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url, dewey_code, dewey_category
     callback delete-title(string); // id
     callback upload-image(string); // title_id
     callback fetch-from-isbn(string); // isbn - fetches and populates create form fields
+    callback search-dewey(string); // search query - opens dialog with search results
+    callback search-dewey-edit(string); // search query for edit dialog
     callback fetch-from-isbn-edit(string); // isbn - fetches and populates edit form fields
     callback find-genre-index(string) -> int; // Find genre index by ID
     callback find-publisher-index(string) -> int; // Find publisher index by ID
@@ -302,6 +312,52 @@ export component TitlesPage inherits Page {
                     }
                 }
 
+                // Dewey Classification Search
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Dewey Search:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-dewey-search-query;
+                        placeholder-text: @tr("Type to search (e.g., 'mathematics', 'poetry')...");
+                    }
+                    Button {
+                        text: @tr("Search");
+                        enabled: root.new-dewey-search-query != "";
+                        clicked => {
+                            root.search-dewey(root.new-dewey-search-query);
+                        }
+                    }
+                }
+
+                // Display selected Dewey classification
+                if root.new-dewey-code != "": HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Selected:");
+                        width: 120px;
+                        vertical-alignment: center;
+                        color: #0088cc;
+                        font-weight: 700;
+                    }
+                    Text {
+                        text: root.new-dewey-code + " - " + root.new-dewey-category;
+                        horizontal-stretch: 1;
+                        color: #0088cc;
+                    }
+                    Button {
+                        text: @tr("Clear");
+                        clicked => {
+                            root.new-dewey-code = "";
+                            root.new-dewey-category = "";
+                            root.new-dewey-search-query = "";
+                        }
+                    }
+                }
+
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -364,7 +420,9 @@ export component TitlesPage inherits Page {
                                     root.new-language,
                                     root.genres[root.new-genre-index].id,
                                     root.new-summary,
-                                    root.new-cover-url
+                                    root.new-cover-url,
+                                    root.new-dewey-code,
+                                    root.new-dewey-category
                                 );
                             } else {
                                 root.create-title(
@@ -378,7 +436,9 @@ export component TitlesPage inherits Page {
                                     root.new-language,
                                     "",
                                     root.new-summary,
-                                    root.new-cover-url
+                                    root.new-cover-url,
+                                    root.new-dewey-code,
+                                    root.new-dewey-category
                                 );
                             }
                             root.show-create-dialog = false;
@@ -517,6 +577,52 @@ export component TitlesPage inherits Page {
                     }
                 }
 
+                // Dewey Classification Search (Edit)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Dewey Search:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-dewey-search-query;
+                        placeholder-text: @tr("Type to search (e.g., 'mathematics', 'poetry')...");
+                    }
+                    Button {
+                        text: @tr("Search");
+                        enabled: root.edit-dewey-search-query != "";
+                        clicked => {
+                            root.search-dewey-edit(root.edit-dewey-search-query);
+                        }
+                    }
+                }
+
+                // Display selected Dewey classification (Edit)
+                if root.edit-dewey-code != "": HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Selected:");
+                        width: 120px;
+                        vertical-alignment: center;
+                        color: #0088cc;
+                        font-weight: 700;
+                    }
+                    Text {
+                        text: root.edit-dewey-code + " - " + root.edit-dewey-category;
+                        horizontal-stretch: 1;
+                        color: #0088cc;
+                    }
+                    Button {
+                        text: @tr("Clear");
+                        clicked => {
+                            root.edit-dewey-code = "";
+                            root.edit-dewey-category = "";
+                            root.edit-dewey-search-query = "";
+                        }
+                    }
+                }
+
                 HorizontalBox {
                     spacing: 10px;
                     Text {
@@ -580,7 +686,9 @@ export component TitlesPage inherits Page {
                                     root.edit-language,
                                     root.genres[root.edit-genre-index].id,
                                     root.edit-summary,
-                                    root.edit-cover-url
+                                    root.edit-cover-url,
+                                    root.edit-dewey-code,
+                                    root.edit-dewey-category
                                 );
                             } else {
                                 root.update-title(
@@ -595,7 +703,9 @@ export component TitlesPage inherits Page {
                                     root.edit-language,
                                     "",
                                     root.edit-summary,
-                                    root.edit-cover-url
+                                    root.edit-cover-url,
+                                    root.edit-dewey-code,
+                                    root.edit-dewey-category
                                 );
                             }
                             root.show-edit-dialog = false;
@@ -918,6 +1028,8 @@ export component TitlesPage inherits Page {
                                         root.edit-genre-index = root.find-genre-index(title.genre-id);
                                         // Find the publisher index for this publisher_id
                                         root.edit-publisher-index = root.find-publisher-index(title.publisher-id);
+                                        root.edit-dewey-code = title.dewey-code;
+                                        root.edit-dewey-category = title.dewey-category;
                                         root.edit-summary = title.summary;
                                         root.show-edit-dialog = true;
                                     }

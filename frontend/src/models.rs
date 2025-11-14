@@ -495,3 +495,17 @@ pub struct CreateLoanResponse {
     pub due_date: i64,
     pub loan_duration_days: i32,
 }
+
+// ============================================================================
+// Dewey Decimal Classification Models
+// ============================================================================
+
+/// Dewey Classification search result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeweySearchResult {
+    pub code: String,
+    pub name: String,
+    pub level: i32,
+    pub description: Option<String>,
+    pub relevance: Option<f32>,
+}

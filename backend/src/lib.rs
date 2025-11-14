@@ -210,6 +210,10 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/loans", web::post().to(handlers::loans::create_loan_by_barcode))
             .route("/api/v1/loans/overdue", web::get().to(handlers::loans::list_overdue_loans))
             .route("/api/v1/loans/{id}/return", web::post().to(handlers::loans::return_loan))
+            // API v1 routes - Dewey Classification
+            .route("/api/v1/dewey/search", web::get().to(handlers::dewey::search_dewey))
+            .route("/api/v1/dewey/browse", web::get().to(handlers::dewey::browse_dewey))
+            .route("/api/v1/dewey/{code}", web::get().to(handlers::dewey::get_dewey_by_code))
             .route("/{name}", web::get().to(greet))
     })
     .listen(listener)?
