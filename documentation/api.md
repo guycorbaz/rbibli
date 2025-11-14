@@ -190,39 +190,84 @@ POST   /api/v1/scan/loan             - ⏳ Create loan via barcode scan
 POST   /api/v1/scan/return           - ⏳ Return volume via barcode scan
 ```
 
-### Loan Management ⏳ (CRITICAL - Database Ready)
+### Loan Management ✅ (IMPLEMENTED)
 
-**Status:** Database table fully created, handlers needed.
+**Status:** ✅ Fully implemented with backend handlers and frontend UI.
 
 ```
-POST   /api/v1/loans                - ⏳ Create a new loan
-GET    /api/v1/loans                - ⏳ List all loans
-GET    /api/v1/loans/active         - ⏳ Get active loans only
-GET    /api/v1/loans/overdue        - ⏳ Get overdue loans
-PUT    /api/v1/loans/{id}/return    - ⏳ Mark loan as returned
-PUT    /api/v1/loans/{id}/extend    - ⏳ Extend loan due date (optional)
+POST   /api/v1/loans                - ✅ Create a new loan by barcode
+GET    /api/v1/loans/active         - ✅ Get active loans with details (title, borrower, due date, overdue status)
+PUT    /api/v1/loans/{id}/return    - ✅ Mark loan as returned and update volume status
+GET    /api/v1/loans                - ⏳ List all loans (including history)
+GET    /api/v1/loans/overdue        - ⏳ Get overdue loans filter
+PUT    /api/v1/loans/{id}/extend    - ⏳ Extend loan due date (not yet implemented)
 ```
 
-**Database Schema Ready:**
+**Implemented Features:**
+- ✅ Loan creation by volume barcode with borrower selection
+- ✅ Automatic due date calculation based on borrower group loan policy
+- ✅ Active loans listing with borrower and title details
+- ✅ Overdue status calculation and visual highlighting
+- ✅ Loan return workflow with volume status update
+- ✅ Full frontend UI with tabbed interface
+
+**Database Schema:**
 - title_id, volume_id, borrower_id (all FKs with RESTRICT on delete)
 - loan_date, due_date, return_date
 - status enum (active/returned/overdue)
 
-### Borrower Management ⏳ (Database Ready)
+### Borrower Management ✅ (IMPLEMENTED)
 
-**Status:** Database table created, handlers needed.
+**Status:** ✅ Fully implemented with backend handlers and frontend UI.
 
 ```
-GET    /api/v1/borrowers            - ⏳ List all borrowers
-POST   /api/v1/borrowers            - ⏳ Create a new borrower
-GET    /api/v1/borrowers/{id}       - ⏳ Get borrower details
-PUT    /api/v1/borrowers/{id}       - ⏳ Update borrower information
-DELETE /api/v1/borrowers/{id}       - ⏳ Delete a borrower
+GET    /api/v1/borrowers            - ✅ List all borrowers with group information
+POST   /api/v1/borrowers            - ✅ Create a new borrower
+GET    /api/v1/borrowers/{id}       - ✅ Get borrower details
+PUT    /api/v1/borrowers/{id}       - ✅ Update borrower information
+DELETE /api/v1/borrowers/{id}       - ✅ Delete a borrower
 ```
 
-**Database Schema Ready:**
-- name, email, phone
+**Implemented Features:**
+- ✅ Full CRUD operations for borrowers
+- ✅ Edit dialog with Save/Cancel buttons
+- ✅ Create dialog with all contact fields
+- ✅ Borrower group association
+- ✅ Display with group name and loan duration
+- ✅ Complete frontend UI within Loans tab
+
+**Database Schema:**
+- name, email, phone, address, city, zip
+- group_id (FK to borrower_groups for loan policies)
 - Simple contact info for trust-based system
+
+### Borrower Group Management ✅ (IMPLEMENTED)
+
+**Status:** ✅ Fully implemented with backend handlers and frontend UI.
+
+```
+GET    /api/v1/borrower-groups      - ✅ List all borrower groups
+POST   /api/v1/borrower-groups      - ✅ Create a new borrower group
+GET    /api/v1/borrower-groups/{id} - ✅ Get borrower group details (implicit)
+PUT    /api/v1/borrower-groups/{id} - ✅ Update borrower group
+DELETE /api/v1/borrower-groups/{id} - ✅ Delete a borrower group
+```
+
+**Implemented Features:**
+- ✅ Full CRUD operations for borrower groups
+- ✅ Edit dialog with Save/Cancel buttons
+- ✅ Create dialog with group name, loan duration, and description
+- ✅ Loan duration policy configuration per group (in days)
+- ✅ Group description and metadata
+- ✅ Complete frontend UI within Loans tab
+
+**Database Schema:**
+- name (group name, e.g., "Friends", "Family", "Colleagues")
+- loan_duration_days (default loan period for this group)
+- description (optional notes about the group)
+
+**Usage:**
+Each borrower is associated with a group, which determines their default loan duration. When creating a loan for a borrower, the system automatically applies the loan duration from their group.
 
 ### Title-Author Relationships ⏳ (Database Ready)
 

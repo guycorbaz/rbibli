@@ -84,13 +84,21 @@ rbibli/
 
 **Volumes:** Database table created with all fields (barcode, condition, location_id, loan_status), but no backend handlers or UI
 **Title-Authors:** Junction table ready with role support, but no handlers or UI
-**Loans:** Complete database schema with status tracking, but no implementation
-**Borrowers:** Database table ready, but no implementation
+
+### ✅ Fully Implemented (Added Recently)
+
+**Loan Management System:**
+- ✅ Complete Loans page with tabbed interface (Active Loans, Create Loan, Borrowers, Groups)
+- ✅ Borrower management (full CRUD with edit dialog using Save/Cancel buttons)
+- ✅ Borrower Group management (full CRUD with edit dialog using Save/Cancel buttons)
+- ✅ Active loans view with overdue highlighting
+- ✅ Loan creation by barcode
+- ✅ Loan return workflow
+- ✅ Backend APIs for all loan/borrower/group operations
 
 ### ⏳ Not Yet Implemented
 
 - Volume management (CRITICAL for MVP)
-- Loan workflow and borrower management
 - Barcode generation and scanning
 - Search and filter capabilities
 - Import/export functionality
@@ -99,10 +107,12 @@ rbibli/
 - Cover image upload
 - Dewey classification UI
 - Series management
+- Loan extension functionality
+- Title-based loan with automatic volume selection
 
-### 📊 MVP Completion: ~65%
+### 📊 MVP Completion: ~70%
 
-Core infrastructure and all primary entity management (Titles, Authors, Publishers, Genres, Locations) are fully implemented. Critical features remaining: Volumes and Loans.
+Core infrastructure and most primary entity management (Titles, Authors, Publishers, Genres, Locations, Borrowers, Loans) are fully implemented. Critical features remaining: Volumes.
 
 ## Core Development Commands
 
@@ -326,8 +336,12 @@ Important system feature for data integrity:
 - 🔄 Volume management (database schema ready, handlers needed)
 - 🔄 Title-Author relationship management (junction table ready)
 
+**Recently Completed Features** (Phase 3):
+- ✅ Loan management system (borrowers, loans, returns) - COMPLETED
+- ✅ Borrower management with full CRUD and edit dialogs - COMPLETED
+- ✅ Borrower Group management with loan policies - COMPLETED
+
 **Planned Features** (Phase 3-4):
-- ⏳ Loan management system (borrowers, loans, returns)
 - ⏳ Barcode generation and scanning (Code 128 format)
 - ⏳ User authentication and sessions
 - ⏳ Import/export functionality (CSV, JSON)
@@ -337,6 +351,8 @@ Important system feature for data integrity:
 - ⏳ Progressive Web App (PWA) features
 - ⏳ Dewey classification UI
 - ⏳ Cover image upload and display
+- ⏳ Loan extension functionality
+- ⏳ Title-based automatic volume selection
 
 ### Key Business Rules
 
@@ -664,16 +680,19 @@ The project **transitioned from Leptos to Slint**:
 - 🔄 Volume management (database schema ready, handlers and UI needed)
 - 🔄 Title-Author relationship (junction table ready, handlers needed)
 
-**Phase 3** (🔄 40% COMPLETE): Advanced features
+**Phase 3** (🔄 75% COMPLETE): Advanced features
 - ✅ Author management (full CRUD operations working)
 - ✅ Publisher management (full CRUD operations working)
 - ✅ Genre management (full CRUD operations working)
 - ✅ Locations management (full CRUD with hierarchical structure)
+- ✅ Loan management system (full CRUD with barcode-based loan creation)
+- ✅ Borrower management (full CRUD with edit dialog using Save/Cancel buttons)
+- ✅ Borrower Group management (full CRUD with edit dialog using Save/Cancel buttons)
 - ⏳ Series management (not started)
 - 🔄 Multiple copies per title (database ready, implementation needed)
 - ⏳ Barcode scanning integration (not started)
-- ⏳ Loan management system (database schema ready, implementation needed)
-- ⏳ Borrower management (database schema ready, implementation needed)
+- ⏳ Title-based loan with automatic volume selection (manual barcode currently)
+- ⏳ Loan extension functionality (not started)
 
 **Phase 4** (⏳ NOT STARTED): Polish and extras
 - ⏳ Dewey classification UI
@@ -685,4 +704,4 @@ The project **transitioned from Leptos to Slint**:
 - ⏳ Cover image upload and display
 - ⏳ Barcode generation (Code 128)
 
-**Current Status**: Mid-Phase 2/Early Phase 3. Core infrastructure is solid, basic entities are fully functional, but the critical Title/Volume relationship and loan management system are not yet implemented.
+**Current Status**: Late Phase 3. Core infrastructure is solid, basic entities are fully functional, and loan management system is fully implemented with borrower/group management. The critical remaining piece is the Title/Volume relationship implementation.

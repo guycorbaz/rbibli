@@ -5,7 +5,7 @@
 
 ## Current Implementation Status
 
-**Overall Progress: ~60%** 🟡 (Was: ~2% in November)
+**Overall Progress: ~65%** 🟡 (Was: ~2% in November, 60% in January)
 
 ### ✅ What's Currently Implemented
 
@@ -307,53 +307,88 @@ Users can:
 
 ---
 
-## 4. Loan Management (0% Complete)
+## 4. Loan Management (✅ ~75% Complete)
 
-### 4.1 Data Models - MISSING
-- [ ] Loan struct/model
-- [ ] Borrower struct/model
-- [ ] Fields: title_id, volume_id, borrower_id
-- [ ] Fields: loan_date, due_date, return_date
-- [ ] Fields: status (active/returned/overdue)
+### 4.1 Data Models - ✅ FULLY IMPLEMENTED
+- [x] ✅ Loan struct/model (frontend & backend)
+- [x] ✅ Borrower struct/model (frontend & backend)
+- [x] ✅ BorrowerGroup struct/model (frontend & backend)
+- [x] ✅ Fields: title_id, volume_id, borrower_id
+- [x] ✅ Fields: loan_date, due_date, return_date
+- [x] ✅ Fields: status (active/returned/overdue)
+- [x] ✅ Timestamps: created_at, updated_at
 
-### 4.2 UI Pages - MISSING
-- [ ] Loans list page (commented out)
-- [ ] Active loans view
-- [ ] Overdue loans view
-- [ ] Loan history
-- [ ] Create loan form
-- [ ] Return volume interface
-- [ ] Loan detail view
-- [ ] Loan card component
+### 4.2 UI Pages - ✅ FULLY IMPLEMENTED
+- [x] ✅ **Loans page with tabbed interface** (Active Loans, Create Loan, Borrowers, Groups)
+- [x] ✅ **Active loans view** with overdue highlighting
+- [x] ✅ **Create loan form** with borrower selection and barcode input
+- [x] ✅ **Return volume interface** with confirmation
+- [x] ✅ Loan card component with status display
+- [ ] ⏳ Loan history (not implemented)
+- [ ] ⏳ Loan detail view (not implemented)
+- [ ] ⏳ Overdue loans separate view (can filter active loans)
 
-### 4.3 Borrower Management - MISSING
-- [ ] Subscribers/Borrowers page (commented out)
-- [ ] Add borrower form
-- [ ] Edit borrower form
-- [ ] Borrowers list
-- [ ] Borrower search
-- [ ] Borrower detail page
+### 4.3 Borrower Management - ✅ FULLY IMPLEMENTED
+- [x] ✅ **Borrowers list page** within Loans tab
+- [x] ✅ **Add borrower form** (modal dialog with Save/Cancel)
+- [x] ✅ **Edit borrower form** (modal dialog with Save/Cancel)
+- [x] ✅ **Delete borrower button**
+- [x] ✅ Borrowers list with contact info display
+- [x] ✅ Group association for each borrower
+- [ ] ⏳ Borrower search (not implemented)
+- [ ] ⏳ Borrower detail page (not implemented)
 
-### 4.4 Backend API - MISSING
-- [ ] `POST /api/v1/loans` - Create loan
-- [ ] `GET /api/v1/loans` - List all loans
-- [ ] `GET /api/v1/loans/active` - Active loans
-- [ ] `GET /api/v1/loans/overdue` - Overdue loans
-- [ ] `PUT /api/v1/loans/{id}/return` - Return volume
-- [ ] `PUT /api/v1/loans/{id}/extend` - Extend loan
-- [ ] `GET /api/v1/borrowers` - List borrowers
-- [ ] `POST /api/v1/borrowers` - Create borrower
-- [ ] `GET /api/v1/borrowers/{id}` - Get borrower
-- [ ] `PUT /api/v1/borrowers/{id}` - Update borrower
-- [ ] `DELETE /api/v1/borrowers/{id}` - Delete borrower
+### 4.4 Borrower Group Management - ✅ FULLY IMPLEMENTED
+- [x] ✅ **Borrower Groups list page** within Loans tab
+- [x] ✅ **Add borrower group form** (modal dialog with Create/Cancel)
+- [x] ✅ **Edit borrower group form** (modal dialog with Save/Cancel)
+- [x] ✅ **Delete borrower group button**
+- [x] ✅ Loan duration policy configuration per group
+- [x] ✅ Group description and metadata
 
-### 4.5 Features - MISSING
-- [ ] Title-based loan with automatic volume selection
-- [ ] Volume selection priority (condition → location → FIFO)
-- [ ] Loan duration by title type (Fiction: 21d, Non-fiction: 14d, etc.)
-- [ ] Overdue calculation
-- [ ] Loan validation (volume available, borrower exists)
-- [ ] Return validation
+### 4.5 Backend API - ✅ FULLY IMPLEMENTED
+- [x] ✅ `POST /api/v1/loans` - Create loan by barcode
+- [x] ✅ `GET /api/v1/loans/active` - Active loans with details
+- [x] ✅ `PUT /api/v1/loans/{id}/return` - Return volume
+- [x] ✅ `GET /api/v1/borrowers` - List borrowers with group info
+- [x] ✅ `POST /api/v1/borrowers` - Create borrower
+- [x] ✅ `GET /api/v1/borrowers/{id}` - Get borrower
+- [x] ✅ `PUT /api/v1/borrowers/{id}` - Update borrower
+- [x] ✅ `DELETE /api/v1/borrowers/{id}` - Delete borrower
+- [x] ✅ `GET /api/v1/borrower-groups` - List borrower groups
+- [x] ✅ `POST /api/v1/borrower-groups` - Create borrower group
+- [x] ✅ `PUT /api/v1/borrower-groups/{id}` - Update borrower group
+- [x] ✅ `DELETE /api/v1/borrower-groups/{id}` - Delete borrower group
+- [ ] ⏳ `GET /api/v1/loans` - List all loans (active implemented)
+- [ ] ⏳ `GET /api/v1/loans/overdue` - Overdue loans filter
+- [ ] ⏳ `PUT /api/v1/loans/{id}/extend` - Extend loan
+
+### 4.6 Features - 🔄 MOSTLY IMPLEMENTED
+- [x] ✅ **Loan creation by barcode** (scan or manual entry)
+- [x] ✅ **Borrower group loan policies** (configurable duration per group)
+- [x] ✅ **Loan duration calculation** based on borrower group
+- [x] ✅ **Overdue calculation and display** (visual highlighting)
+- [x] ✅ **Loan validation** (volume available, borrower exists)
+- [x] ✅ **Return workflow** with volume status update
+- [x] ✅ **Complete borrower management** with CRUD operations
+- [x] ✅ **Borrower group management** with loan policies
+- [ ] ⏳ Title-based loan with automatic volume selection (manual barcode currently)
+- [ ] ⏳ Volume selection priority (condition → location → FIFO)
+- [ ] ⏳ Loan extension functionality
+
+### 4.7 What's Working End-to-End ✅
+Users can:
+- ✅ Create and manage borrowers with contact information
+- ✅ Edit borrowers with Save/Cancel buttons in modal dialog
+- ✅ Create and manage borrower groups with loan duration policies
+- ✅ Edit borrower groups with Save/Cancel buttons in modal dialog
+- ✅ Create loans by scanning or entering volume barcodes
+- ✅ View all active loans with due dates and overdue status
+- ✅ Return loaned volumes
+- ✅ Associate borrowers with groups for automatic loan duration
+- ✅ View borrower's group information in loan creation
+- ✅ Data persists in MariaDB
+- ✅ Full UI with tabbed interface (Active Loans, Create Loan, Borrowers, Groups)
 
 ---
 
@@ -596,17 +631,17 @@ Users can:
 ## Summary Statistics (Updated: January 2025)
 
 ### Implementation Progress:
-- **Frontend UI**: ~60% ✅ (5 fully functional pages, missing Volumes/Loans/Scanner/Statistics)
-- **Backend API**: ~65% ✅ (Full CRUD for 5 entities, missing Volumes/Loans/Borrowers)
+- **Frontend UI**: ~70% ✅ (6 fully functional pages including Loans, missing Volumes/Scanner/Statistics)
+- **Backend API**: ~75% ✅ (Full CRUD for 8 entities: Titles, Authors, Publishers, Genres, Locations, Borrowers, Borrower Groups, Loans)
 - **Database**: ~100% ✅ (All 9 tables created with proper schema)
 - **WASM Configuration**: Deferred (intentional - native-first approach)
-- **Data Models**: ~60% ✅ (5 entities complete, missing Volume/Loan/Borrower)
-- **Business Logic**: ~50% ✅ (CRUD complete for 5 entities, missing loan workflow)
-- **Integration**: ~70% ✅ (Frontend fully connected to backend for implemented features)
+- **Data Models**: ~75% ✅ (8 entities complete, missing Volume data model in frontend)
+- **Business Logic**: ~70% ✅ (CRUD complete for 8 entities, loan workflow mostly working)
+- **Integration**: ~75% ✅ (Frontend fully connected to backend for all implemented features)
 
-### Overall Progress: **~60%** 🟡
+### Overall Progress: **~65%** 🟡
 
-**Progress Since November 2024:** +58% (from 2% to 60%)
+**Progress Since November 2024:** +63% (from 2% to 65%)
 
 ### Critical Path Items for MVP (Must Do Next):
 
@@ -617,12 +652,16 @@ Users can:
    - [ ] Frontend: "Add Volume" on Titles page
    - **Estimated**: 2-3 days
 
-2. **Loan Management** 🔴 **CRITICAL - BLOCKING**
-   - [ ] Backend: Borrower CRUD handlers
-   - [ ] Backend: Loan CRUD handlers with volume selection logic
-   - [ ] Frontend: Borrowers page
-   - [ ] Frontend: Loans page (create/return/list)
-   - **Estimated**: 2-3 days
+2. **Loan Management Polish** 🟡 **MEDIUM PRIORITY**
+   - [x] ✅ Backend: Borrower CRUD handlers - DONE
+   - [x] ✅ Backend: Borrower Group CRUD handlers - DONE
+   - [x] ✅ Backend: Loan CRUD handlers with barcode lookup - DONE
+   - [x] ✅ Frontend: Borrowers page with edit functionality - DONE
+   - [x] ✅ Frontend: Borrower Groups page with edit functionality - DONE
+   - [x] ✅ Frontend: Loans page (create/return/list) - DONE
+   - [ ] ⏳ Title-based loan with automatic volume selection
+   - [ ] ⏳ Loan extension functionality
+   - **Estimated**: 1 day remaining
 
 3. **Title-Author Relationships** 🟡 **MEDIUM PRIORITY**
    - [ ] Backend: Junction table handlers (add/remove author)
