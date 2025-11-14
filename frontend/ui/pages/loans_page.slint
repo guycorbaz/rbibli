@@ -114,6 +114,13 @@ export component LoansPage inherits Page {
     in-out property <string> new-group-duration: "21";
     in-out property <string> new-group-description: "";
 
+    // Edit borrower group form state
+    in-out property <bool> show-edit-group-dialog: false;
+    in-out property <string> edit-group-id: "";
+    in-out property <string> edit-group-name: "";
+    in-out property <string> edit-group-duration: "";
+    in-out property <string> edit-group-description: "";
+
     VerticalBox {
         padding: 20px;
         spacing: 10px;
@@ -750,6 +757,78 @@ export component LoansPage inherits Page {
                         }
                     }
 
+                    // Edit group dialog
+                    if root.show-edit-group-dialog: Rectangle {
+                        background: rgba(0, 0, 0, 0.5);
+
+                        Rectangle {
+                            width: 500px;
+                            height: 350px;
+                            background: white;
+                            border-radius: 8px;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+
+                            VerticalBox {
+                                padding: 20px;
+                                spacing: 15px;
+
+                                Text {
+                                    text: @tr("Edit Group");
+                                    font-size: 18px;
+                                    font-weight: 700;
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Name:"); min-width: 120px; }
+                                    LineEdit { text <=> root.edit-group-name; placeholder-text: @tr("Group name"); }
+                                }
+
+                                HorizontalBox {
+                                    Text { text: @tr("Loan Duration:"); min-width: 120px; }
+                                    LineEdit { text <=> root.edit-group-duration; placeholder-text: "21"; input-type: number; }
+                                    Text { text: @tr("days"); vertical-alignment: center; }
+                                }
+
+                                VerticalBox {
+                                    spacing: 5px;
+                                    Text { text: @tr("Description:"); }
+                                    TextEdit {
+                                        text <=> root.edit-group-description;
+                                        height: 80px;
+                                    }
+                                }
+
+                                HorizontalBox {
+                                    alignment: end;
+                                    spacing: 10px;
+
+                                    Button {
+                                        text: @tr("Cancel");
+                                        clicked => {
+                                            root.show-edit-group-dialog = false;
+                                        }
+                                    }
+
+                                    Button {
+                                        text: @tr("Save");
+                                        primary: true;
+                                        enabled: root.edit-group-name != "" && root.edit-group-duration != "";
+                                        clicked => {
+                                            root.update-borrower-group(
+                                                root.edit-group-id,
+                                                root.edit-group-name,
+                                                root.edit-group-duration.to-float(),
+                                                root.edit-group-description
+                                            );
+                                            root.show-edit-group-dialog = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Groups list
                     if root.borrower-groups.length == 0: VerticalBox {
                         alignment: center;
@@ -798,10 +877,25 @@ export component LoansPage inherits Page {
                                         }
                                     }
 
-                                    Button {
-                                        text: @tr("Delete");
-                                        clicked => {
-                                            root.delete-borrower-group(group.id);
+                                    VerticalBox {
+                                        spacing: 5px;
+
+                                        Button {
+                                            text: @tr("Edit");
+                                            clicked => {
+                                                root.edit-group-id = group.id;
+                                                root.edit-group-name = group.name;
+                                                root.edit-group-duration = group.loan-duration-days;
+                                                root.edit-group-description = group.description;
+                                                root.show-edit-group-dialog = true;
+                                            }
+                                        }
+
+                                        Button {
+                                            text: @tr("Delete");
+                                            clicked => {
+                                                root.delete-borrower-group(group.id);
+                                            }
                                         }
                                     }
                                 }
