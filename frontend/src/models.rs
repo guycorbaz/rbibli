@@ -509,3 +509,46 @@ pub struct DeweySearchResult {
     pub description: Option<String>,
     pub relevance: Option<f32>,
 }
+
+// ============================================================================
+// Statistics Models
+// ============================================================================
+
+/// Statistics for volumes per genre
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GenreStatistic {
+    pub genre_id: Option<String>,
+    pub genre_name: String,
+    pub volume_count: i64,
+    pub title_count: i64,
+}
+
+/// Statistics for volumes per location
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LocationStatistic {
+    pub location_id: Option<String>,
+    pub location_name: String,
+    pub location_path: String,
+    pub volume_count: i64,
+}
+
+/// Statistics for loan status
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoanStatistic {
+    pub status: String,
+    pub count: i64,
+}
+
+/// Overall library statistics
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LibraryStatistics {
+    pub total_titles: i64,
+    pub total_volumes: i64,
+    pub total_authors: i64,
+    pub total_publishers: i64,
+    pub total_genres: i64,
+    pub total_locations: i64,
+    pub total_borrowers: i64,
+    pub active_loans: i64,
+    pub overdue_loans: i64,
+}

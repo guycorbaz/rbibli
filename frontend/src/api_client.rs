@@ -6,7 +6,8 @@ use crate::models::{
     BorrowerGroup, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
     BorrowerWithGroup, CreateBorrowerRequest, UpdateBorrowerRequest,
     LoanDetail, CreateLoanRequest, CreateLoanResponse,
-    DeweySearchResult
+    DeweySearchResult,
+    LibraryStatistics, GenreStatistic, LocationStatistic, LoanStatistic
 };
 use std::error::Error;
 
@@ -1780,5 +1781,109 @@ impl ApiClient {
         let classification: DeweySearchResult = response.json()?;
         println!("Found classification: {} - {}", classification.code, classification.name);
         Ok(classification)
+    }
+
+    // ========================================================================
+    // Statistics API methods
+    // ========================================================================
+
+    /// Get overall library statistics
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(LibraryStatistics)` - Library-wide counts
+    /// * `Err` - If the request fails
+    pub fn get_library_statistics(&self) -> Result<LibraryStatistics, Box<dyn Error>> {
+        let url = format!("{}/api/v1/statistics/library", self.base_url);
+
+        println!("Fetching library statistics...");
+
+        let response = self.client
+            .get(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to fetch library statistics: {}", error_text).into());
+        }
+
+        let stats: LibraryStatistics = response.json()?;
+        println!("Library statistics fetched successfully");
+        Ok(stats)
+    }
+
+    /// Get volumes per genre statistics
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<GenreStatistic>)` - List of genre statistics ordered by volume count
+    /// * `Err` - If the request fails
+    pub fn get_genre_statistics(&self) -> Result<Vec<GenreStatistic>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/statistics/genres", self.base_url);
+
+        println!("Fetching genre statistics...");
+
+        let response = self.client
+            .get(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to fetch genre statistics: {}", error_text).into());
+        }
+
+        let stats: Vec<GenreStatistic> = response.json()?;
+        println!("Found statistics for {} genres", stats.len());
+        Ok(stats)
+    }
+
+    /// Get volumes per location statistics
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<LocationStatistic>)` - List of location statistics ordered by volume count
+    /// * `Err` - If the request fails
+    pub fn get_location_statistics(&self) -> Result<Vec<LocationStatistic>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/statistics/locations", self.base_url);
+
+        println!("Fetching location statistics...");
+
+        let response = self.client
+            .get(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to fetch location statistics: {}", error_text).into());
+        }
+
+        let stats: Vec<LocationStatistic> = response.json()?;
+        println!("Found statistics for {} locations", stats.len());
+        Ok(stats)
+    }
+
+    /// Get loan status statistics
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<LoanStatistic>)` - List of loan status counts
+    /// * `Err` - If the request fails
+    pub fn get_loan_statistics(&self) -> Result<Vec<LoanStatistic>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/statistics/loans", self.base_url);
+
+        println!("Fetching loan statistics...");
+
+        let response = self.client
+            .get(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to fetch loan statistics: {}", error_text).into());
+        }
+
+        let stats: Vec<LoanStatistic> = response.json()?;
+        println!("Found {} loan status types", stats.len());
+        Ok(stats)
     }
 }

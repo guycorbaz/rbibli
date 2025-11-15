@@ -28,7 +28,7 @@
 
 import { Button, VerticalBox, ScrollView, StyleMetrics, ScrollView } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, VolumeData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData, LoansPage, LoanData, BorrowerData, BorrowerGroupData} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, VolumeData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData, LoansPage, LoanData, BorrowerData, BorrowerGroupData, StatisticsPage, GenreStatistic, LocationStatistic, LoanStatistic, LibraryStatistics} from "pages/pages.slint";
 import { Styles } from "styles.slint";
 
 // AppWindow - Main application window component
@@ -357,6 +357,39 @@ export component AppWindow inherits Window {
     callback delete-borrower-group(string);
 
     // ========================================================================
+    // Data Properties - Statistics
+    // ========================================================================
+
+    // Library-wide statistics
+    in-out property <LibraryStatistics> library-statistics: {
+        total-titles: 0,
+        total-volumes: 0,
+        total-authors: 0,
+        total-publishers: 0,
+        total-genres: 0,
+        total-locations: 0,
+        total-borrowers: 0,
+        active-loans: 0,
+        overdue-loans: 0,
+    };
+
+    // Statistics per genre (volumes and titles)
+    in-out property <[GenreStatistic]> genre-statistics: [];
+
+    // Statistics per location (volumes)
+    in-out property <[LocationStatistic]> location-statistics: [];
+
+    // Statistics per loan status
+    in-out property <[LoanStatistic]> loan-statistics: [];
+
+    // ========================================================================
+    // Callbacks - Statistics Operations
+    // ========================================================================
+
+    // Triggers loading of all statistics from the backend
+    callback load-statistics();
+
+    // ========================================================================
     // Window Configuration
     // ========================================================================
     // Minimum window dimensions to ensure usable interface
@@ -579,8 +612,17 @@ export component AppWindow inherits Window {
             }
         }
 
-        // PAGE 6: Statistics Page - View library statistics (NOT YET IMPLEMENTED)
-        //if(side-bar.current-item == 6) : StatisticsPage {}
+        // PAGE 6: Statistics Page - View library statistics
+        if(side-bar.current-item == 6) : StatisticsPage {
+            library-stats: root.library-statistics;
+            genre-stats: root.genre-statistics;
+            location-stats: root.location-statistics;
+            loan-stats: root.loan-statistics;
+
+            load-statistics => {
+                root.load-statistics();
+            }
+        }
 
         // PAGE 7: About Page - Application information and version
             if(side-bar.current-item == 7) : AboutPage {}

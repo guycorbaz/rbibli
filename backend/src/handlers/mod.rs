@@ -10,3 +10,4 @@ pub mod borrower_groups;
 pub mod borrowers;
 pub mod loans;
 pub mod dewey;
+pub mod statistics;

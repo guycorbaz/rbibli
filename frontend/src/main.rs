@@ -13,7 +13,9 @@ use models::{
     CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, CreateAuthorRequest,
     CreatePublisherRequest, UpdatePublisherRequest, CreateGenreRequest, UpdateGenreRequest,
     CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest, CreateBorrowerRequest,
-    UpdateBorrowerRequest, CreateLoanRequest
+    UpdateBorrowerRequest, CreateLoanRequest,
+    LibraryStatistics as ModelsLibraryStatistics, GenreStatistic as ModelsGenreStatistic,
+    LocationStatistic as ModelsLocationStatistic, LoanStatistic as ModelsLoanStatistic
 };
 use slint::Model;
 
@@ -1688,6 +1690,124 @@ fn main() -> Result<(), Box<dyn Error>> {
                     eprintln!("Failed to return loan: {}", e);
                 }
             }
+        });
+    }
+
+    // ========================================================================
+    // Statistics callbacks
+    // ========================================================================
+
+    // Create load_statistics closure
+    let load_statistics = {
+        let ui_handle = ui.as_weak();
+        let api_client = api_client.clone();
+        move || {
+            println!("Loading statistics from backend...");
+
+            // Load library statistics
+            match api_client.get_library_statistics() {
+                Ok(stats) => {
+                    println!("Successfully fetched library statistics");
+
+                    if let Some(ui) = ui_handle.upgrade() {
+                        ui.set_library_statistics(LibraryStatistics {
+                            total_titles: stats.total_titles as i32,
+                            total_volumes: stats.total_volumes as i32,
+                            total_authors: stats.total_authors as i32,
+                            total_publishers: stats.total_publishers as i32,
+                            total_genres: stats.total_genres as i32,
+                            total_locations: stats.total_locations as i32,
+                            total_borrowers: stats.total_borrowers as i32,
+                            active_loans: stats.active_loans as i32,
+                            overdue_loans: stats.overdue_loans as i32,
+                        });
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch library statistics: {}", e);
+                }
+            }
+
+            // Load genre statistics
+            match api_client.get_genre_statistics() {
+                Ok(stats_data) => {
+                    println!("Successfully fetched {} genre statistics", stats_data.len());
+
+                    let slint_stats: Vec<GenreStatistic> = stats_data
+                        .iter()
+                        .map(|s| GenreStatistic {
+                            genre_id: s.genre_id.clone().unwrap_or_default().into(),
+                            genre_name: s.genre_name.clone().into(),
+                            volume_count: s.volume_count as i32,
+                            title_count: s.title_count as i32,
+                        })
+                        .collect();
+
+                    if let Some(ui) = ui_handle.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_stats));
+                        ui.set_genre_statistics(model.into());
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch genre statistics: {}", e);
+                }
+            }
+
+            // Load location statistics
+            match api_client.get_location_statistics() {
+                Ok(stats_data) => {
+                    println!("Successfully fetched {} location statistics", stats_data.len());
+
+                    let slint_stats: Vec<LocationStatistic> = stats_data
+                        .iter()
+                        .map(|s| LocationStatistic {
+                            location_id: s.location_id.clone().unwrap_or_default().into(),
+                            location_name: s.location_name.clone().into(),
+                            location_path: s.location_path.clone().into(),
+                            volume_count: s.volume_count as i32,
+                        })
+                        .collect();
+
+                    if let Some(ui) = ui_handle.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_stats));
+                        ui.set_location_statistics(model.into());
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch location statistics: {}", e);
+                }
+            }
+
+            // Load loan statistics
+            match api_client.get_loan_statistics() {
+                Ok(stats_data) => {
+                    println!("Successfully fetched {} loan statistics", stats_data.len());
+
+                    let slint_stats: Vec<LoanStatistic> = stats_data
+                        .iter()
+                        .map(|s| LoanStatistic {
+                            status: s.status.clone().into(),
+                            count: s.count as i32,
+                        })
+                        .collect();
+
+                    if let Some(ui) = ui_handle.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_stats));
+                        ui.set_loan_statistics(model.into());
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch loan statistics: {}", e);
+                }
+            }
+        }
+    };
+
+    // Connect load-statistics callback
+    {
+        let load_statistics = load_statistics.clone();
+        ui.on_load_statistics(move || {
+            load_statistics();
         });
     }
 

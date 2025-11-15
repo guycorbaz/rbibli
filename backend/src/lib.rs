@@ -214,6 +214,11 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/dewey/search", web::get().to(handlers::dewey::search_dewey))
             .route("/api/v1/dewey/browse", web::get().to(handlers::dewey::browse_dewey))
             .route("/api/v1/dewey/{code}", web::get().to(handlers::dewey::get_dewey_by_code))
+            // API v1 routes - Statistics
+            .route("/api/v1/statistics/library", web::get().to(handlers::statistics::get_library_statistics))
+            .route("/api/v1/statistics/genres", web::get().to(handlers::statistics::get_volumes_per_genre))
+            .route("/api/v1/statistics/locations", web::get().to(handlers::statistics::get_volumes_per_location))
+            .route("/api/v1/statistics/loans", web::get().to(handlers::statistics::get_loan_statistics))
             .route("/{name}", web::get().to(greet))
     })
     .listen(listener)?

@@ -1,0 +1,482 @@
+// ============================================================================
+// statistics_page.slint
+// ============================================================================
+// Statistics page for the rbibli personal library application.
+//
+// This page displays various statistics about the library, including:
+// - Overall library counts (titles, volumes, authors, etc.)
+// - Volumes per genre (bar chart visualization)
+// - Volumes per location
+// - Loan status breakdown
+//
+// All statistics are fetched from the backend API and displayed in an
+// organized, easy-to-read format with visual indicators.
+// ============================================================================
+
+import { Page } from "page.slint";
+import { ListView, VerticalBox, HorizontalBox, Button } from "std-widgets.slint";
+
+// GenreStatistic - Volume and title count per genre
+export struct GenreStatistic {
+    genre-id: string,
+    genre-name: string,
+    volume-count: int,
+    title-count: int,
+}
+
+// LocationStatistic - Volume count per location
+export struct LocationStatistic {
+    location-id: string,
+    location-name: string,
+    location-path: string,
+    volume-count: int,
+}
+
+// LoanStatistic - Count per loan status
+export struct LoanStatistic {
+    status: string,
+    count: int,
+}
+
+// LibraryStatistics - Overall library counts
+export struct LibraryStatistics {
+    total-titles: int,
+    total-volumes: int,
+    total-authors: int,
+    total-publishers: int,
+    total-genres: int,
+    total-locations: int,
+    total-borrowers: int,
+    active-loans: int,
+    overdue-loans: int,
+}
+
+export component StatisticsPage inherits Page {
+    title: @tr("Statistics");
+    description: @tr("View library statistics and analytics");
+
+    // Properties
+    in-out property <LibraryStatistics> library-stats: {
+        total-titles: 0,
+        total-volumes: 0,
+        total-authors: 0,
+        total-publishers: 0,
+        total-genres: 0,
+        total-locations: 0,
+        total-borrowers: 0,
+        active-loans: 0,
+        overdue-loans: 0,
+    };
+    in-out property <[GenreStatistic]> genre-stats: [];
+    in-out property <[LocationStatistic]> location-stats: [];
+    in-out property <[LoanStatistic]> loan-stats: [];
+
+    // Callbacks
+    callback load-statistics();
+
+    VerticalBox {
+        alignment: stretch;
+        padding: 20px;
+        spacing: 20px;
+
+        // Header
+        HorizontalBox {
+            alignment: space-between;
+            height: 50px;
+
+            Text {
+                text: @tr("Library Statistics");
+                font-size: 24px;
+                font-weight: 700;
+            }
+
+            Button {
+                text: @tr("Refresh");
+                min-width: 100px;
+                height: 35px;
+                clicked => {
+                    root.load-statistics();
+                }
+            }
+        }
+
+        // Overall Library Statistics - Card Grid
+        Text {
+            text: @tr("Overview");
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        HorizontalBox {
+            spacing: 15px;
+
+            // Titles Card
+            Rectangle {
+                background: #e3f2fd;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #90caf9;
+
+                VerticalBox {
+                    padding: 15px;
+                    alignment: center;
+                    spacing: 8px;
+
+                    Text {
+                        text: library-stats.total-titles;
+                        font-size: 32px;
+                        font-weight: 700;
+                        color: #1976d2;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: @tr("Titles");
+                        font-size: 13px;
+                        color: #1565c0;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            // Volumes Card
+            Rectangle {
+                background: #f3e5f5;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #ce93d8;
+
+                VerticalBox {
+                    padding: 15px;
+                    alignment: center;
+                    spacing: 8px;
+
+                    Text {
+                        text: library-stats.total-volumes;
+                        font-size: 32px;
+                        font-weight: 700;
+                        color: #7b1fa2;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: @tr("Volumes");
+                        font-size: 13px;
+                        color: #6a1b9a;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            // Authors Card
+            Rectangle {
+                background: #fff3e0;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #ffb74d;
+
+                VerticalBox {
+                    padding: 15px;
+                    alignment: center;
+                    spacing: 8px;
+
+                    Text {
+                        text: library-stats.total-authors;
+                        font-size: 32px;
+                        font-weight: 700;
+                        color: #f57c00;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: @tr("Authors");
+                        font-size: 13px;
+                        color: #ef6c00;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            // Genres Card
+            Rectangle {
+                background: #e8f5e9;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #81c784;
+
+                VerticalBox {
+                    padding: 15px;
+                    alignment: center;
+                    spacing: 8px;
+
+                    Text {
+                        text: library-stats.total-genres;
+                        font-size: 32px;
+                        font-weight: 700;
+                        color: #388e3c;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: @tr("Genres");
+                        font-size: 13px;
+                        color: #2e7d32;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+        }
+
+        HorizontalBox {
+            spacing: 15px;
+
+            // Active Loans Card
+            Rectangle {
+                background: #fff8e1;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #ffd54f;
+
+                VerticalBox {
+                    padding: 15px;
+                    alignment: center;
+                    spacing: 8px;
+
+                    Text {
+                        text: library-stats.active-loans;
+                        font-size: 32px;
+                        font-weight: 700;
+                        color: #f57f17;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: @tr("Active Loans");
+                        font-size: 13px;
+                        color: #f57f17;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            // Overdue Loans Card
+            Rectangle {
+                background: library-stats.overdue-loans > 0 ? #ffebee : #f5f5f5;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: library-stats.overdue-loans > 0 ? #e57373 : #ccc;
+
+                VerticalBox {
+                    padding: 15px;
+                    alignment: center;
+                    spacing: 8px;
+
+                    Text {
+                        text: library-stats.overdue-loans;
+                        font-size: 32px;
+                        font-weight: 700;
+                        color: library-stats.overdue-loans > 0 ? #c62828 : #666;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: @tr("Overdue");
+                        font-size: 13px;
+                        color: library-stats.overdue-loans > 0 ? #b71c1c : #666;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            // Borrowers Card
+            Rectangle {
+                background: #fce4ec;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #f48fb1;
+
+                VerticalBox {
+                    padding: 15px;
+                    alignment: center;
+                    spacing: 8px;
+
+                    Text {
+                        text: library-stats.total-borrowers;
+                        font-size: 32px;
+                        font-weight: 700;
+                        color: #c2185b;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: @tr("Borrowers");
+                        font-size: 13px;
+                        color: #ad1457;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+
+            // Locations Card
+            Rectangle {
+                background: #e0f2f1;
+                border-radius: 8px;
+                border-width: 1px;
+                border-color: #80cbc4;
+
+                VerticalBox {
+                    padding: 15px;
+                    alignment: center;
+                    spacing: 8px;
+
+                    Text {
+                        text: library-stats.total-locations;
+                        font-size: 32px;
+                        font-weight: 700;
+                        color: #00796b;
+                        horizontal-alignment: center;
+                    }
+                    Text {
+                        text: @tr("Locations");
+                        font-size: 13px;
+                        color: #00695c;
+                        horizontal-alignment: center;
+                    }
+                }
+            }
+        }
+
+        // Volumes per Genre Section
+        Text {
+            text: @tr("Volumes per Genre");
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        if genre-stats.length == 0: Text {
+            text: @tr("No genre statistics available. Click Refresh to load data.");
+            color: #888;
+            font-size: 14px;
+        }
+
+        if genre-stats.length > 0: Rectangle {
+            background: white;
+            border-width: 1px;
+            border-color: #ddd;
+            border-radius: 8px;
+
+            ListView {
+                for stat[index] in genre-stats: Rectangle {
+                    height: 60px;
+                    border-width: 1px;
+                    border-color: #eee;
+                    background: Math.mod(index, 2) == 0 ? #fafafa : white;
+
+                    HorizontalLayout {
+                        padding: 15px;
+                        spacing: 15px;
+
+                        // Genre name
+                        VerticalLayout {
+                            width: 200px;
+                            alignment: center;
+
+                            Text {
+                                text: stat.genre-name;
+                                font-size: 14px;
+                                font-weight: 600;
+                                overflow: elide;
+                            }
+                            Text {
+                                text: stat.title-count + " " + @tr("titles");
+                                font-size: 11px;
+                                color: #666;
+                            }
+                        }
+
+                        // Visual bar
+                        Rectangle {
+                            horizontal-stretch: 1;
+
+                            // Background bar
+                            Rectangle {
+                                width: parent.width;
+                                height: 24px;
+                                background: #e0e0e0;
+                                border-radius: 4px;
+
+                                // Filled bar (proportional to volume count)
+                                Rectangle {
+                                    width: parent.width * (stat.volume-count / Math.max(1, genre-stats[0].volume-count));
+                                    height: parent.height;
+                                    background: #1976d2;
+                                    border-radius: 4px;
+                                }
+                            }
+                        }
+
+                        // Volume count
+                        Text {
+                            text: stat.volume-count + " " + @tr("volumes");
+                            font-size: 14px;
+                            font-weight: 700;
+                            color: #1976d2;
+                            width: 100px;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Volumes per Location Section
+        Text {
+            text: @tr("Volumes per Location");
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        if location-stats.length == 0: Text {
+            text: @tr("No location statistics available.");
+            color: #888;
+            font-size: 14px;
+        }
+
+        if location-stats.length > 0: Rectangle {
+            background: white;
+            border-width: 1px;
+            border-color: #ddd;
+            border-radius: 8px;
+
+            ListView {
+                for stat[index] in location-stats: Rectangle {
+                    height: 50px;
+                    border-width: 1px;
+                    border-color: #eee;
+                    background: Math.mod(index, 2) == 0 ? #fafafa : white;
+
+                    HorizontalLayout {
+                        padding: 15px;
+                        spacing: 15px;
+
+                        Text {
+                            text: stat.location-path;
+                            font-size: 13px;
+                            color: #444;
+                            overflow: elide;
+                            horizontal-stretch: 1;
+                            vertical-alignment: center;
+                        }
+
+                        Text {
+                            text: stat.volume-count + " " + @tr("volumes");
+                            font-size: 14px;
+                            font-weight: 700;
+                            color: #00796b;
+                            width: 100px;
+                            horizontal-alignment: right;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
