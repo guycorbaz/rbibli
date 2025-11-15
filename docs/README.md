@@ -159,7 +159,7 @@ Designed for personal use with friends and family:
 3. **Run the application** - It will guide you through initial setup
 4. **Start cataloging** your books!
 
-[View Installation Guide →](https://github.com/yourusername/rbibli#installation)
+[View Installation Guide →](https://github.com/guycorbaz/rbibli#installation)
 
 ### Quick Start
 
@@ -169,7 +169,7 @@ Once installed:
 3. Add physical volumes with barcodes
 4. Optionally add borrowers for loan tracking
 
-[View Full Documentation →](https://github.com/yourusername/rbibli/tree/main/documentation)
+[View Full Documentation →](https://github.com/guycorbaz/rbibli/tree/main/documentation)
 
 ---
 
@@ -197,7 +197,7 @@ Once installed:
 - Community features
 - Library sharing
 
-[View Detailed Roadmap →](https://github.com/yourusername/rbibli/blob/main/documentation/planning.md)
+[View Detailed Roadmap →](https://github.com/guycorbaz/rbibli/blob/main/documentation/planning.md)
 
 ---
 
@@ -205,15 +205,15 @@ Once installed:
 
 ### Support
 
-- 📖 [Documentation](https://github.com/yourusername/rbibli/tree/main/documentation)
-- 💬 [Discussions](https://github.com/yourusername/rbibli/discussions)
-- 🐛 [Report Issues](https://github.com/yourusername/rbibli/issues)
+- 📖 [Documentation](https://github.com/guycorbaz/rbibli/tree/main/documentation)
+- 💬 [Discussions](https://github.com/guycorbaz/rbibli/discussions)
+- 🐛 [Report Issues](https://github.com/guycorbaz/rbibli/issues)
 
 ### Contributing
 
 rbibli is open-source and welcomes contributions! Whether you're fixing bugs, adding features, or improving documentation - we'd love your help.
 
-[Contribution Guide →](https://github.com/yourusername/rbibli#contributing)
+[Contribution Guide →](https://github.com/guycorbaz/rbibli#contributing)
 
 ---
 
@@ -221,7 +221,7 @@ rbibli is open-source and welcomes contributions! Whether you're fixing bugs, ad
 
 rbibli is free and open-source software licensed under the MIT License.
 
-[View License →](https://github.com/yourusername/rbibli/blob/main/LICENSE)
+[View License →](https://github.com/guycorbaz/rbibli/blob/main/LICENSE)
 
 ---
 
@@ -229,13 +229,13 @@ rbibli is free and open-source software licensed under the MIT License.
 
 Ready to bring order to your book collection?
 
-[**Download rbibli**](https://github.com/yourusername/rbibli/releases) | [**View on GitHub**](https://github.com/yourusername/rbibli) | [**Read Documentation**](https://github.com/yourusername/rbibli/tree/main/documentation)
+[**Download rbibli**](https://github.com/yourusername/rbibli/releases) | [**View on GitHub**](https://github.com/guycorbaz/rbibli) | [**Read Documentation**](https://github.com/guycorbaz/rbibli/tree/main/documentation)
 
 ---
 
 <div align="center">
 
-**Built with ❤️ for book lovers**
+**Built for book lovers**
 
 Made with [Rust](https://www.rust-lang.org/) and [Slint](https://slint.dev/)
 
