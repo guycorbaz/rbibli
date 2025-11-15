@@ -206,12 +206,13 @@ export component LocationsPage inherits Page {
         // This dialog appears when show-create-dialog is true.
         // It can create either root locations (parent_id = "") or child
         // locations (parent_id = UUID of parent).
+        // TODO: add shadow aroun the box to give 
         if show-create-dialog: Rectangle {
             background: white;
             border-width: 2px;
-            border-color: #0066cc;
+            border-color: #0066cc; //TODO: put this in styles
             border-radius: 8px;
-            height: 250px;
+            //height: 265px; // remove this to allow auto adjustment of form
 
             VerticalBox {
                 padding: 20px;

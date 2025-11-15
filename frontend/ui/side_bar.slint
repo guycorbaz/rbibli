@@ -19,6 +19,7 @@
 // ============================================================================
 
 import { HorizontalBox, VerticalBox, Palette } from "std-widgets.slint";
+import { Styles} from "styles.slint";
 
 // SideBarItem - Internal component for a single sidebar menu item
 //
@@ -63,16 +64,16 @@ component SideBarItem inherits Rectangle {
 
     states [
         pressed when touch.pressed : {
-            state.opacity: 0.8;
+            state.opacity: Styles.button_pressed_state;
         }
         hover when touch.has-hover : {
-            state.opacity: 0.6;
+            state.opacity: Styles.button_has_over_state;
         }
         selected when root.selected : {
-            state.opacity: 1;
+            state.opacity: Styles.button_selected_state;
         }
         focused when root.has-focus : {
-            state.opacity: 0.8;
+            state.opacity: Styles.button_has_focus_state;
         }
     ]
 
@@ -90,6 +91,8 @@ component SideBarItem inherits Rectangle {
         label := Text {
             vertical-alignment: center;
             accessible-role: none;
+            font-size: 14px;    // TODO: put in styles
+            font-weight: 400;   // TODO: put in styles
         }
     }
 
@@ -167,8 +170,9 @@ export component SideBar inherits Rectangle {
 
         // Sidebar title/header at the top
         label := Text {
-            font-size: 16px;
+            font-size: 18px;
             horizontal-alignment: center;
+            font-weight: 480; //TODO: put in styles
         }
 
         // Navigation menu container with accessibility support

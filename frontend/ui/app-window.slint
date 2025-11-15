@@ -26,7 +26,7 @@
 // All text is internationalized using the @tr() macro for multi-language support.
 // ============================================================================
 
-import { Button, VerticalBox, ScrollView, StyleMetrics } from "std-widgets.slint";
+import { Button, VerticalBox, ScrollView, StyleMetrics, ScrollView } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
 import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, VolumeData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData, LoansPage, LoanData, BorrowerData, BorrowerGroupData} from "pages/pages.slint";
 import { Styles } from "styles.slint";
@@ -370,28 +370,31 @@ export component AppWindow inherits Window {
     //icon: @image-url("../../logo/slint-logo-small-light.png");
 
     // ========================================================================
-    // Main Layout - Horizontal split between sidebar and content
+    // ScrollView wrapping entire main window
     // ========================================================================
-    HorizontalLayout {
-        // Left side: Navigation sidebar
-        // The sidebar provides menu items for switching between different pages.
-        // The current-item property tracks which menu item is selected (0-7).
-        side-bar := SideBar {
-            title: @tr("Personal Library");
-            // Menu items (internationalized):
-            // 0: Titles, 1: Locations, 2: Authors, 3: Publishers,
-            // 4: Genres, 5: Loans (TODO), 6: Statistics (TODO), 7: About
-            model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Genres"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
-        }
-
+    // This allows the entire interface (sidebar + content) to scroll together
+    // when forms or content exceed the viewport size.
+    ScrollView {
         // ====================================================================
-        // Right side: Content area with conditional page rendering
+        // Main Layout - Horizontal split between sidebar and content
         // ====================================================================
-        // Pages are shown/hidden based on the sidebar's current-item property.
-        // Each page receives data and callbacks from the AppWindow.
-        // Wrapped in ScrollView to provide scrollbars when content exceeds window size.
+        HorizontalLayout {
+            // Left side: Navigation sidebar
+            // The sidebar provides menu items for switching between different pages.
+            // The current-item property tracks which menu item is selected (0-7).
+            side-bar := SideBar {
+                title: @tr("Personal Library");
+                // Menu items (internationalized):
+                // 0: Titles, 1: Locations, 2: Authors, 3: Publishers,
+                // 4: Genres, 5: Loans (TODO), 6: Statistics (TODO), 7: About
+                model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Genres"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
+            }
 
-        ScrollView {
+            // ====================================================================
+            // Right side: Content area with conditional page rendering
+            // ====================================================================
+            // Pages are shown/hidden based on the sidebar's current-item property.
+            // Each page receives data and callbacks from the AppWindow.
             // PAGE 0: Titles Page - Manage books and titles in the library
             if(side-bar.current-item == 0) : TitlesPage {
             titles: root.titles;
