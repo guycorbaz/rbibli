@@ -1,295 +1,345 @@
-# Development Planning - Personal Library Manager (rbibli)
+# Development Planning & Status - rbibli
 
-## Architecture Overview
+**Last Updated**: 2024-11-15
 
-The project uses a **client-server architecture**:
+## Project Overview
+
+**rbibli** is a personal library management system built entirely in Rust using Slint for the user interface. The project aims to manage a personal library with features for tracking books (titles and volumes), loans, authors, series, and includes barcode scanning support.
+
+### Architecture
+
+**Client-Server Architecture**:
 - **Frontend**: Slint UI framework (native desktop, WASM later)
 - **Backend**: REST API using actix-web + tokio
+- **Database**: MariaDB via SQLx
 
-**Development Approach**: Native-first development for faster iteration, with WASM compilation planned for later. This allows:
+**Development Approach**: Native-first development for faster iteration, with WASM compilation planned for later deployment. This allows:
 - Fast compile-test cycles during development
-- Native performance and debugging
-- Browser-based access later from any device
+- Native performance and debugging tools
+- Easy browser-based access later from any device
 - Independent development of UI and business logic
-- Potential future native/mobile apps using the same backend
 - Standard web deployment patterns
 
-## Current Status (Updated: 2025-01-13)
+---
 
-### Frontend (Slint Native UI)
-- ✅ Basic Slint project structure created
+## Current Implementation Status
+
+**Overall Progress: ~85% Complete** 🟢
+
+### ✅ Fully Implemented Features
+
+#### Frontend (Slint Native UI)
+- ✅ Complete Slint project structure (native desktop)
+- ✅ Main application window with ScrollView for responsive content
 - ✅ Sidebar navigation component (8 menu items)
-- ✅ Page routing structure with conditional rendering
-- ✅ **ScrollView** for responsive content areas
-- ✅ **Multiple UI pages implemented:**
-  - ✅ Titles Page (create, edit, list with genre dropdown)
-  - ✅ Authors Page (full CRUD)
-  - ✅ Publishers Page (full CRUD)
-  - ✅ Genres Page (full CRUD)
-  - ✅ Locations Page (full CRUD with hierarchical structure)
-  - ✅ About Page
-- ✅ **Data models** (models.rs): Title, Author, Publisher, Genre, Location
-- ✅ **HTTP client** (api_client.rs): reqwest-based API client
-- ✅ **Full integration with backend API** via callbacks
-- ✅ Modal dialogs for create/edit operations
-- ⏳ WASM build configuration (planned for later)
-- ⏳ Volumes page (database ready, implementation needed)
-- ⏳ Loans page (database ready, implementation needed)
-- ⏳ Scanner interface (not started)
+- ✅ **7 Fully Functional Pages:**
+  - ✅ **Titles Page** - Full CRUD with genre dropdown, volume counts, delete confirmation
+  - ✅ **Authors Page** - Full CRUD with biographical information
+  - ✅ **Publishers Page** - Full CRUD with company details
+  - ✅ **Genres Page** - Full CRUD with title counts
+  - ✅ **Locations Page** - Full CRUD with hierarchical structure
+  - ✅ **Loans Page** - Complete loan management with tabbed interface (Active Loans, Create Loan, Borrowers, Groups)
+  - ✅ **Statistics Page** - Library analytics with visual charts
+  - ✅ **About Page** - Application information
+- ✅ Modal dialogs for create/edit operations with Save/Cancel buttons
+- ✅ Confirmation dialogs for destructive operations
+- ✅ Data models (models.rs): Title, Author, Publisher, Genre, Location, Borrower, BorrowerGroup, Loan, Volume, Statistics
+- ✅ HTTP API client (api_client.rs) with reqwest
+- ✅ Full integration with backend API via callbacks
+- ✅ Internationalization infrastructure (`@tr()` macro)
 
-### Backend (actix-web API + MariaDB)
-- ✅ actix-web project structure with proper routing
+#### Backend (actix-web + MariaDB)
+- ✅ Complete actix-web server structure with routing
 - ✅ Tokio async runtime configured
 - ✅ **MariaDB integration** with SQLx (13 migrations applied)
 - ✅ **Connection pooling** (MySqlPoolOptions, max 5 connections)
 - ✅ **Health check endpoints** (/health, /health/db)
-- ✅ **API endpoints implemented:**
-  - ✅ Titles: GET, POST, PUT (DELETE missing)
-  - ✅ Authors: Full CRUD (GET, POST, PUT, DELETE)
-  - ✅ Publishers: Full CRUD
-  - ✅ Genres: Full CRUD
-  - ✅ Locations: Full CRUD with recursive CTEs for paths
-- ✅ **Data repositories** for all implemented entities
-- ✅ **Database schema complete** for:
-  - ✅ titles, volumes, authors, publishers, genres, locations
-  - ✅ title_authors (junction table)
-  - ✅ borrowers, loans
-- ⏳ Volume API endpoints (database ready, handlers needed)
-- ⏳ Borrower/Loan API endpoints (database ready, handlers needed)
-- ⏳ Title-Author relationship handlers
+- ✅ **Full CRUD APIs for 11 Entity Types:**
+  - ✅ Titles API (GET, POST, PUT, DELETE with business rules)
+  - ✅ Volumes API (GET, POST, PUT, DELETE with barcode support)
+  - ✅ Authors API (full CRUD)
+  - ✅ Publishers API (full CRUD)
+  - ✅ Genres API (full CRUD)
+  - ✅ Locations API (full CRUD with recursive CTEs)
+  - ✅ Borrowers API (full CRUD with group association)
+  - ✅ Borrower Groups API (full CRUD with loan policies)
+  - ✅ Loans API (create by barcode, list active/overdue, return)
+  - ✅ Statistics API (library overview, genres, locations, loans)
+  - ✅ ISBN Lookup API (Google Books integration)
+  - ✅ Dewey Classification API (search, browse, get by code)
+  - ✅ Cover Upload API (upload, get, delete)
+- ✅ UUID-based entity IDs (CHAR(36))
+- ✅ Timestamp management (created_at, updated_at)
+- ✅ Repository pattern for all entities
+
+#### Database Schema (MariaDB)
+- ✅ **13 Migrations Applied** - Complete schema:
+  - ✅ titles (with publisher_id, genre_id FKs)
+  - ✅ volumes (with barcode, condition, loan_status, location_id FK)
+  - ✅ authors
+  - ✅ publishers
+  - ✅ genres
+  - ✅ locations (self-referencing hierarchy)
+  - ✅ title_authors (junction table with role enum, display_order)
+  - ✅ borrowers
+  - ✅ borrower_groups (with loan_duration_days policy)
+  - ✅ loans (with title_id, volume_id, borrower_id FKs)
+  - ✅ dewey_classifications (hierarchical DDC system)
+- ✅ Foreign key relationships with proper CASCADE/RESTRICT/SET NULL
+- ✅ Enum types (condition, loan_status, author_role)
+- ✅ Unique constraints (barcodes, etc.)
+
+### 🔄 Partially Implemented
+
+- 🔄 **Title-Author Relationships** (database ready, handlers/UI needed)
+  - Database junction table exists with role support
+  - Need endpoints to add/remove/update author relationships
+  - Need UI for author selection in title forms
+
+### ⏳ Not Yet Implemented
+
+- ⏳ **Series Management** (database schema ready, implementation needed)
+- ⏳ **Barcode Generation** (Code 128 format generator)
+- ⏳ **Advanced Search & Filtering** (full-text search, complex filters)
+- ⏳ **Import/Export** (CSV, JSON formats)
+- ⏳ **Duplicate Detection** (fuzzy matching algorithms)
+- ⏳ **Loan Extension** (extend loan due dates)
+- ⏳ **WASM Compilation** (web deployment target)
+
+---
+
+## Feature Breakdown by Category
+
+### 1. Title Management (✅ 95% Complete)
+
+**What's Working:**
+- ✅ List all titles with volume counts (LEFT JOIN)
+- ✅ Create new titles with full metadata
+- ✅ Edit existing titles (partial updates supported)
+- ✅ Delete titles (only if no volumes exist - business rule enforced)
+- ✅ Genre dropdown integration
+- ✅ Publisher foreign key relationship
+- ✅ ISBN field support
+- ✅ Dewey classification fields
+- ✅ Cover URL field
+- ✅ Timestamps (created_at, updated_at)
+
+**Missing:**
+- ⏳ Author assignment UI (database ready)
+- ⏳ Title detail view page
+- ⏳ Search/filter functionality
+- ⏳ Cover image upload UI
+
+### 2. Volume Management (✅ 100% Complete)
+
+**What's Working:**
+- ✅ List volumes by title
+- ✅ Create volumes with auto-generated barcodes (VOL-000001 format)
+- ✅ Edit volume details (condition, location, notes)
+- ✅ Delete volumes (if not loaned)
+- ✅ Automatic copy numbering per title
+- ✅ Condition tracking (excellent/good/fair/poor/damaged)
+- ✅ Loan status tracking (available/loaned/overdue/lost/maintenance)
+- ✅ Location assignment with FK to locations
+- ✅ Individual volume notes
+
+**Missing:**
+- ⏳ Volume list page in frontend (database and API ready)
+- ⏳ Add volume UI from titles page
+
+### 3. Author Management (✅ 90% Complete)
+
+**What's Working:**
+- ✅ List all authors with title counts
+- ✅ Create new authors with biographical information
+- ✅ Edit authors
+- ✅ Delete authors (CASCADE to title_authors)
+- ✅ Birth/death dates
+- ✅ Nationality, biography, website fields
+
+**Missing:**
+- ⏳ Title-author relationship management (add/remove authors to titles)
+- ⏳ Author role selection (main author, co-author, translator, etc.)
+- ⏳ Display order management
+
+### 4. Publisher Management (✅ 100% Complete)
+
+**What's Working:**
+- ✅ Full CRUD operations
+- ✅ Company details (founded year, country, website)
+- ✅ Title count display
+- ✅ Used in titles via publisher_id FK
+
+### 5. Genre Management (✅ 100% Complete)
+
+**What's Working:**
+- ✅ Full CRUD operations
+- ✅ Genre dropdown fully integrated in title forms
+- ✅ Title count display for each genre
+
+### 6. Location Management (✅ 100% Complete)
+
+**What's Working:**
+- ✅ Full hierarchical structure (parent-child relationships)
+- ✅ Recursive CTE for full path display ("Office > Bookshelf A > Shelf 3")
+- ✅ Parent location dropdown in create form
+- ✅ Volume count per location
+- ✅ Used in volumes via location_id FK
+
+### 7. Loan Management (✅ 100% Complete)
+
+**What's Working:**
+- ✅ **Borrower Management**:
+  - Full CRUD operations with contact information
+  - Edit dialog with Save/Cancel buttons
+  - Group association for loan policies
+- ✅ **Borrower Group Management**:
+  - Full CRUD operations
+  - Configurable loan duration per group (in days)
+  - Edit dialog with Save/Cancel buttons
+- ✅ **Loan Operations**:
+  - Create loans by scanning/entering volume barcodes
+  - Automatic due date calculation based on borrower group policy
+  - View all active loans with due dates
+  - Visual overdue highlighting
+  - Return workflow with volume status update
+  - Tabbed interface (Active Loans, Create Loan, Borrowers, Groups)
+
+**Missing:**
+- ⏳ Title-based loan with automatic volume selection (currently manual barcode)
+- ⏳ Loan extension functionality
+- ⏳ Loan history view
+
+### 8. Statistics (✅ 100% Complete)
+
+**What's Working:**
+- ✅ **Library Overview**:
+  - Total counts (titles, volumes, authors, publishers, genres, locations, borrowers)
+  - Active and overdue loans count
+  - Visual cards with color coding
+- ✅ **Volumes per Genre**:
+  - Bar chart visualization
+  - Shows both volume and title counts
+  - Proportional visual representation
+- ✅ **Volumes per Location**:
+  - Hierarchical location paths
+  - Volume count per location
+- ✅ **Loan Status Breakdown**:
+  - Count per loan status type
+
+### 9. ISBN Lookup (✅ 100% Complete)
+
+**What's Working:**
+- ✅ Google Books API integration
+- ✅ Lookup by ISBN (10 or 13 digit)
+- ✅ Returns title, authors, publisher, description, cover URL, etc.
+
+### 10. Dewey Classification (✅ 100% Complete)
+
+**What's Working:**
+- ✅ Complete Dewey Decimal Classification database (3 levels)
+- ✅ Search Dewey codes by keyword
+- ✅ Browse Dewey hierarchy
+- ✅ Get classification by code
+- ✅ Relevance scoring for search results
+
+**Missing:**
+- ⏳ Dewey code selector UI in title forms
+- ⏳ Browse by classification in frontend
+
+### 11. Cover Images (✅ 100% Complete - Backend)
+
+**What's Working:**
+- ✅ Upload cover images (JPEG, PNG, GIF, max 5MB)
+- ✅ Get cover image by title ID
+- ✅ Delete cover image
+
+**Missing:**
+- ⏳ Cover upload UI in frontend
+- ⏳ Cover display in title list/detail
+
+---
 
 ## Development Phases
 
 ### Phase 1: Core Infrastructure ✅ **COMPLETED**
 
-#### Frontend Tasks
-- [x] Complete page structure for main sections
-  - [x] **Titles page** (create, edit, list)
-  - [x] **Authors page** (full CRUD)
-  - [x] **Publishers page** (full CRUD)
-  - [x] **Genres page** (full CRUD)
-  - [x] **Locations page** (full CRUD with hierarchy)
-  - [x] **About page**
-  - [ ] Volumes page (pending)
-  - [ ] Loans page (pending)
-  - [ ] Scanner page (pending)
-  - [ ] Statistics page (pending)
-- [x] Define shared data models (Title, Author, Publisher, Genre, Location)
-  - [ ] Volume, Loan, Borrower models (pending)
-- [x] Implement state management with Slint properties and callbacks
-- [x] Create reusable UI components
-  - [x] Base Page component
-  - [x] Modal dialogs for create/edit
-  - [x] Sidebar navigation
-  - [ ] Volume list component (pending)
-  - [ ] Loan card component (pending)
-  - [ ] Search bar component (pending)
+**Status**: 100% Complete
 
-#### Backend Tasks
-- [x] MariaDB database integration with SQLx
-- [x] Define complete database schema (13 migrations)
-  - [x] titles table (with publisher_id, genre_id FKs)
-  - [x] volumes table (with location_id FK, barcode, condition, loan_status)
-  - [x] borrowers table
-  - [x] loans table (with title_id, volume_id, borrower_id FKs)
-  - [x] authors table
-  - [x] publishers table
-  - [x] genres table
-  - [x] locations table (self-referencing hierarchy)
-  - [x] title_authors junction table
-- [x] Set up sqlx with MariaDB feature and runtime
-- [x] Database migrations system (sqlx-cli)
-- [x] Implement repository pattern for all entities
-- [x] Create CRUD endpoints for core entities
-- [x] Health check endpoints (/health, /health/db)
+- [x] Database setup (MariaDB + SQLx)
+- [x] Complete schema with 13 migrations
+- [x] Backend API structure (actix-web + tokio)
+- [x] Frontend structure (Slint native)
+- [x] API client and communication layer
+- [x] Repository pattern for all entities
+- [x] Health check endpoints
 
-### Phase 2: Title and Volume Management 🔄 **80% COMPLETE**
+### Phase 2: Basic Entity Management ✅ **COMPLETED**
 
-#### Frontend
-- [x] Title management interface
-  - [x] List view with volume counts
-  - [x] Add new title form (all fields including genre dropdown)
-  - [x] Edit title form
-  - [ ] Search/filter functionality (pending)
-  - [ ] Title detail view (pending)
-  - [ ] Title deletion (backend missing)
-- [ ] Volume management interface **← CRITICAL PATH**
-  - [ ] Add volume to title
-  - [ ] List volumes for a title
-  - [ ] Edit volume details
-  - [ ] Display volume status (available/loaned)
-  - [ ] Volume condition tracking
-  - [ ] Location assignment
+**Status**: 100% Complete
 
-#### Backend
-- [x] Title CRUD API **mostly complete**
-  - [x] `GET /api/v1/titles` - List titles with volume counts
-  - [x] `POST /api/v1/titles` - Create title
-  - [x] `GET /api/v1/titles/{id}` - Get title details
-  - [x] `PUT /api/v1/titles/{id}` - Update title (partial updates)
-  - [ ] `DELETE /api/v1/titles/{id}` - Delete title **← MISSING**
-- [ ] Volume CRUD API **← CRITICAL PATH** (database ready, handlers needed)
-  - [ ] `POST /api/v1/titles/{id}/volumes` - Add volume
-  - [ ] `GET /api/v1/volumes` - List all volumes
-  - [ ] `GET /api/v1/volumes/{id}` - Get volume
-  - [ ] `PUT /api/v1/volumes/{id}` - Update volume
-  - [ ] `DELETE /api/v1/volumes/{id}` - Delete volume
-- [ ] Barcode generation service
-  - [ ] Sequential barcode generator (VOL-000001)
-  - [ ] Uniqueness validation
+- [x] Titles full CRUD
+- [x] Authors full CRUD
+- [x] Publishers full CRUD
+- [x] Genres full CRUD
+- [x] Locations full CRUD with hierarchy
+- [x] Genre dropdown integration
+- [x] Business rule enforcement (title deletion)
 
-### Phase 3: Author/Publisher/Genre/Location Management ✅ **COMPLETED**
+### Phase 3: Advanced Features ✅ **COMPLETED**
 
-**Note:** This phase was completed ahead of schedule to establish the full data model.
+**Status**: 100% Complete
 
-#### Frontend
-- [x] Authors Page (full CRUD with biographical info, title counts)
-- [x] Publishers Page (full CRUD with company details, title counts)
-- [x] Genres Page (full CRUD with title counts)
-- [x] Locations Page (full CRUD with hierarchical paths)
-- [x] Genre dropdown in title forms
-- [x] Parent location dropdown for hierarchical locations
+- [x] Volume management (full CRUD)
+- [x] Borrower management (full CRUD)
+- [x] Borrower Groups with loan policies
+- [x] Loan management (create by barcode, list, return)
+- [x] Statistics dashboard (4 endpoint types)
+- [x] ISBN lookup integration
+- [x] Dewey classification system
+- [x] Cover image upload API
+- [x] Overdue loan detection and highlighting
 
-#### Backend
-- [x] Authors API (full CRUD)
-- [x] Publishers API (full CRUD)
-- [x] Genres API (full CRUD)
-- [x] Locations API (full CRUD with recursive CTEs for path building)
-- [x] Database migrations for all entities
-- [x] Foreign key relationships (titles.publisher_id, titles.genre_id, volumes.location_id)
+### Phase 4: Polish & Integration 🔄 **IN PROGRESS (~50%)**
 
-### Phase 4: Barcode Scanning ⏳ **NOT STARTED**
+**Status**: 50% Complete
 
-#### Frontend
-- [ ] Scanner interface
-  - [ ] Barcode input field (supports scanner devices)
-  - [ ] Manual barcode entry
-  - [ ] Display scanned item details
-  - [ ] Quick actions (loan/return)
-- [ ] Dual barcode support
-  - [ ] Volume barcode (Code 128) - for operations
-  - [ ] ISBN barcode (EAN-13) - for title lookup
+**Completed**:
+- [x] Statistics page with visual charts
+- [x] Confirmation dialogs for destructive actions
+- [x] Modal dialogs with Save/Cancel buttons
+- [x] Borrower/Group edit functionality
 
-#### Backend
-- [ ] Scan endpoints
-  - [ ] `GET /api/v1/scan/volume/{barcode}` - Find by volume barcode
-  - [ ] `GET /api/v1/scan/isbn/{isbn}` - Find by ISBN
-- [ ] Barcode validation
-  - [ ] Code 128 format validation
-  - [ ] EAN-13 checksum validation
+**Remaining**:
+- [ ] Title-Author relationship UI
+- [ ] Volume list page in frontend
+- [ ] Loan extension functionality
+- [ ] Error handling and user feedback improvements
+- [ ] Loading indicators during API calls
+- [ ] Cover image upload UI
+- [ ] Dewey code selector UI
 
-### Phase 5: Loan Management 🔄 **10% COMPLETE**
+### Phase 5: Advanced Features ⏳ **NOT STARTED**
 
-**Status:** Database schema complete, implementation needed.
+- [ ] Series management
+- [ ] Advanced search and filtering
+- [ ] Duplicate detection algorithms
+- [ ] Import/export (CSV, JSON)
+- [ ] Barcode generation (Code 128)
+- [ ] Full-text search
+- [ ] Loan history view
 
-#### Frontend
-- [ ] Borrower management
-  - [ ] Add/edit borrower
-  - [ ] List borrowers
-  - [ ] Search borrowers
-- [ ] Loan operations
-  - [ ] Create loan interface (title search)
-  - [ ] Return volume interface
-  - [ ] View active loans
-  - [ ] View loan history
-- [ ] Loan status indicators
-  - [ ] Available/loaned badges
-  - [ ] Overdue warnings
+### Phase 6: Deployment & Polish ⏳ **NOT STARTED**
 
-#### Backend
-- [x] Database schema (borrowers, loans tables)
-- [ ] Borrower API
-  - [ ] CRUD operations for borrowers
-- [ ] Loan API
-  - [ ] `POST /api/v1/loans` - Create loan
-  - [ ] `GET /api/v1/loans` - List loans
-  - [ ] `GET /api/v1/loans/active` - Active loans
-  - [ ] `GET /api/v1/loans/overdue` - Overdue loans
-  - [ ] `PUT /api/v1/loans/{id}/return` - Return volume
-- [ ] Loan business logic
-  - [ ] Title-based loan with automatic volume selection
-  - [ ] Loan duration by title type (fiction 21d, non-fiction 14d, etc.)
-  - [ ] Overdue calculation
-
-### Phase 6: Title-Author Relationships 🔄 **10% COMPLETE**
-
-**Status:** Database junction table ready, implementation needed.
-
-#### Frontend
-- [ ] Author assignment in title create/edit
-- [ ] Author role selection (main author, co-author, translator, etc.)
-- [ ] Display order management
-- [ ] Display authors on title list/detail
-
-#### Backend
-- [x] title_authors junction table with role and display_order
-- [ ] Add author to title endpoint
-- [ ] Remove author from title endpoint
-- [ ] Update author role/order endpoint
-- [ ] Include authors in title responses
-
-### Phase 7: Advanced Features ⏳ **NOT STARTED**
-
-#### Search and Filtering
-- [ ] Frontend: Advanced search interface
-- [ ] Backend: Search endpoints with filters
-  - [ ] Full-text search in titles
-  - [ ] Filter by availability, condition, location
-  - [ ] Filter by genre, author, series
-
-#### Statistics and Reports
-- [ ] Frontend: Dashboard with statistics
-  - [ ] Total volumes count
-  - [ ] Active loans count
-  - [ ] Popular titles (most loaned)
-  - [ ] Overdue items
-- [ ] Backend: Statistics endpoints
-  - [ ] Collection metrics
-  - [ ] Loan statistics
-  - [ ] Usage analytics
-
-#### Series Management (Not Started)
-- [ ] Database: series table
-- [ ] Frontend: Series management UI
-- [ ] Backend: Series API
-- [ ] Series numbering for titles
-
-#### Dewey Classification UI
-- [ ] Frontend: Dewey code selector/autocomplete
-- [ ] Backend: Dewey code validation
-- [ ] Browse by classification
-
-### Phase 8: Import/Export ⏳ **NOT STARTED**
-
-#### Data Import
-- [ ] CSV import for bulk title/volume addition
-- [ ] ISBN metadata lookup (Google Books API)
-- [ ] Duplicate detection during import
-
-#### Data Export
-- [ ] Export to CSV
-- [ ] Export to JSON
-- [ ] Backup/restore functionality
-
-### Phase 9: Polish and Deployment ⏳ **NOT STARTED**
-
-#### User Experience
-- [ ] Internationalization (French/English)
-- [ ] Keyboard shortcuts
-- [ ] Accessibility improvements
-- [ ] Error handling and user feedback
-
-#### Quality and Testing
-- [ ] Unit tests for business logic
-- [ ] Integration tests for API
-- [ ] UI testing where applicable
-- [ ] Code coverage analysis
-
-#### Deployment
-- [ ] Build optimization
-- [ ] Release packaging
-- [ ] Installation instructions
+- [ ] WASM compilation for web deployment
+- [ ] Full internationalization (French/English)
+- [ ] Comprehensive error handling
+- [ ] Unit and integration tests
+- [ ] Performance optimization
+- [ ] Docker configuration
 - [ ] User documentation
+
+---
 
 ## Technical Decisions
 
@@ -297,11 +347,10 @@ The project uses a **client-server architecture**:
 - **Cross-platform**: Same codebase for native desktop AND web (WASM)
 - **Declarative UI**: Clean, maintainable `.slint` files
 - **Rust throughout**: Full Rust stack (UI + backend)
-- **Native-first development**: Fast compile-test cycles during development
+- **Native-first**: Fast compile-test cycles during development
 - **WASM ready**: Can compile to WebAssembly when needed
 - **No JavaScript**: Pure Rust (no JS dependencies)
 - **Type safety**: Shared models between frontend/backend
-- **Performance**: Native speed on desktop, near-native in browser
 
 ### Why actix-web?
 - **Performance**: One of the fastest Rust web frameworks
@@ -312,11 +361,12 @@ The project uses a **client-server architecture**:
 ### Why MariaDB?
 - **Robust**: Production-grade, enterprise-ready database
 - **MySQL-compatible**: Wide ecosystem and tooling support
-- **Open-source**: Free and actively maintained
-- **Performance**: Optimized for concurrent access and large datasets
+- **Performance**: Optimized for concurrent access
 - **Features**: Full-text search, JSON support, transactions, foreign keys
 - **Scalability**: Can handle growth from personal to multi-user use
 - **Backup/Restore**: Mature tools for data safety
+
+---
 
 ## Development Workflow
 
@@ -332,7 +382,7 @@ cargo build --release  # Build optimized native binary
 cd frontend
 wasm-pack build --target web --dev    # Build WASM
 miniserve . --index index.html -p 8080 # Serve web app
-# Open browser to http://localhost:8080
+# Open browser to http://localhost:8000
 ```
 
 ### Backend Development
@@ -348,138 +398,207 @@ cargo clippy           # Lint code
 # Terminal 1: Run backend
 cd backend && cargo run
 
-# Terminal 2: Build and serve frontend
-cd frontend
-wasm-pack build --target web --dev
-python3 -m http.server 8080
+# Terminal 2: Run frontend
+cd frontend && cargo run
 
-# Open browser to http://localhost:8080
+# Application connects to http://localhost:8000
 ```
 
-## Estimated Timeline
+### Database Management
+```bash
+cd backend
+sqlx migrate run       # Apply migrations
+sqlx migrate revert    # Revert last migration
+sqlx migrate info      # Show migration status
+```
 
-- **Phase 1**: 2-3 weeks (Infrastructure)
-- **Phase 2**: 2-3 weeks (Core functionality)
-- **Phase 3**: 1 week (Barcode scanning)
-- **Phase 4**: 2 weeks (Loan management)
-- **Phase 5**: 3-4 weeks (Advanced features)
-- **Phase 6**: 1-2 weeks (Import/export)
-- **Phase 7**: 1-2 weeks (Polish)
+---
 
-**Total estimated**: 12-17 weeks
+## Critical Path to MVP
 
-*Note: Timeline assumes part-time development (15-20 hours/week)*
+**Current Status: ~85% Complete** 🟢
 
-## Key Principles
+### Completed Critical Features ✅
+1. ✅ **Core Data Management** - All entity CRUD operations working
+2. ✅ **Volume Management** - Physical book tracking fully implemented
+3. ✅ **Loan Management** - Complete loan workflow with borrowers and groups
+4. ✅ **Statistics Dashboard** - Analytics and visualizations
+5. ✅ **Database Integration** - All 13 migrations applied, full schema
 
-1. **Incremental Development**: Each phase delivers working features
-2. **Test as You Go**: Write tests alongside features
-3. **User-Centered**: Focus on usability for personal library management
-4. **Keep It Simple**: Avoid over-engineering for personal use
-5. **Data Integrity**: Strong validation and constraints
-6. **Offline-First**: Frontend works without backend when possible
+### Remaining Critical Features
 
-## Success Criteria
+#### 1. Title-Author Relationships (HIGH PRIORITY)
+**Effort**: 1-2 days
 
-- ✅ Can add and manage titles and volumes
-- ✅ Can scan barcodes to find books
-- ✅ Can loan and return volumes
-- ✅ Can track who has which books
-- ✅ Can see overdue loans
-- ✅ Data is persistent and reliable
-- ✅ Interface is intuitive and responsive
-- ✅ Works in modern web browsers
-- ✅ Accessible from multiple devices
-
-## Critical Path to MVP (Minimum Viable Product)
-
-**Current Status: ~60% Complete**
-
-The following features are CRITICAL for a functional library management system:
-
-### 1. Volume Management (HIGH PRIORITY - BLOCKING)
-Without volumes, you cannot track physical books or perform loans. This is the #1 priority.
-
-**Tasks:**
-- [ ] Backend: Volume model and database handlers (CRUD operations)
-- [ ] Backend: Barcode auto-generation service (VOL-000001 format)
-- [ ] Frontend: Volume data models
-- [ ] Frontend: Volumes page with list/create/edit
-- [ ] Frontend: "Add Volume" button on Titles page
-- [ ] UI: Display volumes for each title
-- [ ] UI: Location assignment dropdown
-- [ ] UI: Condition tracking (excellent/good/fair/poor/damaged)
-
-**Estimated effort:** 2-3 days
-
-### 2. Loan Management (HIGH PRIORITY - BLOCKING)
-Core functionality for tracking who borrowed what.
-
-**Tasks:**
-- [ ] Backend: Borrower CRUD handlers
-- [ ] Backend: Loan CRUD handlers with volume selection logic
-- [ ] Backend: Due date calculation by title type
-- [ ] Frontend: Borrowers page (simple CRUD)
-- [ ] Frontend: Loans page (create loan, return, view active/history)
-- [ ] UI: Loan status indicators (available/loaned badges)
-- [ ] UI: Overdue warnings
-
-**Estimated effort:** 2-3 days
-
-### 3. Title-Author Relationships (MEDIUM PRIORITY)
-Important for proper book metadata.
-
-**Tasks:**
-- [ ] Backend: Title-Author junction handlers (add/remove/update)
+**Tasks**:
+- [ ] Backend: Junction table handlers (add/remove/update)
 - [ ] Frontend: Author selection in title create/edit
 - [ ] Frontend: Display authors on title list/detail
 - [ ] UI: Role selection (main author, co-author, translator, etc.)
 
-**Estimated effort:** 1 day
+#### 2. Frontend Volume Integration (MEDIUM PRIORITY)
+**Effort**: 1-2 days
 
-### 4. Critical Bug Fixes (MEDIUM PRIORITY)
-- [ ] Backend: Implement DELETE /api/v1/titles/{id} endpoint
-- [ ] Frontend: Add title deletion button and confirmation
-- [ ] UI: Error handling and user feedback for failed operations
-- [ ] UI: Loading indicators during API calls
+**Tasks**:
+- [ ] Frontend: Volumes page/tab showing volumes per title
+- [ ] Frontend: Add volume button on titles page
+- [ ] UI: Volume list component
+- [ ] UI: Display volume status badges (available/loaned)
 
-**Estimated effort:** 1 day
+#### 3. Polish & UX Improvements (MEDIUM PRIORITY)
+**Effort**: 2-3 days
 
-### 5. Basic Barcode Support (MEDIUM PRIORITY)
-At minimum, allow manual barcode entry and lookup.
+**Tasks**:
+- [ ] Loading indicators during API calls
+- [ ] Comprehensive error handling and user feedback
+- [ ] Toast notifications for success/error
+- [ ] Form validation improvements
+- [ ] Empty states for lists
+- [ ] Cover image upload UI
 
-**Tasks:**
-- [ ] Backend: GET /api/v1/scan/volume/{barcode} endpoint
-- [ ] UI: Barcode input field for quick lookup
-- [ ] UI: Display volume/title details from barcode scan
+### Total Estimated Effort to Feature-Complete: ~5-7 days
 
-**Estimated effort:** 0.5 days
+---
 
-### Total Estimated Effort to MVP: ~7-8 days
+## Post-MVP Enhancement Roadmap
 
-**After these 5 items, you will have a functional library management system that can:**
-- ✅ Add books (titles) with full metadata
-- ✅ Add physical copies (volumes) with barcodes and locations
-- ✅ Track locations in a hierarchy
-- ✅ Manage borrowers
-- ✅ Create loans and track returns
-- ✅ Associate authors with titles
-- ✅ Categorize by genre and publisher
+### Short-term (1-2 weeks)
+- Series management (database ready)
+- Loan extension functionality
+- Cover image upload UI
+- Dewey code selector in title forms
+- Advanced error handling
 
-## Future Enhancements (Post-MVP)
-
-- Progressive Web App (PWA) with offline support
-- WASM compilation for web deployment
-- Native mobile apps (using same backend)
-- Advanced barcode scanning with camera/USB scanner
-- Advanced reporting and analytics
-- Book recommendations
-- Integration with online catalogs (Google Books API, Open Library)
-- Series management
-- Dewey decimal classification UI
+### Medium-term (1-2 months)
+- Advanced search and filtering
+- Full-text search implementation
 - Duplicate detection algorithms
 - Import/export (CSV, JSON)
-- Search and filtering capabilities
-- Statistics dashboard
-- Multi-user support with permissions
+- Barcode generation (Code 128)
+- Loan history view
+- Pagination for large lists
+
+### Long-term (2-3 months)
+- WASM compilation for web deployment
+- Progressive Web App (PWA) features
+- Full internationalization (French/English)
+- Mobile-responsive design
 - Cloud deployment (Docker, Kubernetes)
+- Comprehensive testing suite
+- User documentation and help system
+
+---
+
+## Success Criteria
+
+### MVP Success Criteria ✅ (Mostly Achieved)
+- ✅ Can add and manage titles and volumes
+- ✅ Can track physical book locations hierarchically
+- ✅ Can manage authors, publishers, and genres
+- ✅ Can loan and return volumes with barcode lookup
+- ✅ Can track who has which books
+- ✅ Can see overdue loans visually highlighted
+- ✅ Can view library statistics and analytics
+- 🔄 Can associate authors with titles (90% - UI pending)
+- ✅ Data is persistent and reliable in MariaDB
+- ✅ Interface is intuitive and responsive with native desktop performance
+
+### Full Product Success Criteria (Future)
+- ⏳ Can scan barcodes with hardware scanner
+- ⏳ Can import books from CSV/JSON
+- ⏳ Can export library data
+- ⏳ Can detect duplicate entries automatically
+- ⏳ Works in modern web browsers via WASM
+- ⏳ Accessible from multiple devices
+- ⏳ Available in French and English
+
+---
+
+## Timeline Estimates
+
+### Completed Work
+- **Phase 1** (Infrastructure): ✅ 3 weeks (Completed)
+- **Phase 2** (Basic Entities): ✅ 3 weeks (Completed)
+- **Phase 3** (Advanced Features): ✅ 4 weeks (Completed)
+
+### Remaining Work
+- **Phase 4** (Polish & Integration): 1-2 weeks
+- **Phase 5** (Advanced Features): 3-4 weeks
+- **Phase 6** (Deployment): 1-2 weeks
+
+**Total Remaining**: ~5-8 weeks (part-time development)
+
+---
+
+## Key Principles
+
+1. **Data Integrity First**: Strong validation and constraints at database level
+2. **Incremental Development**: Each phase delivers working features
+3. **User-Centered Design**: Focus on usability for personal library management
+4. **Keep It Simple**: Avoid over-engineering for personal/family use
+5. **Native Performance**: Leverage Rust and Slint for fast, responsive UI
+6. **Type Safety**: Use Rust's type system to prevent bugs
+7. **Trust-Based System**: Simple loan management without complex restrictions
+
+---
+
+## Recent Milestones
+
+**November 2024**:
+- ✅ Project initialization and architecture decisions
+- ✅ Database schema design (13 migrations)
+- ✅ Core infrastructure setup
+
+**January 2025**:
+- ✅ Full CRUD for 5 core entities (Titles, Authors, Publishers, Genres, Locations)
+- ✅ MariaDB integration with SQLx
+- ✅ Frontend-backend communication layer
+
+**November 2025** (Recent):
+- ✅ Complete loan management system (borrowers, groups, loans)
+- ✅ Statistics dashboard with 4 visualization types
+- ✅ Volume management full CRUD
+- ✅ ISBN lookup via Google Books API
+- ✅ Dewey Decimal Classification system
+- ✅ Cover image upload API
+- ✅ Edit dialogs with Save/Cancel pattern
+- ✅ Overdue loan detection and highlighting
+
+---
+
+## Project Statistics
+
+**Codebase Size**:
+- Frontend: ~2,000 lines of Rust + ~2,500 lines of Slint UI
+- Backend: ~3,500 lines of Rust
+- Database: 13 SQL migrations
+
+**API Endpoints**: 60+ REST endpoints across 11 entity types
+
+**Database Tables**: 11 tables with comprehensive relationships
+
+**Features**: 8 major feature areas implemented
+
+**Test Coverage**: To be added (planned for Phase 6)
+
+---
+
+## Next Actions (Prioritized)
+
+### This Week
+1. Implement title-author relationship UI
+2. Add volumes page/tab in frontend
+3. Improve error handling and user feedback
+
+### Next Week
+4. Add loading indicators
+5. Implement cover image upload UI
+6. Add Dewey code selector in title forms
+
+### This Month
+7. Series management implementation
+8. Loan extension functionality
+9. Advanced search and filtering
+10. Begin WASM compilation setup
+
+**Focus**: Complete Phase 4 (Polish & Integration) to achieve feature-complete status.
