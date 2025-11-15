@@ -229,7 +229,7 @@ rbibli is free and open-source software licensed under the MIT License.
 
 Ready to bring order to your book collection?
 
-[**Download rbibli**](https://github.com/yourusername/rbibli/releases) | [**View on GitHub**](https://github.com/guycorbaz/rbibli) | [**Read Documentation**](https://github.com/guycorbaz/rbibli/tree/main/documentation)
+[**Download rbibli**](https://github.com/guycorbaz/rbibli/releases) | [**View on GitHub**](https://github.com/guycorbaz/rbibli) | [**Read Documentation**](https://github.com/guycorbaz/rbibli/tree/main/documentation)
 
 ---
 
@@ -239,6 +239,6 @@ Ready to bring order to your book collection?
 
 Made with [Rust](https://www.rust-lang.org/) and [Slint](https://slint.dev/)
 
-[⭐ Star on GitHub](https://github.com/yourusername/rbibli) • [🐦 Share on Twitter](https://twitter.com/intent/tweet?text=Check%20out%20rbibli%20-%20A%20beautiful%20personal%20library%20management%20system!) • [📧 Contact](mailto:your.email@example.com)
+[⭐ Star on GitHub](https://github.com/guycorbaz/rbibli) • [🐦 Share on Twitter](https://twitter.com/intent/tweet?text=Check%20out%20rbibli%20-%20A%20beautiful%20personal%20library%20management%20system!)
 
 </div>
