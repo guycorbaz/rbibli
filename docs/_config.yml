@@ -13,7 +13,7 @@ plugins:
 
 # Repository Information (update with your GitHub username)
 github:
-  repository_url: https://github.com/yourusername/rbibli
+  repository_url: https://github.com/guycorbaz/rbibli
   repository_name: rbibli
 
 # Build Settings
@@ -39,7 +39,7 @@ exclude:
 
 # Additional Settings
 show_downloads: true
-google_analytics: # Add your GA tracking ID if needed
+#google_analytics: # Add your GA tracking ID if needed
 
 # Logo (optional - add a logo image to docs/ directory)
 # logo: /assets/images/logo.png
