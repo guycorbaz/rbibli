@@ -233,7 +233,7 @@ Ready to bring order to your book collection?
 
 ---
 
-<div align="center">
+<div style="text-align: center;">
 
 **Built for book lovers**
 
