@@ -429,11 +429,12 @@ export component GenresPage inherits Page {
                         }
 
                         // Delete button - removes genre from database
-                        // Note: May fail if genre has associated titles
+                        // Note: Disabled if genre has associated titles
                         Button {
                             text: @tr("Delete");
                             min-width: 80px;
                             height: 32px;
+                            enabled: genre.title-count == 0;
                             clicked => {
                                 root.delete-genre(genre.id);
                             }
