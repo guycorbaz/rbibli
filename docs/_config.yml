@@ -1,0 +1,48 @@
+# GitHub Pages Configuration for rbibli
+
+# Site Settings
+title: rbibli
+description: >-
+  A modern personal library management system built in Rust.
+  Catalog your books, track loans, and organize your collection with ease.
+
+# Theme
+remote_theme: pages-themes/slate@v0.2.0
+plugins:
+  - jekyll-remote-theme
+
+# Repository Information (update with your GitHub username)
+github:
+  repository_url: https://github.com/yourusername/rbibli
+  repository_name: rbibli
+
+# Build Settings
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - .DS_Store
+
+# Site URL (will be set automatically by GitHub Pages)
+# url: "https://yourusername.github.io"
+# baseurl: "/rbibli"
+
+# Additional Settings
+show_downloads: true
+google_analytics: # Add your GA tracking ID if needed
+
+# Logo (optional - add a logo image to docs/ directory)
+# logo: /assets/images/logo.png
+
+# SEO
+lang: en-US
