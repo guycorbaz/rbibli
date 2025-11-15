@@ -4,34 +4,38 @@
 
 The backend is a REST API built with **actix-web** and **tokio** for async operations. It provides endpoints for managing the library data. The API is consumed by the Slint-based frontend (currently native desktop, WASM compilation planned for later).
 
-## Current Status (Updated: 2025-01-13)
+## Current Status (Updated: 2024-11-15)
 
-**Phase 2-3: Actively Developed (~65% Complete)**
+**Phase 3: Nearly Complete (~85% Complete)**
 
-The backend has a solid foundation with MariaDB integration and comprehensive CRUD operations for core entities. All primary entity management (Titles, Authors, Publishers, Genres, Locations) now have full CRUD operations. The database schema is complete for all planned features, but Volume and Loan management handlers are not yet implemented.
+The backend has comprehensive functionality with MariaDB integration and full CRUD operations for all core entities. Volume management, loan system, statistics dashboard, ISBN lookup, Dewey classification, and cover image uploads are all fully implemented.
 
 ### ✅ Fully Implemented
 - Health check endpoints (/health, /health/db)
-- Titles API (full CRUD with business rule validation)
-- Authors API (full CRUD)
-- Publishers API (full CRUD)
-- Genres API (full CRUD)
-- Locations API (full CRUD with hierarchical paths)
+- **Titles API** (full CRUD with business rule validation)
+- **Volumes API** (full CRUD with barcode support)
+- **Authors API** (full CRUD)
+- **Publishers API** (full CRUD)
+- **Genres API** (full CRUD)
+- **Locations API** (full CRUD with hierarchical paths)
+- **Borrowers API** (full CRUD with group association)
+- **Borrower Groups API** (full CRUD with loan policies)
+- **Loans API** (create by barcode, list active/overdue, return)
+- **Statistics API** (library overview, volumes per genre/location, loan status)
+- **ISBN Lookup API** (Google Books integration)
+- **Dewey Classification API** (search, browse, get by code)
+- **Cover Upload API** (upload, get, delete cover images)
 - Database integration with connection pooling
 - UUID-based entity IDs
-- Timestamp management
+- Timestamp management (created_at, updated_at)
 
-### 🔄 Database Ready, Handlers Needed
-- Volume management (table created, no endpoints)
-- Borrower management (table created, no endpoints)
-- Loan management (table created, no endpoints)
-- Title-Author relationships (junction table created, no endpoints)
-
-### ⏳ Not Yet Implemented
-- Barcode scanning endpoints
-- Search and filter endpoints
-- Statistics endpoints
-- Import/export endpoints
+### ⏳ Planned / Not Yet Implemented
+- Title-Author relationship endpoints (junction table exists)
+- Series management endpoints
+- Loan extension functionality
+- Advanced search and filter endpoints
+- Import/export endpoints (CSV, JSON)
+- Barcode generation endpoints
 
 ## Architecture
 
@@ -41,344 +45,514 @@ The backend has a solid foundation with MariaDB integration and comprehensive CR
 - **Connection Pooling**: MySqlPoolOptions (max 5 connections)
 - **Language**: Rust (edition 2024)
 
+## Base URL
+
+```
+http://localhost:8000
+```
+
+---
+
 ## Implemented Endpoints
 
 ### Health Check ✅
+
+Check service and database health status.
 
 ```
 GET /health          - Basic health check
 GET /health/db       - Database connectivity check
 ```
 
-Health check endpoints to verify the backend and database are running. Used by monitoring tools and deployment systems.
-
 **Responses:**
-- 200 OK: Service is healthy
-- 500 Internal Server Error: Service or database is down
+- `200 OK`: Service is healthy
+- `503 Service Unavailable`: Database connection failed
 
-### Titles Management ✅ (Full CRUD)
-
-```
-GET    /api/v1/titles              - ✅ List all titles with volume counts
-POST   /api/v1/titles              - ✅ Create a new title
-GET    /api/v1/titles/{id}         - ✅ Get title details
-PUT    /api/v1/titles/{id}         - ✅ Update title information (partial updates supported)
-DELETE /api/v1/titles/{id}         - ✅ Delete a title (only if no volumes exist)
-GET    /api/v1/titles/wishlist     - ⏳ NOT IMPLEMENTED (can filter volume_count=0)
+**Example Response** (`/health/db`):
+```json
+{
+  "status": "ok",
+  "database": "connected"
+}
 ```
 
-**Implemented Features:**
-- LEFT JOIN with volumes to include volume_count in list
+---
+
+### Titles Management ✅
+
+Manage book titles (abstract book metadata).
+
+```
+GET    /api/v1/titles              - List all titles with volume counts
+POST   /api/v1/titles              - Create a new title
+PUT    /api/v1/titles/{id}         - Update title information (partial updates)
+DELETE /api/v1/titles/{id}         - Delete a title (only if no volumes exist)
+```
+
+**Features:**
+- LEFT JOIN with volumes to include `volume_count` in listings
 - Genre and publisher foreign key relationships
 - Partial updates (only changed fields are updated)
 - **Business rule enforcement**: Titles with volumes cannot be deleted
-- UUID-based IDs
-- Created/updated timestamps
+- ISBN, Dewey classification, cover URL support
 
-**DELETE Endpoint Details:**
-- **Business Rule**: A title can only be deleted if it has no volumes (volume_count == 0)
-- **Response Codes**:
-  - `200 OK`: Title successfully deleted
-  - `404 Not Found`: Title ID does not exist
-  - `409 Conflict`: Title has volumes and cannot be deleted (returns volume_count)
-- **Conflict Response Format**:
+**DELETE Business Rules:**
+- **Success (200)**: Title deleted if `volume_count == 0`
+- **Not Found (404)**: Title ID doesn't exist
+- **Conflict (409)**: Title has volumes, returns:
   ```json
   {
     "error": {
       "code": "HAS_VOLUMES",
       "message": "Cannot delete title with existing volumes",
-      "details": {
-        "volume_count": 3
-      }
+      "details": { "volume_count": 3 }
     }
   }
   ```
-- **Implementation**: Checks volume count before deletion using LEFT JOIN query
 
-### Authors Management ✅ (Full CRUD)
-
+**Example Title Object:**
+```json
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "title": "The Rust Programming Language",
+  "subtitle": "2nd Edition",
+  "isbn": "9781718500440",
+  "publisher": "No Starch Press",
+  "publisher_id": "pub-uuid",
+  "publication_year": 2023,
+  "pages": 560,
+  "language": "en",
+  "dewey_code": "005.133",
+  "dewey_category": "Computer programming",
+  "genre": "Programming",
+  "genre_id": "genre-uuid",
+  "summary": "Learn Rust programming...",
+  "cover_url": "https://...",
+  "volume_count": 2,
+  "created_at": 1699564800,
+  "updated_at": 1699564800
+}
 ```
-GET    /api/v1/authors             - ✅ List all authors with title counts
-GET    /api/v1/authors/{id}        - ✅ Get author details
-POST   /api/v1/authors             - ✅ Create a new author
-PUT    /api/v1/authors/{id}        - ✅ Update author information
-DELETE /api/v1/authors/{id}        - ✅ Delete an author
-```
-
-**Features:**
-- Title count for each author via LEFT JOIN
-- Biographical information (birth/death dates, nationality, website)
-- UUID-based IDs
-
-### Publishers Management ✅ (Full CRUD)
-
-```
-GET    /api/v1/publishers          - ✅ List all publishers with title counts
-GET    /api/v1/publishers/{id}     - ✅ Get publisher details
-POST   /api/v1/publishers          - ✅ Create a new publisher
-PUT    /api/v1/publishers/{id}     - ✅ Update publisher information
-DELETE /api/v1/publishers/{id}     - ✅ Delete a publisher
-```
-
-**Features:**
-- Title count for each publisher
-- Company details (founded year, country, website)
-- UUID-based IDs
-
-### Genres Management ✅ (Full CRUD)
-
-```
-GET    /api/v1/genres              - ✅ List all genres with title counts
-GET    /api/v1/genres/{id}         - ✅ Get genre details
-POST   /api/v1/genres              - ✅ Create a new genre
-PUT    /api/v1/genres/{id}         - ✅ Update genre information
-DELETE /api/v1/genres/{id}         - ✅ Delete a genre
-```
-
-**Features:**
-- Title count for each genre
-- Name and description
-- UUID-based IDs
-
-### Locations Management ✅ (Full CRUD with Hierarchy)
-
-```
-GET    /api/v1/locations           - ✅ List all locations with full hierarchical paths
-GET    /api/v1/locations/{id}      - ✅ Get location details
-POST   /api/v1/locations           - ✅ Create a new location
-PUT    /api/v1/locations/{id}      - ✅ Update location information
-DELETE /api/v1/locations/{id}      - ✅ Delete a location
-```
-
-**Features:**
-- Recursive CTE to build full paths ("Office > Shelf A > Shelf 1")
-- Self-referencing hierarchy (parent_id foreign key)
-- Volume count per location
-- UUID-based IDs
 
 ---
 
-## Planned Endpoints (Not Yet Implemented)
+### Volumes Management ✅
 
-### Volume Management ⏳ (CRITICAL - Database Ready)
-
-**Status:** Database table fully created with all fields, handlers needed.
+Manage physical book copies with barcode tracking.
 
 ```
-POST   /api/v1/titles/{id}/volumes - ⏳ Add a new volume to a title
-GET    /api/v1/volumes             - ⏳ List all volumes
-GET    /api/v1/volumes/{id}        - ⏳ Get volume details
-PUT    /api/v1/volumes/{id}        - ⏳ Update volume information
-DELETE /api/v1/volumes/{id}        - ⏳ Delete a volume (if not loaned)
+GET    /api/v1/titles/{title_id}/volumes  - List volumes for a specific title
+POST   /api/v1/volumes                    - Create a new volume
+GET    /api/v1/volumes/{id}               - Get volume details
+PUT    /api/v1/volumes/{id}               - Update volume information
+DELETE /api/v1/volumes/{id}               - Delete a volume (if not loaned)
 ```
 
-**Database Schema Ready:**
-- barcode (unique, Code 128 format: VOL-000001)
-- copy_number (unique per title)
-- condition enum (excellent/good/fair/poor/damaged)
-- loan_status enum (available/loaned/overdue/lost/maintenance)
-- location_id (FK to locations, SET NULL on delete)
-- title_id (FK to titles, CASCADE on delete)
-- individual_notes
+**Features:**
+- Unique barcode per volume (Code 128 format: `VOL-000001`)
+- Automatic copy numbering per title
+- Condition tracking (excellent, good, fair, poor, damaged)
+- Loan status tracking (available, loaned, overdue, lost, maintenance)
+- Location assignment with FK to locations table
+- Individual volume notes
 
-### Barcode Operations ⏳ (Not Started)
-
-```
-GET    /api/v1/scan/volume/{barcode} - ⏳ Find volume by barcode (Code 128)
-GET    /api/v1/scan/isbn/{isbn}      - ⏳ Find title by ISBN (EAN-13)
-POST   /api/v1/scan/loan             - ⏳ Create loan via barcode scan
-POST   /api/v1/scan/return           - ⏳ Return volume via barcode scan
-```
-
-### Loan Management ✅ (IMPLEMENTED)
-
-**Status:** ✅ Fully implemented with backend handlers and frontend UI.
-
-```
-POST   /api/v1/loans                - ✅ Create a new loan by barcode
-GET    /api/v1/loans/active         - ✅ Get active loans with details (title, borrower, due date, overdue status)
-PUT    /api/v1/loans/{id}/return    - ✅ Mark loan as returned and update volume status
-GET    /api/v1/loans                - ⏳ List all loans (including history)
-GET    /api/v1/loans/overdue        - ⏳ Get overdue loans filter
-PUT    /api/v1/loans/{id}/extend    - ⏳ Extend loan due date (not yet implemented)
-```
-
-**Implemented Features:**
-- ✅ Loan creation by volume barcode with borrower selection
-- ✅ Automatic due date calculation based on borrower group loan policy
-- ✅ Active loans listing with borrower and title details
-- ✅ Overdue status calculation and visual highlighting
-- ✅ Loan return workflow with volume status update
-- ✅ Full frontend UI with tabbed interface
-
-**Database Schema:**
-- title_id, volume_id, borrower_id (all FKs with RESTRICT on delete)
-- loan_date, due_date, return_date
-- status enum (active/returned/overdue)
-
-### Borrower Management ✅ (IMPLEMENTED)
-
-**Status:** ✅ Fully implemented with backend handlers and frontend UI.
-
-```
-GET    /api/v1/borrowers            - ✅ List all borrowers with group information
-POST   /api/v1/borrowers            - ✅ Create a new borrower
-GET    /api/v1/borrowers/{id}       - ✅ Get borrower details
-PUT    /api/v1/borrowers/{id}       - ✅ Update borrower information
-DELETE /api/v1/borrowers/{id}       - ✅ Delete a borrower
-```
-
-**Implemented Features:**
-- ✅ Full CRUD operations for borrowers
-- ✅ Edit dialog with Save/Cancel buttons
-- ✅ Create dialog with all contact fields
-- ✅ Borrower group association
-- ✅ Display with group name and loan duration
-- ✅ Complete frontend UI within Loans tab
-
-**Database Schema:**
-- name, email, phone, address, city, zip
-- group_id (FK to borrower_groups for loan policies)
-- Simple contact info for trust-based system
-
-### Borrower Group Management ✅ (IMPLEMENTED)
-
-**Status:** ✅ Fully implemented with backend handlers and frontend UI.
-
-```
-GET    /api/v1/borrower-groups      - ✅ List all borrower groups
-POST   /api/v1/borrower-groups      - ✅ Create a new borrower group
-GET    /api/v1/borrower-groups/{id} - ✅ Get borrower group details (implicit)
-PUT    /api/v1/borrower-groups/{id} - ✅ Update borrower group
-DELETE /api/v1/borrower-groups/{id} - ✅ Delete a borrower group
-```
-
-**Implemented Features:**
-- ✅ Full CRUD operations for borrower groups
-- ✅ Edit dialog with Save/Cancel buttons
-- ✅ Create dialog with group name, loan duration, and description
-- ✅ Loan duration policy configuration per group (in days)
-- ✅ Group description and metadata
-- ✅ Complete frontend UI within Loans tab
-
-**Database Schema:**
-- name (group name, e.g., "Friends", "Family", "Colleagues")
-- loan_duration_days (default loan period for this group)
-- description (optional notes about the group)
-
-**Usage:**
-Each borrower is associated with a group, which determines their default loan duration. When creating a loan for a borrower, the system automatically applies the loan duration from their group.
-
-### Title-Author Relationships ⏳ (Database Ready)
-
-**Status:** Junction table created with role support, handlers needed.
-
-```
-POST   /api/v1/titles/{id}/authors  - ⏳ Add author to title
-DELETE /api/v1/titles/{title_id}/authors/{author_id} - ⏳ Remove author from title
-PUT    /api/v1/titles/{title_id}/authors/{author_id} - ⏳ Update role/order
-```
-
-**Database Schema Ready:**
-- title_id, author_id (many-to-many junction)
-- role enum (main_author/co_author/translator/illustrator/editor)
-- display_order (for author display sequence)
-
-### Search ⏳ (Not Started)
-
-```
-GET    /api/v1/search/titles        - ⏳ Search titles by keyword
-GET    /api/v1/search/volumes       - ⏳ Search volumes by various criteria
-GET    /api/v1/search/authors       - ⏳ Search authors by name
-```
-
-**Future Features:**
-- Full-text search in title and summary fields
-- Filter by genre, publisher, author, location
-- Filter by availability, condition
-- Sort options (title, year, recently added)
-
-### Statistics ⏳ (Not Started)
-
-```
-GET    /api/v1/stats/overview       - ⏳ Get dashboard statistics
-GET    /api/v1/stats/loans          - ⏳ Get loan statistics
-GET    /api/v1/stats/collection     - ⏳ Get collection statistics
-```
-
-**Future Features:**
-- Total titles/volumes/borrowers count
-- Active/overdue loans count
-- Most loaned titles
-- Collection growth over time
-- Borrower activity
-
-## Data Models
-
-### Title
+**Example Volume Object:**
 ```json
 {
-  "id": "uuid",
-  "title": "string",
-  "subtitle": "string?",
-  "isbn": "string?",
-  "publisher": "string?",
-  "publication_year": "number?",
-  "pages": "number?",
-  "language": "string",
-  "dewey_code": "string?",
-  "dewey_category": "string?",
-  "genre": "string?",
-  "summary": "string?",
-  "cover_url": "string?",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "id": "vol-uuid",
+  "title_id": "title-uuid",
+  "copy_number": 1,
+  "barcode": "VOL-000001",
+  "condition": "good",
+  "location_id": "location-uuid",
+  "loan_status": "available",
+  "individual_notes": "Gift from friend",
+  "created_at": 1699564800,
+  "updated_at": 1699564800
 }
 ```
 
-### Volume
+---
+
+### Authors Management ✅
+
+Manage book authors with biographical information.
+
+```
+GET    /api/v1/authors             - List all authors with title counts
+GET    /api/v1/authors/{id}        - Get author details
+POST   /api/v1/authors             - Create a new author
+PUT    /api/v1/authors/{id}        - Update author information
+DELETE /api/v1/authors/{id}        - Delete an author
+```
+
+**Features:**
+- Title count per author via LEFT JOIN
+- Biographical information (birth/death dates, nationality, biography)
+- Website and contact information
+
+**Example Author Object:**
 ```json
 {
-  "id": "uuid",
-  "title_id": "uuid",
-  "copy_number": "number",
-  "barcode": "string",
-  "condition": "excellent|good|fair|poor|damaged",
-  "location": "string?",
-  "loan_status": "available|loaned|overdue|lost|maintenance",
-  "individual_notes": "string?",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "id": "author-uuid",
+  "name": "Steve Klabnik",
+  "biography": "Technical writer and Rust core team member",
+  "birth_date": "1985-06-15",
+  "death_date": null,
+  "nationality": "American",
+  "website": "https://steveklabnik.com",
+  "title_count": 5,
+  "created_at": 1699564800,
+  "updated_at": 1699564800
 }
 ```
 
-### Loan
+---
+
+### Publishers Management ✅
+
+Manage publishing companies and their catalogs.
+
+```
+GET    /api/v1/publishers          - List all publishers with title counts
+GET    /api/v1/publishers/{id}     - Get publisher details
+POST   /api/v1/publishers          - Create a new publisher
+PUT    /api/v1/publishers/{id}     - Update publisher information
+DELETE /api/v1/publishers/{id}     - Delete a publisher
+```
+
+**Features:**
+- Title count per publisher
+- Company details (founded year, country, website, description)
+
+**Example Publisher Object:**
 ```json
 {
-  "id": "uuid",
-  "title_id": "uuid",
-  "volume_id": "uuid",
-  "borrower_id": "uuid",
-  "loan_date": "datetime",
-  "due_date": "datetime",
-  "return_date": "datetime?",
-  "status": "active|returned|overdue",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "id": "pub-uuid",
+  "name": "No Starch Press",
+  "description": "Publisher of tech books",
+  "website_url": "https://nostarch.com",
+  "country": "USA",
+  "founded_year": 1994,
+  "title_count": 12,
+  "created_at": 1699564800,
+  "updated_at": 1699564800
 }
 ```
 
-### Borrower
+---
+
+### Genres Management ✅
+
+Manage book genres and categories.
+
+```
+GET    /api/v1/genres              - List all genres with title counts
+GET    /api/v1/genres/{id}         - Get genre details
+POST   /api/v1/genres              - Create a new genre
+PUT    /api/v1/genres/{id}         - Update genre information
+DELETE /api/v1/genres/{id}         - Delete a genre
+```
+
+**Example Genre Object:**
 ```json
 {
-  "id": "uuid",
-  "name": "string",
-  "email": "string?",
-  "phone": "string?",
-  "created_at": "datetime",
-  "updated_at": "datetime"
+  "id": "genre-uuid",
+  "name": "Science Fiction",
+  "description": "Speculative fiction based on scientific concepts",
+  "title_count": 42,
+  "created_at": 1699564800,
+  "updated_at": 1699564800
 }
 ```
+
+---
+
+### Locations Management ✅
+
+Manage storage locations with hierarchical organization.
+
+```
+GET    /api/v1/locations           - List all locations with full hierarchical paths
+GET    /api/v1/locations/{id}      - Get location details
+POST   /api/v1/locations           - Create a new location
+PUT    /api/v1/locations/{id}      - Update location information
+DELETE /api/v1/locations/{id}      - Delete a location
+```
+
+**Features:**
+- Recursive CTE to build full paths: `"Office > Bookshelf A > Shelf 3"`
+- Self-referencing hierarchy (parent_id foreign key)
+- Volume count per location
+- Level tracking (0 = root, 1 = child, etc.)
+
+**Example Location Object:**
+```json
+{
+  "id": "location-uuid",
+  "name": "Shelf 3",
+  "description": "Top shelf",
+  "parent_id": "bookshelf-uuid",
+  "full_path": "Office > Bookshelf A > Shelf 3",
+  "level": 2,
+  "created_at": 1699564800,
+  "updated_at": 1699564800
+}
+```
+
+---
+
+### Borrowers Management ✅
+
+Manage library borrowers (friends, family, colleagues).
+
+```
+GET    /api/v1/borrowers            - List all borrowers with group information
+POST   /api/v1/borrowers            - Create a new borrower
+PUT    /api/v1/borrowers/{id}       - Update borrower information
+DELETE /api/v1/borrowers/{id}       - Delete a borrower
+```
+
+**Features:**
+- Simple contact information (name, email, phone, address)
+- Borrower group association for loan policies
+- Trust-based system (no complex restrictions)
+
+**Example Borrower Object:**
+```json
+{
+  "id": "borrower-uuid",
+  "name": "John Doe",
+  "email": "john@example.com",
+  "phone": "+1234567890",
+  "address": "123 Main St",
+  "city": "Portland",
+  "zip": "97201",
+  "group_id": "friends-group-uuid",
+  "group_name": "Friends",
+  "loan_duration_days": 21,
+  "created_at": 1699564800,
+  "updated_at": 1699564800
+}
+```
+
+---
+
+### Borrower Groups Management ✅
+
+Manage borrower groups with custom loan policies.
+
+```
+GET    /api/v1/borrower-groups      - List all borrower groups
+POST   /api/v1/borrower-groups      - Create a new borrower group
+PUT    /api/v1/borrower-groups/{id} - Update borrower group
+DELETE /api/v1/borrower-groups/{id} - Delete a borrower group
+```
+
+**Features:**
+- Custom loan duration per group (in days)
+- Group descriptions and metadata
+- Applied automatically when creating loans
+
+**Example Borrower Group Object:**
+```json
+{
+  "id": "group-uuid",
+  "name": "Friends",
+  "loan_duration_days": 21,
+  "description": "Close friends with longer loan periods",
+  "created_at": 1699564800,
+  "updated_at": 1699564800
+}
+```
+
+---
+
+### Loans Management ✅
+
+Manage book loans with barcode-based checkout.
+
+```
+GET    /api/v1/loans                - List active loans with details
+POST   /api/v1/loans                - Create a new loan by barcode
+GET    /api/v1/loans/overdue        - List overdue loans
+POST   /api/v1/loans/{id}/return    - Return a loaned volume
+```
+
+**Features:**
+- Barcode-based loan creation
+- Automatic due date calculation from borrower group policy
+- Overdue status calculation
+- Loan history tracking
+- Volume status updates on return
+
+**Create Loan Request:**
+```json
+{
+  "borrower_id": "borrower-uuid",
+  "barcode": "VOL-000001"
+}
+```
+
+**Loan Detail Response:**
+```json
+{
+  "loan": {
+    "id": "loan-uuid",
+    "title_id": "title-uuid",
+    "volume_id": "volume-uuid",
+    "borrower_id": "borrower-uuid",
+    "loan_date": "2024-11-01",
+    "due_date": "2024-11-22",
+    "returned_at": null
+  },
+  "title": "The Rust Programming Language",
+  "barcode": "VOL-000001",
+  "borrower_name": "John Doe",
+  "borrower_email": "john@example.com",
+  "is_overdue": false
+}
+```
+
+---
+
+### Statistics ✅
+
+View library analytics and statistics.
+
+```
+GET /api/v1/statistics/library      - Overall library statistics
+GET /api/v1/statistics/genres       - Volumes per genre
+GET /api/v1/statistics/locations    - Volumes per location
+GET /api/v1/statistics/loans        - Loan status breakdown
+```
+
+**Library Statistics Response:**
+```json
+{
+  "total_titles": 150,
+  "total_volumes": 200,
+  "total_authors": 75,
+  "total_publishers": 20,
+  "total_genres": 15,
+  "total_locations": 8,
+  "total_borrowers": 12,
+  "active_loans": 5,
+  "overdue_loans": 1
+}
+```
+
+**Genre Statistics Response:**
+```json
+[
+  {
+    "genre_id": "genre-uuid",
+    "genre_name": "Science Fiction",
+    "title_count": 42,
+    "volume_count": 58
+  }
+]
+```
+
+**Location Statistics Response:**
+```json
+[
+  {
+    "location_id": "location-uuid",
+    "location_name": "Shelf 3",
+    "location_path": "Office > Bookshelf A > Shelf 3",
+    "volume_count": 25
+  }
+]
+```
+
+---
+
+### ISBN Lookup ✅
+
+Look up book metadata via ISBN using Google Books API.
+
+```
+GET /api/v1/isbn/{isbn}             - Lookup book by ISBN
+```
+
+**Query Parameters:**
+- `isbn` (path) - 10 or 13 digit ISBN
+
+**Response:**
+```json
+{
+  "title": "The Rust Programming Language",
+  "subtitle": "2nd Edition",
+  "authors": ["Steve Klabnik", "Carol Nichols"],
+  "publisher": "No Starch Press",
+  "published_date": "2023",
+  "description": "Learn Rust programming...",
+  "page_count": 560,
+  "categories": ["Computers"],
+  "language": "en",
+  "isbn_10": "1718500440",
+  "isbn_13": "9781718500440",
+  "cover_url": "https://books.google.com/...",
+  "preview_link": "https://books.google.com/..."
+}
+```
+
+---
+
+### Dewey Classification ✅
+
+Search and browse Dewey Decimal Classification system.
+
+```
+GET /api/v1/dewey/search            - Search Dewey classifications
+GET /api/v1/dewey/browse            - Browse Dewey hierarchy
+GET /api/v1/dewey/{code}            - Get classification by code
+```
+
+**Search Query Parameters:**
+- `q` - Search query (searches code, name, description)
+
+**Browse Query Parameters:**
+- `parent` - Parent code to browse children (omit for top level)
+
+**Example Classification:**
+```json
+{
+  "code": "005.133",
+  "name": "Specific programming languages",
+  "level": 3,
+  "description": "Programming in specific languages like Rust, Python, etc.",
+  "relevance": 0.95
+}
+```
+
+---
+
+### Cover Image Uploads ✅
+
+Upload and manage book cover images.
+
+```
+POST   /api/v1/uploads/cover         - Upload cover image
+GET    /api/v1/uploads/cover/{title_id} - Get cover image
+DELETE /api/v1/uploads/cover/{title_id} - Delete cover image
+```
+
+**Upload Request:**
+- Content-Type: `multipart/form-data`
+- Field: `cover` (image file)
+- Supported formats: JPEG, PNG, GIF
+- Max size: 5MB
+
+**Response:**
+```json
+{
+  "url": "/api/v1/uploads/cover/title-uuid"
+}
+```
+
+---
 
 ## Error Responses
 
@@ -388,10 +562,10 @@ All endpoints follow standard HTTP status codes:
 - **201 Created**: Resource successfully created
 - **400 Bad Request**: Invalid request data
 - **404 Not Found**: Resource not found
-- **409 Conflict**: Resource conflict (e.g., duplicate barcode)
+- **409 Conflict**: Resource conflict (e.g., duplicate barcode, title has volumes)
 - **500 Internal Server Error**: Server error
 
-Error response format:
+**Error Response Format:**
 ```json
 {
   "error": {
@@ -402,31 +576,57 @@ Error response format:
 }
 ```
 
-## Database Integration (Planned)
+**Common Error Codes:**
+- `HAS_VOLUMES` - Cannot delete title with existing volumes
+- `DUPLICATE_BARCODE` - Volume barcode already exists
+- `NOT_FOUND` - Resource not found
+- `INVALID_REQUEST` - Invalid request data
+- `DATABASE_ERROR` - Database operation failed
+
+---
+
+## Database
 
 The backend uses **MariaDB** for data persistence:
+
 - **MariaDB**: Production-grade, MySQL-compatible database
 - **SQLx**: Compile-time checked queries with async support
-- **Connection pooling**: Efficient connection management
-- **Migrations**: Version-controlled schema changes via sqlx-cli
+- **Connection pooling**: MySqlPoolOptions (max 5 connections)
+- **Migrations**: 13 migrations applied via sqlx-cli
+- **UUID-based IDs**: Using CHAR(36) format
+- **Timestamps**: created_at, updated_at on all entities
 
-Database abstraction is handled through the repository pattern with trait-based interfaces.
-
-## Authentication (Planned)
-
-For personal use, authentication will be optional and simple:
-- Basic username/password authentication
-- Session-based (no complex JWT for personal use)
-- Guest read-only access option
+---
 
 ## Running the Backend
+
+### Start the server
 
 ```bash
 cd backend
 cargo run
 ```
 
-The server will start on `http://localhost:8000` by default.
+Server starts on `http://localhost:8000` by default.
+
+### Configure via environment variables
+
+Create `backend/.env`:
+```env
+DATABASE_URL=mysql://username:password@localhost:3306/rbibli
+HOST=127.0.0.1
+PORT=8000
+RUST_LOG=info
+```
+
+### Run database migrations
+
+```bash
+cd backend
+sqlx migrate run
+```
+
+---
 
 ## Testing
 
@@ -435,6 +635,28 @@ cd backend
 cargo test
 ```
 
+---
+
 ## Development
 
-See `development_environment.md` for setup instructions and `CLAUDE.md` for architecture overview.
+See [`development_environment.md`](development_environment.md) for detailed setup instructions and [`CLAUDE.md`](CLAUDE.md) for architecture overview.
+
+---
+
+## Future Planned Features
+
+### Title-Author Relationships ⏳
+- `POST /api/v1/titles/{id}/authors` - Add author to title with role
+- `DELETE /api/v1/titles/{title_id}/authors/{author_id}` - Remove author from title
+- `PUT /api/v1/titles/{title_id}/authors/{author_id}` - Update author role/order
+
+### Series Management ⏳
+- Full CRUD for series (collections of related titles)
+- Series ordering and numbering
+
+### Advanced Features ⏳
+- Full-text search across titles and summaries
+- Loan extension functionality
+- Import/export (CSV, JSON)
+- Barcode generation API
+- Advanced filtering and sorting options
