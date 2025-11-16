@@ -9,7 +9,7 @@ use uuid::Uuid;
 pub async fn list_locations(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/locations - Fetching all locations");
 
-    // Recursive query to build full paths
+    // Recursive query to build full paths with child and volume counts
     let query = r#"
         WITH RECURSIVE location_path AS (
             -- Base case: root locations (no parent)
@@ -40,8 +40,12 @@ pub async fn list_locations(data: web::Data<AppState>) -> impl Responder {
             FROM locations l
             INNER JOIN location_path lp ON l.parent_id = lp.id
         )
-        SELECT * FROM location_path
-        ORDER BY path ASC
+        SELECT
+            lp.*,
+            COALESCE((SELECT COUNT(*) FROM locations WHERE parent_id = lp.id), 0) as child_count,
+            COALESCE((SELECT COUNT(*) FROM volumes WHERE location_id = lp.id), 0) as volume_count
+        FROM location_path lp
+        ORDER BY lp.path ASC
     "#;
 
     debug!("Executing recursive query to fetch locations with paths");
@@ -81,6 +85,8 @@ pub async fn list_locations(data: web::Data<AppState>) -> impl Responder {
                         },
                         full_path: row.get("path"),
                         level: row.get("level"),
+                        child_count: row.get::<i64, _>("child_count") as i32,
+                        volume_count: row.get::<i64, _>("volume_count") as i32,
                     })
                 })
                 .collect();
@@ -369,6 +375,67 @@ pub async fn delete_location(
         }));
     }
 
+    // Check if location has child locations
+    let child_check_query = "SELECT COUNT(*) as count FROM locations WHERE parent_id = ?";
+    match sqlx::query(child_check_query)
+        .bind(&location_id)
+        .fetch_one(&data.db_pool)
+        .await
+    {
+        Ok(row) => {
+            let count: i64 = row.get("count");
+            if count > 0 {
+                warn!("Cannot delete location {} - has {} child locations", location_id, count);
+                return HttpResponse::Conflict().json(serde_json::json!({
+                    "error": {
+                        "code": "HAS_CHILD_LOCATIONS",
+                        "message": format!("Cannot delete location: it has {} child location(s). Delete or move child locations first.", count)
+                    }
+                }));
+            }
+        }
+        Err(e) => {
+            error!("Database error checking child locations: {}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to check for child locations"
+                }
+            }));
+        }
+    }
+
+    // Check if location has volumes allocated to it
+    let volume_check_query = "SELECT COUNT(*) as count FROM volumes WHERE location_id = ?";
+    match sqlx::query(volume_check_query)
+        .bind(&location_id)
+        .fetch_one(&data.db_pool)
+        .await
+    {
+        Ok(row) => {
+            let count: i64 = row.get("count");
+            if count > 0 {
+                warn!("Cannot delete location {} - has {} volumes allocated", location_id, count);
+                return HttpResponse::Conflict().json(serde_json::json!({
+                    "error": {
+                        "code": "HAS_VOLUMES",
+                        "message": format!("Cannot delete location: it has {} volume(s) allocated to it. Move or delete volumes first.", count)
+                    }
+                }));
+            }
+        }
+        Err(e) => {
+            error!("Database error checking volumes: {}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to check for allocated volumes"
+                }
+            }));
+        }
+    }
+
+    // All checks passed - proceed with deletion
     let query = "DELETE FROM locations WHERE id = ?";
 
     match sqlx::query(query)

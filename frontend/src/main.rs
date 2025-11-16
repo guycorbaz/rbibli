@@ -159,6 +159,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                             parent_id: l.location.parent_id.clone().unwrap_or_default().into(),
                             full_path: l.full_path.clone().into(),
                             level: l.level,
+                            child_count: l.child_count,
+                            volume_count: l.volume_count,
                         })
                         .collect();
 

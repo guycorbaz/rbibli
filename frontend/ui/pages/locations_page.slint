@@ -72,6 +72,8 @@ export struct LocationData {
     parent-id: string,
     full-path: string,
     level: int,
+    child-count: int,      // Number of child locations
+    volume-count: int,     // Number of volumes allocated to this location
 }
 
 // LocationsPage - Locations management page component (EXPORTED)
@@ -575,11 +577,14 @@ export component LocationsPage inherits Page {
                         }
 
                         // Delete button - shows confirmation dialog
-                        // Note: May fail if location has child locations or volumes
+                        // Disabled if location has child locations or volumes
                         Button {
-                            text: @tr("Delete");
+                            text: location.child-count > 0 || location.volume-count > 0 ?
+                                  @tr("Delete") + " (" + (location.child-count + location.volume-count) + ")" :
+                                  @tr("Delete");
                             min-width: 80px;
                             height: 32px;
+                            enabled: location.child-count == 0 && location.volume-count == 0;
                             clicked => {
                                 // Store location info and show confirmation dialog
                                 root.delete-location-id = location.id;

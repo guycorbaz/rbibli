@@ -91,6 +91,8 @@ pub struct LocationWithPath {
     pub location: Location,
     pub full_path: String,
     pub level: i32,
+    pub child_count: i32,
+    pub volume_count: i32,
 }
 
 /// CreateLocationRequest for creating a new location
