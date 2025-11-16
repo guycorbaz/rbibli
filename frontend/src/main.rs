@@ -10,10 +10,10 @@ mod api_client;
 
 use api_client::ApiClient;
 use models::{
-    CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, CreateAuthorRequest,
-    UpdateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest, CreateGenreRequest,
-    UpdateGenreRequest, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
-    CreateBorrowerRequest, UpdateBorrowerRequest, CreateLoanRequest,
+    CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, UpdateLocationRequest,
+    CreateAuthorRequest, UpdateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest,
+    CreateGenreRequest, UpdateGenreRequest, CreateBorrowerGroupRequest,
+    UpdateBorrowerGroupRequest, CreateBorrowerRequest, UpdateBorrowerRequest, CreateLoanRequest,
     LibraryStatistics as ModelsLibraryStatistics, GenreStatistic as ModelsGenreStatistic,
     LocationStatistic as ModelsLocationStatistic, LoanStatistic as ModelsLoanStatistic
 };
@@ -395,6 +395,43 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to create location: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the update-location callback
+    {
+        let load_locations = load_locations.clone();
+        let api_client = api_client.clone();
+        ui.on_update_location(move |id, name, description, parent_id| {
+            println!("Updating location: {}", id);
+
+            let request = UpdateLocationRequest {
+                name: if name.is_empty() {
+                    None
+                } else {
+                    Some(name.to_string())
+                },
+                description: if description.is_empty() {
+                    None
+                } else {
+                    Some(description.to_string())
+                },
+                parent_id: if parent_id.is_empty() {
+                    None
+                } else {
+                    Some(parent_id.to_string())
+                },
+            };
+
+            match api_client.update_location(&id.to_string(), request) {
+                Ok(_) => {
+                    println!("Successfully updated location");
+                    load_locations();
+                }
+                Err(e) => {
+                    eprintln!("Failed to update location: {}", e);
                 }
             }
         });

@@ -131,6 +131,13 @@ export component LocationsPage inherits Page {
     in-out property <string> new-location-description: "";     // Description (optional)
     in-out property <string> new-location-parent-id: "";       // Parent UUID (empty = root location)
 
+    // Edit dialog state
+    in-out property <bool> show-edit-dialog: false;            // Whether edit dialog is visible
+    in-out property <string> edit-location-id: "";             // ID of location being edited
+    in-out property <string> edit-location-name: "";           // Updated name (required)
+    in-out property <string> edit-location-description: "";    // Updated description (optional)
+    in-out property <string> edit-location-parent-id: "";      // Updated parent UUID (optional)
+
     // ========================================================================
     // Callbacks (connected to Rust backend)
     // ========================================================================
@@ -141,6 +148,10 @@ export component LocationsPage inherits Page {
     // Creates a new location in the database
     // Parameters: name, description, parent_id (empty string for root)
     callback create-location(string, string, string);
+
+    // Updates an existing location's information
+    // Parameters: id, name, description, parent_id
+    callback update-location(string, string, string, string);
 
     // Deletes a location by ID
     // Parameter: location id (UUID string)
@@ -293,9 +304,96 @@ export component LocationsPage inherits Page {
         }
 
         // ====================================================================
+        // Edit Location Dialog - Modal form for updating existing locations
+        // ====================================================================
+        if show-edit-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 15px;
+
+                // Dialog title
+                Text {
+                    text: @tr("Edit Location");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                // Location Name field (REQUIRED)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Name:");
+                        width: 100px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-location-name;
+                        placeholder-text: @tr("Location name (required)");
+                    }
+                }
+
+                // Location Description field (Optional)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Description:");
+                        width: 100px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.edit-location-description;
+                        height: 60px;
+                    }
+                }
+
+                // Dialog action buttons (Cancel and Save)
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    // Cancel button - closes dialog without saving changes
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-edit-dialog = false;
+                        }
+                    }
+
+                    // Save button - submits form and updates location
+                    // Disabled if required field (name) is empty
+                    Button {
+                        text: @tr("Save");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.edit-location-name != "";
+                        clicked => {
+                            // Call backend to update location
+                            root.update-location(
+                                root.edit-location-id,
+                                root.edit-location-name,
+                                root.edit-location-description,
+                                root.edit-location-parent-id
+                            );
+                            // Close dialog after submission
+                            root.show-edit-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ====================================================================
         // Empty State - Shown when no locations exist
         // ====================================================================
-        if locations.length == 0 && !show-create-dialog: Rectangle {
+        if locations.length == 0 && !show-create-dialog && !show-edit-dialog: Rectangle {
             height: 100px;
             Text {
                 text: @tr("No locations found. Click 'New Location' to create one.");
@@ -375,7 +473,7 @@ export component LocationsPage inherits Page {
 
                     // Action buttons section
                     HorizontalBox {
-                        width: 200px;
+                        width: 280px;
                         spacing: 8px;
                         alignment: end;
 
@@ -391,6 +489,22 @@ export component LocationsPage inherits Page {
                                 root.new-location-name = "";
                                 root.new-location-description = "";
                                 root.new-location-parent-id = location.id;  // Set parent for hierarchy
+                            }
+                        }
+
+                        // Edit button - opens edit dialog with pre-filled data
+                        Button {
+                            text: @tr("Edit");
+                            min-width: 80px;
+                            height: 32px;
+                            clicked => {
+                                // Pre-fill edit form with current location data
+                                root.edit-location-id = location.id;
+                                root.edit-location-name = location.name;
+                                root.edit-location-description = location.description;
+                                root.edit-location-parent-id = location.parent-id;
+                                // Show edit dialog
+                                root.show-edit-dialog = true;
                             }
                         }
 

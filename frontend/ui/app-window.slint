@@ -61,6 +61,7 @@ import { Styles } from "styles.slint";
 //
 //   Location Operations:
 //     - create-location(name, description, parent-id)
+//     - update-location(id, name, description, parent-id)
 //     - delete-location(id)
 //
 //   Author Operations:
@@ -227,6 +228,10 @@ export component AppWindow inherits Window {
     // Creates a new storage location
     // Parameters: name, description, parent-id (UUID or empty for root location)
     callback create-location(string, string, string);
+
+    // Updates an existing storage location's information
+    // Parameters: id, name, description, parent-id
+    callback update-location(string, string, string, string);
 
     // Deletes a storage location by ID
     // Parameter: id (UUID string)
@@ -520,6 +525,9 @@ export component AppWindow inherits Window {
             }
             create-location(name, description, parent-id) => {
                 root.create-location(name, description, parent-id);
+            }
+            update-location(id, name, description, parent-id) => {
+                root.update-location(id, name, description, parent-id);
             }
             delete-location(id) => {
                 root.delete-location(id);

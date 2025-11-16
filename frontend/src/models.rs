@@ -101,6 +101,14 @@ pub struct CreateLocationRequest {
     pub parent_id: Option<String>,
 }
 
+/// UpdateLocationRequest for updating an existing location
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateLocationRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub parent_id: Option<String>,
+}
+
 /// Author represents a book author
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Author {

@@ -1,9 +1,9 @@
 use crate::models::{
     TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest,
-    AuthorWithTitleCount, CreateAuthorRequest, UpdateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest,
-    UpdatePublisherRequest, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest,
-    Volume, CreateVolumeRequest, UpdateVolumeRequest, IsbnLookupResponse,
-    BorrowerGroup, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
+    UpdateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, UpdateAuthorRequest,
+    PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest, GenreWithTitleCount,
+    CreateGenreRequest, UpdateGenreRequest, Volume, CreateVolumeRequest, UpdateVolumeRequest,
+    IsbnLookupResponse, BorrowerGroup, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
     BorrowerWithGroup, CreateBorrowerRequest, UpdateBorrowerRequest,
     LoanDetail, CreateLoanRequest, CreateLoanResponse,
     DeweySearchResult,
@@ -407,6 +407,62 @@ impl ApiClient {
         println!("Successfully created location with ID: {}", location_id);
 
         Ok(location_id)
+    }
+
+    /// Updates an existing storage location.
+    ///
+    /// This method makes a PUT request to `/api/v1/locations/{id}` to update
+    /// a location's information.
+    ///
+    /// # Arguments
+    ///
+    /// * `location_id` - The UUID of the location to update
+    /// * `request` - The update request containing the fields to change
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Location updated successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The location ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The server returns an error
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::UpdateLocationRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = UpdateLocationRequest {
+    ///     name: Some("Shelf A1".to_string()),
+    ///     description: Some("Top shelf in room A".to_string()),
+    ///     parent_id: None,
+    /// };
+    ///
+    /// match client.update_location("123e4567-e89b-12d3-a456-426614174000", request) {
+    ///     Ok(()) => println!("Location updated successfully"),
+    ///     Err(e) => eprintln!("Failed to update location: {}", e),
+    /// }
+    /// ```
+    pub fn update_location(&self, location_id: &str, request: UpdateLocationRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/locations/{}", self.base_url, location_id);
+
+        println!("Updating location: {}", location_id);
+
+        let response = self.client
+            .put(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully updated location: {}", location_id);
+
+        Ok(())
     }
 
     /// Deletes a storage location by its ID.
