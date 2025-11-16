@@ -12,7 +12,8 @@ pub async fn list_borrowers(data: web::Data<AppState>) -> impl Responder {
     let query = "
         SELECT
             b.id, b.name, b.email, b.phone, b.address, b.city, b.zip, b.group_id, b.created_at, b.updated_at,
-            g.name as group_name, g.loan_duration_days
+            g.name as group_name, g.loan_duration_days,
+            COALESCE((SELECT COUNT(*) FROM loans WHERE borrower_id = b.id AND status = 'active'), 0) as active_loan_count
         FROM borrowers b
         LEFT JOIN borrower_groups g ON b.group_id = g.id
         ORDER BY b.name
@@ -42,6 +43,7 @@ pub async fn list_borrowers(data: web::Data<AppState>) -> impl Responder {
                         },
                         group_name: row.get("group_name"),
                         loan_duration_days: row.get("loan_duration_days"),
+                        active_loan_count: row.get::<i64, _>("active_loan_count") as i32,
                     }
                 })
                 .collect();
@@ -166,6 +168,37 @@ pub async fn delete_borrower(
 ) -> impl Responder {
     info!("DELETE /api/v1/borrowers/{} - Deleting borrower", id);
 
+    // Check if borrower has active loans
+    let loan_check_query = "SELECT COUNT(*) as count FROM loans WHERE borrower_id = ? AND status = 'active'";
+    match sqlx::query(loan_check_query)
+        .bind(id.as_str())
+        .fetch_one(&data.db_pool)
+        .await
+    {
+        Ok(row) => {
+            let count: i64 = row.get("count");
+            if count > 0 {
+                error!("Cannot delete borrower {} - has {} active loan(s)", id, count);
+                return HttpResponse::Conflict().json(serde_json::json!({
+                    "error": {
+                        "code": "HAS_ACTIVE_LOANS",
+                        "message": format!("Cannot delete borrower: they have {} active loan(s). Return all loaned volumes first.", count)
+                    }
+                }));
+            }
+        }
+        Err(e) => {
+            error!("Database error checking active loans: {}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to check for active loans"
+                }
+            }));
+        }
+    }
+
+    // All checks passed - proceed with deletion
     match sqlx::query("DELETE FROM borrowers WHERE id = ?")
         .bind(id.as_str())
         .execute(&data.db_pool)

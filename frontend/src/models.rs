@@ -399,6 +399,7 @@ pub struct BorrowerWithGroup {
     pub borrower: Borrower,
     pub group_name: Option<String>,
     pub loan_duration_days: Option<i32>,
+    pub active_loan_count: i32,
 }
 
 /// CreateBorrowerRequest for creating a new borrower

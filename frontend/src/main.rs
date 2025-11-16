@@ -1573,6 +1573,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             group_id: b.borrower.group_id.clone().unwrap_or_default().into(),
                             group_name: b.group_name.clone().unwrap_or_default().into(),
                             loan_duration_days: b.loan_duration_days.unwrap_or(21),
+                            active_loan_count: b.active_loan_count,
                         })
                         .collect();
 

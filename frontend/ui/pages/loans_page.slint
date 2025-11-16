@@ -43,6 +43,7 @@ export struct BorrowerData {
     group-id: string,
     group-name: string,
     loan-duration-days: int,
+    active-loan-count: int,
 }
 
 // LoanData - Data structure for active loans
@@ -743,7 +744,10 @@ export component LoansPage inherits Page {
                                         }
 
                                         Button {
-                                            text: @tr("Delete");
+                                            text: borrower.active-loan-count > 0 ?
+                                                   @tr("Delete") + " (" + borrower.active-loan-count + " loans)" :
+                                                   @tr("Delete");
+                                            enabled: borrower.active-loan-count == 0;
                                             clicked => {
                                                 root.delete-borrower-id = borrower.id;
                                                 root.delete-borrower-name = borrower.name;
