@@ -11,9 +11,9 @@ mod api_client;
 use api_client::ApiClient;
 use models::{
     CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, CreateAuthorRequest,
-    CreatePublisherRequest, UpdatePublisherRequest, CreateGenreRequest, UpdateGenreRequest,
-    CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest, CreateBorrowerRequest,
-    UpdateBorrowerRequest, CreateLoanRequest,
+    UpdateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest, CreateGenreRequest,
+    UpdateGenreRequest, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
+    CreateBorrowerRequest, UpdateBorrowerRequest, CreateLoanRequest,
     LibraryStatistics as ModelsLibraryStatistics, GenreStatistic as ModelsGenreStatistic,
     LocationStatistic as ModelsLocationStatistic, LoanStatistic as ModelsLoanStatistic
 };
@@ -471,6 +471,63 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to create author: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the update-author callback
+    {
+        let load_authors = load_authors.clone();
+        let api_client = api_client.clone();
+        ui.on_update_author(move |id, first_name, last_name, biography, birth_date, death_date, nationality, website_url| {
+            println!("Updating author: {}", id);
+
+            let request = UpdateAuthorRequest {
+                first_name: if first_name.is_empty() {
+                    None
+                } else {
+                    Some(first_name.to_string())
+                },
+                last_name: if last_name.is_empty() {
+                    None
+                } else {
+                    Some(last_name.to_string())
+                },
+                biography: if biography.is_empty() {
+                    None
+                } else {
+                    Some(biography.to_string())
+                },
+                birth_date: if birth_date.is_empty() {
+                    None
+                } else {
+                    Some(birth_date.to_string())
+                },
+                death_date: if death_date.is_empty() {
+                    None
+                } else {
+                    Some(death_date.to_string())
+                },
+                nationality: if nationality.is_empty() {
+                    None
+                } else {
+                    Some(nationality.to_string())
+                },
+                website_url: if website_url.is_empty() {
+                    None
+                } else {
+                    Some(website_url.to_string())
+                },
+            };
+
+            match api_client.update_author(&id.to_string(), request) {
+                Ok(_) => {
+                    println!("Successfully updated author");
+                    load_authors();
+                }
+                Err(e) => {
+                    eprintln!("Failed to update author: {}", e);
                 }
             }
         });

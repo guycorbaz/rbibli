@@ -1,6 +1,6 @@
 use crate::models::{
     TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest,
-    AuthorWithTitleCount, CreateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest,
+    AuthorWithTitleCount, CreateAuthorRequest, UpdateAuthorRequest, PublisherWithTitleCount, CreatePublisherRequest,
     UpdatePublisherRequest, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest,
     Volume, CreateVolumeRequest, UpdateVolumeRequest, IsbnLookupResponse,
     BorrowerGroup, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
@@ -583,6 +583,66 @@ impl ApiClient {
         println!("Successfully created author with ID: {}", author_id);
 
         Ok(author_id)
+    }
+
+    /// Updates an existing author in the library database.
+    ///
+    /// This method makes a PUT request to `/api/v1/authors/{id}` to update
+    /// an author's biographical information.
+    ///
+    /// # Arguments
+    ///
+    /// * `author_id` - The UUID of the author to update
+    /// * `request` - The update request containing the fields to change
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Author updated successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The author ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The server returns an error
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::UpdateAuthorRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = UpdateAuthorRequest {
+    ///     first_name: Some("Isaac".to_string()),
+    ///     last_name: Some("Asimov".to_string()),
+    ///     biography: Some("American science fiction writer".to_string()),
+    ///     birth_date: Some("1920-01-02".to_string()),
+    ///     death_date: Some("1992-04-06".to_string()),
+    ///     nationality: Some("American".to_string()),
+    ///     website_url: None,
+    /// };
+    ///
+    /// match client.update_author("123e4567-e89b-12d3-a456-426614174000", request) {
+    ///     Ok(()) => println!("Author updated successfully"),
+    ///     Err(e) => eprintln!("Failed to update author: {}", e),
+    /// }
+    /// ```
+    pub fn update_author(&self, author_id: &str, request: UpdateAuthorRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/authors/{}", self.base_url, author_id);
+
+        println!("Updating author: {}", author_id);
+
+        let response = self.client
+            .put(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully updated author: {}", author_id);
+
+        Ok(())
     }
 
     /// Deletes an author from the library database.

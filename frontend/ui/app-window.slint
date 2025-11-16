@@ -65,6 +65,7 @@ import { Styles } from "styles.slint";
 //
 //   Author Operations:
 //     - create-author(first-name, last-name, bio, birth, death, nationality, website)
+//     - update-author(id, first-name, last-name, bio, birth, death, nationality, website)
 //     - delete-author(id)
 //
 //   Publisher Operations:
@@ -241,6 +242,10 @@ export component AppWindow inherits Window {
     // Creates a new author
     // Parameters: first-name, last-name, biography, birth-date, death-date, nationality, website-url
     callback create-author(string, string, string, string, string, string, string);
+
+    // Updates an existing author's information
+    // Parameters: id, first-name, last-name, biography, birth-date, death-date, nationality, website-url
+    callback update-author(string, string, string, string, string, string, string, string);
 
     // Deletes an author by ID
     // Parameter: id (UUID string)
@@ -529,6 +534,9 @@ export component AppWindow inherits Window {
             }
             create-author(first-name, last-name, biography, birth-date, death-date, nationality, website-url) => {
                 root.create-author(first-name, last-name, biography, birth-date, death-date, nationality, website-url);
+            }
+            update-author(id, first-name, last-name, biography, birth-date, death-date, nationality, website-url) => {
+                root.update-author(id, first-name, last-name, biography, birth-date, death-date, nationality, website-url);
             }
             delete-author(id) => {
                 root.delete-author(id);

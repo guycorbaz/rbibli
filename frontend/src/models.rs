@@ -138,6 +138,18 @@ pub struct CreateAuthorRequest {
     pub website_url: Option<String>,
 }
 
+/// UpdateAuthorRequest for updating an existing author
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateAuthorRequest {
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub biography: Option<String>,
+    pub birth_date: Option<String>,
+    pub death_date: Option<String>,
+    pub nationality: Option<String>,
+    pub website_url: Option<String>,
+}
+
 /// Publisher represents a book publisher
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Publisher {

@@ -129,6 +129,17 @@ export component AuthorsPage inherits Page {
     in-out property <string> new-nationality: "";       // Optional
     in-out property <string> new-website-url: "";       // Optional
 
+    // Edit dialog state
+    in-out property <bool> show-edit-dialog: false;     // Whether edit dialog is visible
+    in-out property <string> edit-id: "";               // ID of author being edited
+    in-out property <string> edit-first-name: "";       // Updated first name (required)
+    in-out property <string> edit-last-name: "";        // Updated last name (required)
+    in-out property <string> edit-biography: "";        // Updated biography (optional)
+    in-out property <string> edit-birth-date: "";       // Updated birth date (optional)
+    in-out property <string> edit-death-date: "";       // Updated death date (optional)
+    in-out property <string> edit-nationality: "";      // Updated nationality (optional)
+    in-out property <string> edit-website-url: "";      // Updated website URL (optional)
+
     // ========================================================================
     // Callbacks (connected to Rust backend)
     // ========================================================================
@@ -139,6 +150,10 @@ export component AuthorsPage inherits Page {
     // Creates a new author in the database
     // Parameters: first_name, last_name, biography, birth_date, death_date, nationality, website_url
     callback create-author(string, string, string, string, string, string, string);
+
+    // Updates an existing author's information
+    // Parameters: id, first_name, last_name, biography, birth_date, death_date, nationality, website_url
+    callback update-author(string, string, string, string, string, string, string, string);
 
     // Deletes an author by ID
     // Parameter: author id (UUID string)
@@ -364,9 +379,172 @@ export component AuthorsPage inherits Page {
         }
 
         // ====================================================================
+        // Edit Author Dialog - Modal form for updating existing authors
+        // ====================================================================
+        // This dialog appears when show-edit-dialog is true.
+        // It provides the same form fields as create, pre-filled with existing data.
+        if show-edit-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 12px;
+
+                // Dialog title
+                Text {
+                    text: @tr("Edit Author");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                // First Name field (REQUIRED)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("First Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-first-name;
+                        placeholder-text: @tr("First name (required)");
+                    }
+                }
+
+                // Last Name field (REQUIRED)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Last Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-last-name;
+                        placeholder-text: @tr("Last name (required)");
+                    }
+                }
+
+                // Biography field (Optional multi-line)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Biography:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.edit-biography;
+                        height: 80px;
+                    }
+                }
+
+                // Birth Date field (Optional, ISO format)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Birth Date:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-birth-date;
+                        placeholder-text: @tr("YYYY-MM-DD");
+                    }
+                }
+
+                // Death Date field (Optional, ISO format)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Death Date:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-death-date;
+                        placeholder-text: @tr("YYYY-MM-DD");
+                    }
+                }
+
+                // Nationality field (Optional)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Nationality:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-nationality;
+                        placeholder-text: @tr("E.g., American, British");
+                    }
+                }
+
+                // Website URL field (Optional)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Website:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-website-url;
+                        placeholder-text: @tr("https://...");
+                    }
+                }
+
+                // Dialog action buttons (Cancel and Save)
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    // Cancel button - closes dialog without saving changes
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-edit-dialog = false;
+                        }
+                    }
+
+                    // Save button - submits form and updates author
+                    // Disabled if required fields (first name, last name) are empty
+                    Button {
+                        text: @tr("Save");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.edit-first-name != "" && root.edit-last-name != "";
+                        clicked => {
+                            // Call backend to update author
+                            root.update-author(
+                                root.edit-id,
+                                root.edit-first-name,
+                                root.edit-last-name,
+                                root.edit-biography,
+                                root.edit-birth-date,
+                                root.edit-death-date,
+                                root.edit-nationality,
+                                root.edit-website-url
+                            );
+                            // Close dialog after submission
+                            root.show-edit-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ====================================================================
         // Empty State - Shown when no authors exist
         // ====================================================================
-        if authors.length == 0 && !show-create-dialog: Rectangle {
+        if authors.length == 0 && !show-create-dialog && !show-edit-dialog: Rectangle {
             height: 100px;
             Text {
                 text: @tr("No authors found. Click 'New Author' to create one.");
@@ -470,10 +648,30 @@ export component AuthorsPage inherits Page {
                     }
 
                     // Right side: Action buttons
-                    HorizontalBox {
+                    VerticalBox {
                         width: 100px;
-                        spacing: 8px;
-                        alignment: end;
+                        spacing: 5px;
+                        alignment: center;
+
+                        // Edit button - opens edit dialog with pre-filled data
+                        Button {
+                            text: @tr("Edit");
+                            min-width: 80px;
+                            height: 32px;
+                            clicked => {
+                                // Pre-fill edit form with current author data
+                                root.edit-id = author.id;
+                                root.edit-first-name = author.first-name;
+                                root.edit-last-name = author.last-name;
+                                root.edit-biography = author.biography;
+                                root.edit-birth-date = author.birth-date;
+                                root.edit-death-date = author.death-date;
+                                root.edit-nationality = author.nationality;
+                                root.edit-website-url = author.website-url;
+                                // Show edit dialog
+                                root.show-edit-dialog = true;
+                            }
+                        }
 
                         // Delete button - removes author from database
                         // Note: May fail if author has associated titles
