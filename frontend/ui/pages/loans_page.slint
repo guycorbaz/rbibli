@@ -121,6 +121,11 @@ export component LoansPage inherits Page {
     in-out property <string> edit-group-duration: "";
     in-out property <string> edit-group-description: "";
 
+    // Delete borrower confirmation dialog state
+    in-out property <bool> show-delete-borrower-confirmation: false;
+    in-out property <string> delete-borrower-id: "";
+    in-out property <string> delete-borrower-name: "";
+
     VerticalBox {
         padding: 20px;
         spacing: 10px;
@@ -598,6 +603,73 @@ export component LoansPage inherits Page {
                         }
                     }
 
+                    // Delete borrower confirmation dialog
+                    if root.show-delete-borrower-confirmation: Rectangle {
+                        background: rgba(0, 0, 0, 0.5);
+
+                        Rectangle {
+                            width: 450px;
+                            height: 200px;
+                            background: white;
+                            border-radius: 8px;
+                            border-width: 2px;
+                            border-color: #cc0000;
+                            x: (parent.width - self.width) / 2;
+                            y: (parent.height - self.height) / 2;
+
+                            VerticalBox {
+                                padding: 20px;
+                                spacing: 20px;
+
+                                // Dialog title (warning style)
+                                Text {
+                                    text: @tr("Delete Borrower?");
+                                    font-size: 18px;
+                                    font-weight: 600;
+                                    color: #cc0000;
+                                }
+
+                                // Confirmation message with borrower name
+                                Text {
+                                    text: @tr("Are you sure you want to delete this borrower?\\n\\n") + "\"" + root.delete-borrower-name + "\"";
+                                    font-size: 14px;
+                                    color: #333;
+                                    wrap: word-wrap;
+                                }
+
+                                // Dialog action buttons (Cancel and Delete)
+                                HorizontalBox {
+                                    spacing: 10px;
+                                    alignment: end;
+
+                                    // Cancel button - closes dialog without deleting
+                                    Button {
+                                        text: @tr("Cancel");
+                                        min-width: 100px;
+                                        height: 35px;
+                                        clicked => {
+                                            root.show-delete-borrower-confirmation = false;
+                                        }
+                                    }
+
+                                    // Delete button - confirms deletion
+                                    Button {
+                                        text: @tr("Delete");
+                                        primary: true;
+                                        min-width: 100px;
+                                        height: 35px;
+                                        clicked => {
+                                            // Call backend to delete borrower
+                                            root.delete-borrower(root.delete-borrower-id);
+                                            // Close dialog after submission
+                                            root.show-delete-borrower-confirmation = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Borrowers list
                     if root.borrowers.length == 0: VerticalBox {
                         alignment: center;
@@ -673,7 +745,9 @@ export component LoansPage inherits Page {
                                         Button {
                                             text: @tr("Delete");
                                             clicked => {
-                                                root.delete-borrower(borrower.id);
+                                                root.delete-borrower-id = borrower.id;
+                                                root.delete-borrower-name = borrower.name;
+                                                root.show-delete-borrower-confirmation = true;
                                             }
                                         }
                                     }
