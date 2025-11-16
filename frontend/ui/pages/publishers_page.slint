@@ -32,6 +32,11 @@ export component PublishersPage inherits Page {
     in-out property <string> edit-country: "";
     in-out property <string> edit-founded-year: "";
 
+    // Delete confirmation dialog state
+    in-out property <bool> show-delete-confirmation: false;
+    in-out property <string> delete-publisher-id: "";
+    in-out property <string> delete-publisher-name: "";
+
     // Callbacks
     callback load-publishers();
     callback create-publisher(string, string, string, string, string); // name, description, website_url, country, founded_year
@@ -315,8 +320,67 @@ export component PublishersPage inherits Page {
             }
         }
 
+        // Delete confirmation dialog
+        if show-delete-confirmation: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #cc0000;
+            border-radius: 8px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 20px;
+
+                // Dialog title (warning style)
+                Text {
+                    text: @tr("Delete Publisher?");
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #cc0000;
+                }
+
+                // Confirmation message with publisher name
+                Text {
+                    text: @tr("Are you sure you want to delete this publisher?\n\n") + "\"" + root.delete-publisher-name + "\"";
+                    font-size: 14px;
+                    color: #333;
+                    wrap: word-wrap;
+                }
+
+                // Dialog action buttons (Cancel and Delete)
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    // Cancel button - closes dialog without deleting
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-delete-confirmation = false;
+                        }
+                    }
+
+                    // Delete button - confirms deletion
+                    Button {
+                        text: @tr("Delete");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            // Call backend to delete publisher
+                            root.delete-publisher(root.delete-publisher-id);
+                            // Close dialog after submission
+                            root.show-delete-confirmation = false;
+                        }
+                    }
+                }
+            }
+        }
+
         // Empty state
-        if publishers.length == 0 && !show-create-dialog && !show-edit-dialog: Rectangle {
+        if publishers.length == 0 && !show-create-dialog && !show-edit-dialog && !show-delete-confirmation: Rectangle {
             height: 100px;
             Text {
                 text: @tr("No publishers found. Click 'New Publisher' to create one.");
@@ -433,7 +497,9 @@ export component PublishersPage inherits Page {
                             min-width: 80px;
                             height: 32px;
                             clicked => {
-                                root.delete-publisher(publisher.id);
+                                root.delete-publisher-id = publisher.id;
+                                root.delete-publisher-name = publisher.name;
+                                root.show-delete-confirmation = true;
                             }
                         }
                     }
