@@ -28,7 +28,7 @@
 
 import { Button, VerticalBox, ScrollView, StyleMetrics, ScrollView } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, VolumeData, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData, LoansPage, LoanData, BorrowerData, BorrowerGroupData, StatisticsPage, GenreStatistic, LocationStatistic, LoanStatistic, LibraryStatistics} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, VolumeData, AuthorWithRoleData, AuthorItem, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData, LoansPage, LoanData, BorrowerData, BorrowerGroupData, StatisticsPage, GenreStatistic, LocationStatistic, LoanStatistic, LibraryStatistics} from "pages/pages.slint";
 import { Styles } from "styles.slint";
 
 // AppWindow - Main application window component
@@ -125,6 +125,11 @@ export component AppWindow inherits Window {
     // ID of the title whose volumes are currently expanded
     in-out property <string> expanded-title-id: "";
 
+    // Author-related properties for title-author management
+    in-out property <[AuthorWithRoleData]> title-authors: [];
+    in-out property <[AuthorItem]> all-authors: [];
+    in-out property <[string]> author-names: [];
+
     // Expose title form properties for ISBN lookup functionality
     in-out property <string> new-title: "";
     in-out property <string> new-subtitle: "";
@@ -217,6 +222,25 @@ export component AppWindow inherits Window {
     // Parameter: id (UUID string)
     // Note: A volume can only be deleted if it is not loaned or overdue
     callback delete-volume(string);
+
+    // ========================================================================
+    // Callbacks - Title Author Operations
+    // ========================================================================
+
+    // Loads all authors for a specific title with their roles
+    // Parameter: title-id (UUID string)
+    callback load-title-authors(string);
+
+    // Loads all available authors for dropdown selection
+    callback load-all-authors();
+
+    // Adds an author to a title with a specific role
+    // Parameters: title-id, author-id, role (main_author, co_author, translator, illustrator, editor)
+    callback add-author-to-title(string, string, string);
+
+    // Removes an author from a title
+    // Parameters: title-id, author-id
+    callback remove-author-from-title(string, string);
 
     // ========================================================================
     // Callbacks - Location Operations
@@ -449,6 +473,10 @@ export component AppWindow inherits Window {
             location-names: root.location-names;
             volumes <=> root.volumes;
             expanded-title-id <=> root.expanded-title-id;
+            // Bind author-related properties
+            title-authors <=> root.title-authors;
+            all-authors <=> root.all-authors;
+            author-names <=> root.author-names;
             // Bind form properties for ISBN lookup
             new-title <=> root.new-title;
             new-subtitle <=> root.new-subtitle;
@@ -514,6 +542,18 @@ export component AppWindow inherits Window {
             }
             delete-volume(id) => {
                 root.delete-volume(id);
+            }
+            load-title-authors(title-id) => {
+                root.load-title-authors(title-id);
+            }
+            load-all-authors => {
+                root.load-all-authors();
+            }
+            add-author-to-title(title-id, author-id, role) => {
+                root.add-author-to-title(title-id, author-id, role);
+            }
+            remove-author-from-title(title-id, author-id) => {
+                root.remove-author-from-title(title-id, author-id);
             }
         }
 

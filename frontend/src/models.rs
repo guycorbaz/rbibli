@@ -160,6 +160,34 @@ pub struct UpdateAuthorRequest {
     pub website_url: Option<String>,
 }
 
+/// AuthorRole enum for different author roles in a title
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum AuthorRole {
+    MainAuthor,
+    CoAuthor,
+    Translator,
+    Illustrator,
+    Editor,
+}
+
+/// AuthorWithRole includes role and display order for a title
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuthorWithRole {
+    #[serde(flatten)]
+    pub author: Author,
+    pub role: AuthorRole,
+    pub display_order: i32,
+}
+
+/// AddAuthorToTitleRequest for associating an author with a title
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AddAuthorToTitleRequest {
+    pub author_id: String,
+    pub role: AuthorRole,
+    pub display_order: Option<i32>,
+}
+
 /// Publisher represents a book publisher
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Publisher {

@@ -289,6 +289,102 @@ impl ApiClient {
         Ok(())
     }
 
+    /// Fetches all authors for a specific title with their roles.
+    ///
+    /// # Arguments
+    ///
+    /// * `title_id` - The UUID of the title to fetch authors for
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<AuthorWithRole>)` - List of authors with their roles and display order
+    /// * `Err(Box<dyn Error>)` - If the request fails
+    pub fn get_title_authors(&self, title_id: &str) -> Result<Vec<crate::models::AuthorWithRole>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/titles/{}/authors", self.base_url, title_id);
+
+        println!("Fetching authors for title: {}", title_id);
+
+        let response = self.client
+            .get(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to fetch title authors: {}", error_text).into());
+        }
+
+        let authors = response.json::<Vec<crate::models::AuthorWithRole>>()?;
+        println!("Successfully fetched {} authors for title", authors.len());
+
+        Ok(authors)
+    }
+
+    /// Adds an author to a title with a specified role.
+    ///
+    /// # Arguments
+    ///
+    /// * `title_id` - The UUID of the title
+    /// * `request` - The request containing author_id, role, and optional display_order
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The ID of the created relationship
+    /// * `Err(Box<dyn Error>)` - If the request fails
+    pub fn add_author_to_title(&self, title_id: &str, request: crate::models::AddAuthorToTitleRequest) -> Result<String, Box<dyn Error>> {
+        let url = format!("{}/api/v1/titles/{}/authors", self.base_url, title_id);
+
+        println!("Adding author {} to title {} with role {:?}", request.author_id, title_id, request.role);
+
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to add author to title: {}", error_text).into());
+        }
+
+        let result: serde_json::Value = response.json()?;
+        let id = result["id"].as_str()
+            .ok_or("Response missing 'id' field")?
+            .to_string();
+
+        println!("Successfully added author to title");
+
+        Ok(id)
+    }
+
+    /// Removes an author from a title.
+    ///
+    /// # Arguments
+    ///
+    /// * `title_id` - The UUID of the title
+    /// * `author_id` - The UUID of the author to remove
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the author was successfully removed
+    /// * `Err(Box<dyn Error>)` - If the request fails
+    pub fn remove_author_from_title(&self, title_id: &str, author_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/titles/{}/authors/{}", self.base_url, title_id, author_id);
+
+        println!("Removing author {} from title {}", author_id, title_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to remove author from title: {}", error_text).into());
+        }
+
+        println!("Successfully removed author from title");
+
+        Ok(())
+    }
+
     /// Fetches all storage locations with their full hierarchical paths.
     ///
     /// This method makes a GET request to `/api/v1/locations` to retrieve all physical

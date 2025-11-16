@@ -1,5 +1,5 @@
 use actix_web::{web, HttpResponse, Responder};
-use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest};
+use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, AddAuthorToTitleRequest, Author, AuthorRole};
 use crate::AppState;
 use log::{info, warn, error, debug};
 use sqlx::Row;
@@ -619,6 +619,209 @@ pub async fn delete_title(
                     "details": {
                         "error": e.to_string()
                     }
+                }
+            }))
+        }
+    }
+}
+
+/// GET /api/v1/titles/{title_id}/authors - List all authors for a title
+pub async fn list_title_authors(
+    data: web::Data<AppState>,
+    title_id: web::Path<String>,
+) -> impl Responder {
+    info!("GET /api/v1/titles/{}/authors - Fetching authors for title", title_id);
+
+    let query = r#"
+        SELECT
+            a.id, a.first_name, a.last_name, a.biography, a.birth_date, a.death_date,
+            a.nationality, a.website_url, a.created_at, a.updated_at,
+            ta.role, ta.display_order
+        FROM authors a
+        INNER JOIN title_authors ta ON a.id = ta.author_id
+        WHERE ta.title_id = ?
+        ORDER BY ta.display_order ASC, a.last_name ASC
+    "#;
+
+    match sqlx::query(query)
+        .bind(title_id.as_str())
+        .fetch_all(&data.db_pool)
+        .await
+    {
+        Ok(rows) => {
+            #[derive(serde::Serialize)]
+            struct AuthorWithRole {
+                #[serde(flatten)]
+                author: Author,
+                role: AuthorRole,
+                display_order: i32,
+            }
+
+            let authors: Vec<AuthorWithRole> = rows
+                .into_iter()
+                .filter_map(|row| {
+                    let id_str: String = row.get("id");
+                    let id = Uuid::parse_str(&id_str).ok()?;
+
+                    let created_at: chrono::NaiveDateTime = row.get("created_at");
+                    let updated_at: chrono::NaiveDateTime = row.get("updated_at");
+
+                    let role_str: String = row.get("role");
+                    let role = match role_str.as_str() {
+                        "main_author" => AuthorRole::MainAuthor,
+                        "co_author" => AuthorRole::CoAuthor,
+                        "translator" => AuthorRole::Translator,
+                        "illustrator" => AuthorRole::Illustrator,
+                        "editor" => AuthorRole::Editor,
+                        _ => return None,
+                    };
+
+                    Some(AuthorWithRole {
+                        author: Author {
+                            id,
+                            first_name: row.get("first_name"),
+                            last_name: row.get("last_name"),
+                            biography: row.get("biography"),
+                            birth_date: row.get("birth_date"),
+                            death_date: row.get("death_date"),
+                            nationality: row.get("nationality"),
+                            website_url: row.get("website_url"),
+                            created_at: chrono::DateTime::from_naive_utc_and_offset(created_at, chrono::Utc),
+                            updated_at: chrono::DateTime::from_naive_utc_and_offset(updated_at, chrono::Utc),
+                        },
+                        role,
+                        display_order: row.get("display_order"),
+                    })
+                })
+                .collect();
+
+            info!("Successfully fetched {} authors for title", authors.len());
+            HttpResponse::Ok().json(authors)
+        }
+        Err(e) => {
+            error!("Database error while fetching title authors: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to fetch title authors",
+                    "details": { "error": e.to_string() }
+                }
+            }))
+        }
+    }
+}
+
+/// POST /api/v1/titles/{title_id}/authors - Add an author to a title
+pub async fn add_author_to_title(
+    data: web::Data<AppState>,
+    title_id: web::Path<String>,
+    req: web::Json<AddAuthorToTitleRequest>,
+) -> impl Responder {
+    info!("POST /api/v1/titles/{}/authors - Adding author {} with role {:?}", title_id, req.author_id, req.role);
+
+    // Generate new UUID for the relationship
+    let relationship_id = Uuid::new_v4();
+
+    // Determine display_order: if not provided, use the next available order
+    let display_order = if let Some(order) = req.display_order {
+        order
+    } else {
+        // Get the maximum display_order for this title and increment
+        let max_order_query = "SELECT COALESCE(MAX(display_order), 0) as max_order FROM title_authors WHERE title_id = ?";
+        match sqlx::query(max_order_query)
+            .bind(title_id.as_str())
+            .fetch_one(&data.db_pool)
+            .await
+        {
+            Ok(row) => {
+                let max_order: i32 = row.get("max_order");
+                max_order + 1
+            }
+            Err(e) => {
+                error!("Failed to get max display_order: {}", e);
+                return HttpResponse::InternalServerError().json(serde_json::json!({
+                    "error": {
+                        "code": "DATABASE_ERROR",
+                        "message": "Failed to determine display order"
+                    }
+                }));
+            }
+        }
+    };
+
+    let query = r#"
+        INSERT INTO title_authors (id, title_id, author_id, role, display_order, created_at)
+        VALUES (?, ?, ?, ?, ?, NOW())
+    "#;
+
+    match sqlx::query(query)
+        .bind(relationship_id.to_string())
+        .bind(title_id.as_str())
+        .bind(&req.author_id)
+        .bind(req.role.to_string())
+        .bind(display_order)
+        .execute(&data.db_pool)
+        .await
+    {
+        Ok(_) => {
+            info!("Successfully added author to title");
+            HttpResponse::Created().json(serde_json::json!({
+                "id": relationship_id.to_string(),
+                "message": "Author added to title successfully"
+            }))
+        }
+        Err(e) => {
+            error!("Database error while adding author to title: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to add author to title",
+                    "details": { "error": e.to_string() }
+                }
+            }))
+        }
+    }
+}
+
+/// DELETE /api/v1/titles/{title_id}/authors/{author_id} - Remove an author from a title
+pub async fn remove_author_from_title(
+    data: web::Data<AppState>,
+    path: web::Path<(String, String)>,
+) -> impl Responder {
+    let (title_id, author_id) = path.into_inner();
+    info!("DELETE /api/v1/titles/{}/authors/{} - Removing author from title", title_id, author_id);
+
+    let query = "DELETE FROM title_authors WHERE title_id = ? AND author_id = ?";
+
+    match sqlx::query(query)
+        .bind(&title_id)
+        .bind(&author_id)
+        .execute(&data.db_pool)
+        .await
+    {
+        Ok(result) => {
+            if result.rows_affected() == 0 {
+                warn!("Author-title relationship not found");
+                HttpResponse::NotFound().json(serde_json::json!({
+                    "error": {
+                        "code": "NOT_FOUND",
+                        "message": "Author-title relationship not found"
+                    }
+                }))
+            } else {
+                info!("Successfully removed author from title");
+                HttpResponse::Ok().json(serde_json::json!({
+                    "message": "Author removed from title successfully"
+                }))
+            }
+        }
+        Err(e) => {
+            error!("Database error while removing author from title: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to remove author from title",
+                    "details": { "error": e.to_string() }
                 }
             }))
         }

@@ -1,5 +1,5 @@
 import { Page } from "page.slint";
-import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, ComboBox } from "std-widgets.slint";
+import { ListView, ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, ComboBox } from "std-widgets.slint";
 import { LocationData } from "locations_page.slint";
 
 // Structure to hold title data
@@ -45,6 +45,21 @@ export struct VolumeData {
     location-name: string,  // Full path of location for display
     loan-status: string,
     individual-notes: string,
+}
+
+// Structure for author with role
+export struct AuthorWithRoleData {
+    author-id: string,
+    first-name: string,
+    last-name: string,
+    role: string,  // main_author, co_author, translator, illustrator, editor
+    display-order: int,
+}
+
+// Structure for author dropdown
+export struct AuthorItem {
+    id: string,
+    name: string,  // Full name (first + last)
 }
 
 export component TitlesPage inherits Page {
@@ -125,6 +140,16 @@ export component TitlesPage inherits Page {
     in-out property <string> edit-volume-location-id: "";
     in-out property <string> edit-volume-notes: "";
 
+    // Author-related properties
+    in-out property <[AuthorWithRoleData]> title-authors: [];
+    in-out property <string> managing-authors-title-id: "";  // Which title is having authors managed
+    in-out property <bool> show-authors-dialog: false;
+    in-out property <[AuthorItem]> all-authors: [];
+    in-out property <[string]> author-names: [];
+    in-out property <[string]> role-names: ["Main Author", "Co-Author", "Translator", "Illustrator", "Editor"];
+    in-out property <int> add-author-index: -1;
+    in-out property <int> add-author-role-index: 0;
+
     // Callback to request loading titles
     callback load-titles();
     callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url, dewey_code, dewey_category
@@ -143,6 +168,12 @@ export component TitlesPage inherits Page {
     callback create-volume(string, string, string, string, string); // title-id, barcode, condition, location-id, notes
     callback update-volume(string, string, string, string, string); // id, barcode, condition, location-id, notes
     callback delete-volume(string); // id
+
+    // Author callbacks
+    callback load-title-authors(string); // title-id
+    callback load-all-authors(); // Load all authors for dropdown
+    callback add-author-to-title(string, string, string); // title-id, author-id, role
+    callback remove-author-from-title(string, string); // title-id, author-id
 
     VerticalBox {
         alignment: stretch;
@@ -659,24 +690,39 @@ export component TitlesPage inherits Page {
 
                 HorizontalBox {
                     spacing: 10px;
-                    alignment: end;
+                    alignment: space-between;
 
                     Button {
-                        text: @tr("Cancel");
-                        min-width: 100px;
+                        text: @tr("Manage Authors");
+                        min-width: 150px;
                         height: 35px;
                         clicked => {
-                            root.show-edit-dialog = false;
+                            root.managing-authors-title-id = root.edit-id;
+                            root.load-title-authors(root.edit-id);
+                            root.load-all-authors();
+                            root.show-authors-dialog = true;
                         }
                     }
 
-                    Button {
-                        text: @tr("Save");
-                        primary: true;
-                        min-width: 100px;
-                        height: 35px;
-                        enabled: root.edit-title != "";
-                        clicked => {
+                    HorizontalBox {
+                        spacing: 10px;
+
+                        Button {
+                            text: @tr("Cancel");
+                            min-width: 100px;
+                            height: 35px;
+                            clicked => {
+                                root.show-edit-dialog = false;
+                            }
+                        }
+
+                        Button {
+                            text: @tr("Save");
+                            primary: true;
+                            min-width: 100px;
+                            height: 35px;
+                            enabled: root.edit-title != "";
+                            clicked => {
                             // Look up publisher_id from index
                             root.edit-publisher-id = (root.edit-publisher-index > 0 && root.edit-publisher-index <= root.publishers.length) ? root.publishers[root.edit-publisher-index - 1].id : "";
 
@@ -718,6 +764,7 @@ export component TitlesPage inherits Page {
                             }
                             root.show-edit-dialog = false;
                         }
+                    }
                     }
                 }
             }
@@ -1044,6 +1091,167 @@ export component TitlesPage inherits Page {
             }
         }
 
+        // Authors management dialog
+        if show-authors-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+            width: 700px;
+            height: 600px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 15px;
+
+                Text {
+                    text: @tr("Manage Authors");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                // Current authors list
+                Text {
+                    text: @tr("Current Authors:");
+                    font-size: 14px;
+                    font-weight: 600;
+                }
+
+                if root.title-authors.length == 0: Text {
+                    text: @tr("No authors assigned yet");
+                    font-size: 13px;
+                    color: #888;
+                    height: 40px;
+                }
+
+                if root.title-authors.length > 0: ScrollView {
+                    height: 200px;
+
+                    VerticalBox {
+                        spacing: 5px;
+
+                        for author in root.title-authors: Rectangle {
+                            height: 40px;
+                            border-width: 1px;
+                            border-color: #ddd;
+                            border-radius: 4px;
+                            background: #fafafa;
+
+                            HorizontalBox {
+                                padding: 8px;
+                                spacing: 10px;
+
+                                Text {
+                                    text: author.first-name + " " + author.last-name;
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    horizontal-stretch: 1;
+                                    vertical-alignment: center;
+                                }
+
+                                Text {
+                                    text: author.role == "main_author" ? "Main Author" :
+                                          author.role == "co_author" ? "Co-Author" :
+                                          author.role == "translator" ? "Translator" :
+                                          author.role == "illustrator" ? "Illustrator" :
+                                          author.role == "editor" ? "Editor" : author.role;
+                                    font-size: 12px;
+                                    color: #0066cc;
+                                    vertical-alignment: center;
+                                }
+
+                                Button {
+                                    text: @tr("Remove");
+                                    min-width: 80px;
+                                    height: 28px;
+                                    clicked => {
+                                        root.remove-author-from-title(root.managing-authors-title-id, author.author-id);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Rectangle {
+                    height: 2px;
+                    background: #ddd;
+                }
+
+                // Add new author section
+                Text {
+                    text: @tr("Add Author:");
+                    font-size: 14px;
+                    font-weight: 600;
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Author:");
+                        width: 80px;
+                        vertical-alignment: center;
+                    }
+                    ComboBox {
+                        model: root.author-names;
+                        current-index <=> root.add-author-index;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Role:");
+                        width: 80px;
+                        vertical-alignment: center;
+                    }
+                    ComboBox {
+                        model: root.role-names;
+                        current-index <=> root.add-author-role-index;
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: center;
+
+                    Button {
+                        text: @tr("Add Author");
+                        primary: true;
+                        min-width: 150px;
+                        height: 35px;
+                        enabled: root.add-author-index >= 0 && root.all-authors.length > 0;
+                        clicked => {
+                            // Convert role index to role string
+                            root.add-author-to-title(
+                                root.managing-authors-title-id,
+                                root.all-authors[root.add-author-index].id,
+                                root.add-author-role-index == 0 ? "main_author" :
+                                root.add-author-role-index == 1 ? "co_author" :
+                                root.add-author-role-index == 2 ? "translator" :
+                                root.add-author-role-index == 3 ? "illustrator" : "editor"
+                            );
+                        }
+                    }
+                }
+
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    Button {
+                        text: @tr("Close");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-authors-dialog = false;
+                            root.title-authors = [];
+                        }
+                    }
+                }
+            }
+        }
+
         // List of titles
         if titles.length == 0 && !show-create-dialog && !show-edit-dialog && !show-delete-confirmation: Text {
             text: @tr("No titles found. Click Refresh to load titles from the backend.");
@@ -1174,6 +1382,18 @@ export component TitlesPage inherits Page {
                                         root.expanded-title-id = title.id;
                                         root.load-volumes(title.id);
                                     }
+                                }
+                            }
+
+                            Button {
+                                text: @tr("Authors");
+                                min-width: 170px;
+                                height: 32px;
+                                clicked => {
+                                    root.managing-authors-title-id = title.id;
+                                    root.load-title-authors(title.id);
+                                    root.load-all-authors();
+                                    root.show-authors-dialog = true;
                                 }
                             }
                         }

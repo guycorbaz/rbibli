@@ -1241,6 +1241,145 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect author management callbacks
+    {
+        let api_client = api_client.clone();
+        let ui_weak = ui.as_weak();
+
+        ui.on_load_title_authors(move |title_id| {
+            println!("Loading authors for title: {}", title_id);
+
+            match api_client.get_title_authors(&title_id.to_string()) {
+                Ok(authors) => {
+                    use slint::Model;
+                    use slint::VecModel;
+
+                    let ui = ui_weak.unwrap();
+                    let slint_authors: Vec<AuthorWithRoleData> = authors
+                        .iter()
+                        .map(|a| AuthorWithRoleData {
+                            author_id: a.author.id.clone().into(),
+                            first_name: a.author.first_name.clone().into(),
+                            last_name: a.author.last_name.clone().into(),
+                            role: match a.role {
+                                crate::models::AuthorRole::MainAuthor => "main_author".into(),
+                                crate::models::AuthorRole::CoAuthor => "co_author".into(),
+                                crate::models::AuthorRole::Translator => "translator".into(),
+                                crate::models::AuthorRole::Illustrator => "illustrator".into(),
+                                crate::models::AuthorRole::Editor => "editor".into(),
+                            },
+                            display_order: a.display_order,
+                        })
+                        .collect();
+
+                    let model = std::rc::Rc::new(VecModel::from(slint_authors));
+                    ui.set_title_authors(model.into());
+                    println!("Successfully loaded {} authors", authors.len());
+                }
+                Err(e) => {
+                    eprintln!("Failed to load title authors: {}", e);
+                }
+            }
+        });
+    }
+
+    {
+        let api_client = api_client.clone();
+        let ui_weak = ui.as_weak();
+
+        ui.on_load_all_authors(move || {
+            println!("Loading all authors for dropdown");
+
+            match api_client.get_authors() {
+                Ok(authors) => {
+                    use slint::Model;
+                    use slint::VecModel;
+
+                    let ui = ui_weak.unwrap();
+
+                    // Create AuthorItem list
+                    let author_items: Vec<AuthorItem> = authors
+                        .iter()
+                        .map(|a| AuthorItem {
+                            id: a.author.id.clone().into(),
+                            name: format!("{} {}", a.author.first_name, a.author.last_name).into(),
+                        })
+                        .collect();
+
+                    // Create author names list for ComboBox
+                    let author_names: Vec<slint::SharedString> = authors
+                        .iter()
+                        .map(|a| format!("{} {}", a.author.first_name, a.author.last_name).into())
+                        .collect();
+
+                    ui.set_all_authors(std::rc::Rc::new(VecModel::from(author_items)).into());
+                    ui.set_author_names(std::rc::Rc::new(VecModel::from(author_names)).into());
+                    println!("Successfully loaded {} authors", authors.len());
+                }
+                Err(e) => {
+                    eprintln!("Failed to load authors: {}", e);
+                }
+            }
+        });
+    }
+
+    {
+        let api_client = api_client.clone();
+        let ui_weak = ui.as_weak();
+
+        ui.on_add_author_to_title(move |title_id, author_id, role| {
+            println!("Adding author {} to title {} with role {}", author_id, title_id, role);
+
+            let role_enum = match role.as_str() {
+                "main_author" => crate::models::AuthorRole::MainAuthor,
+                "co_author" => crate::models::AuthorRole::CoAuthor,
+                "translator" => crate::models::AuthorRole::Translator,
+                "illustrator" => crate::models::AuthorRole::Illustrator,
+                "editor" => crate::models::AuthorRole::Editor,
+                _ => crate::models::AuthorRole::MainAuthor,
+            };
+
+            let request = crate::models::AddAuthorToTitleRequest {
+                author_id: author_id.to_string(),
+                role: role_enum,
+                display_order: None,
+            };
+
+            match api_client.add_author_to_title(&title_id.to_string(), request) {
+                Ok(_) => {
+                    println!("Successfully added author to title");
+                    // Reload the authors list
+                    let ui = ui_weak.unwrap();
+                    ui.invoke_load_title_authors(title_id);
+                }
+                Err(e) => {
+                    eprintln!("Failed to add author to title: {}", e);
+                }
+            }
+        });
+    }
+
+    {
+        let api_client = api_client.clone();
+        let ui_weak = ui.as_weak();
+
+        ui.on_remove_author_from_title(move |title_id, author_id| {
+            println!("Removing author {} from title {}", author_id, title_id);
+
+            match api_client.remove_author_from_title(&title_id.to_string(), &author_id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully removed author from title");
+                    // Reload the authors list
+                    let ui = ui_weak.unwrap();
+                    ui.invoke_load_title_authors(title_id);
+                }
+                Err(e) => {
+                    eprintln!("Failed to remove author from title: {}", e);
+                }
+            }
+        });
+    }
+
     // Connect the upload-image callback
     {
         let load_titles = load_titles.clone();

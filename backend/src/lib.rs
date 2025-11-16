@@ -159,6 +159,10 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/titles", web::post().to(handlers::titles::create_title))
             .route("/api/v1/titles/{id}", web::put().to(handlers::titles::update_title))
             .route("/api/v1/titles/{id}", web::delete().to(handlers::titles::delete_title))
+            // API v1 routes - Title Authors
+            .route("/api/v1/titles/{title_id}/authors", web::get().to(handlers::titles::list_title_authors))
+            .route("/api/v1/titles/{title_id}/authors", web::post().to(handlers::titles::add_author_to_title))
+            .route("/api/v1/titles/{title_id}/authors/{author_id}", web::delete().to(handlers::titles::remove_author_from_title))
             // API v1 routes - Volumes
             .route("/api/v1/titles/{title_id}/volumes", web::get().to(handlers::volumes::list_volumes_by_title))
             .route("/api/v1/volumes", web::post().to(handlers::volumes::create_volume))
