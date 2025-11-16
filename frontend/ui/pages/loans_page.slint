@@ -139,10 +139,31 @@ export component LoansPage inherits Page {
                     HorizontalBox {
                         alignment: space-between;
 
-                        Text {
-                            text: @tr("Active Loans");
-                            font-size: 18px;
-                            font-weight: 700;
+                        HorizontalBox {
+                            spacing: 10px;
+
+                            Text {
+                                text: @tr("Active Loans");
+                                font-size: 18px;
+                                font-weight: 700;
+                            }
+
+                            // Debug: Show count
+                            Rectangle {
+                                background: #0066cc;
+                                border-radius: 12px;
+                                width: 60px;
+                                height: 24px;
+
+                                Text {
+                                    text: "(" + root.active-loans.length + ")";
+                                    font-size: 14px;
+                                    font-weight: 700;
+                                    color: white;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
                         }
 
                         Button {
@@ -154,12 +175,31 @@ export component LoansPage inherits Page {
                     }
 
                     // Empty state or loans list
-                    if root.active-loans.length == 0: VerticalBox {
-                        alignment: center;
-                        Text {
-                            text: @tr("No active loans");
-                            font-size: 16px;
-                            color: #888;
+                    if root.active-loans.length == 0: Rectangle {
+                        height: 200px;
+                        background: #f5f5f5;
+                        border-radius: 8px;
+                        border-width: 2px;
+                        border-color: #ddd;
+
+                        VerticalBox {
+                            alignment: center;
+                            spacing: 10px;
+
+                            Text {
+                                text: @tr("📚 No Active Loans");
+                                font-size: 20px;
+                                font-weight: 700;
+                                color: #666;
+                                horizontal-alignment: center;
+                            }
+
+                            Text {
+                                text: @tr("Create a new loan using the 'Create Loan' tab");
+                                font-size: 14px;
+                                color: #888;
+                                horizontal-alignment: center;
+                            }
                         }
                     }
 

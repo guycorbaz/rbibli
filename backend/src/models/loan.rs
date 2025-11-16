@@ -5,6 +5,7 @@ use uuid::Uuid;
 /// Loan status
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
 #[sqlx(type_name = "VARCHAR", rename_all = "lowercase")]
+#[serde(rename_all = "lowercase")]
 pub enum LoanStatus {
     #[sqlx(rename = "active")]
     Active,
