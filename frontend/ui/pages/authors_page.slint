@@ -140,6 +140,11 @@ export component AuthorsPage inherits Page {
     in-out property <string> edit-nationality: "";      // Updated nationality (optional)
     in-out property <string> edit-website-url: "";      // Updated website URL (optional)
 
+    // Delete confirmation dialog state
+    in-out property <bool> show-delete-confirmation: false;  // Whether delete confirmation dialog is visible
+    in-out property <string> delete-author-id: "";           // ID of author to delete
+    in-out property <string> delete-author-name: "";         // Name of author to delete (for display)
+
     // ========================================================================
     // Callbacks (connected to Rust backend)
     // ========================================================================
@@ -542,9 +547,72 @@ export component AuthorsPage inherits Page {
         }
 
         // ====================================================================
+        // Delete Confirmation Dialog - Shown when deleting an author
+        // ====================================================================
+        // This dialog appears when show-delete-confirmation is true.
+        // It displays the author name and asks for confirmation before deletion.
+        if show-delete-confirmation: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #cc0000;
+            border-radius: 8px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 20px;
+
+                // Dialog title (warning style)
+                Text {
+                    text: @tr("Delete Author?");
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #cc0000;
+                }
+
+                // Confirmation message with author name
+                Text {
+                    text: @tr("Are you sure you want to delete this author?\n\n") + "\"" + root.delete-author-name + "\"";
+                    font-size: 14px;
+                    color: #333;
+                    wrap: word-wrap;
+                }
+
+                // Dialog action buttons (Cancel and Delete)
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    // Cancel button - closes dialog without deleting
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-delete-confirmation = false;
+                        }
+                    }
+
+                    // Delete button - confirms deletion
+                    Button {
+                        text: @tr("Delete");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            // Call backend to delete author
+                            root.delete-author(root.delete-author-id);
+                            // Close dialog after submission
+                            root.show-delete-confirmation = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ====================================================================
         // Empty State - Shown when no authors exist
         // ====================================================================
-        if authors.length == 0 && !show-create-dialog && !show-edit-dialog: Rectangle {
+        if authors.length == 0 && !show-create-dialog && !show-edit-dialog && !show-delete-confirmation: Rectangle {
             height: 100px;
             Text {
                 text: @tr("No authors found. Click 'New Author' to create one.");
@@ -673,14 +741,17 @@ export component AuthorsPage inherits Page {
                             }
                         }
 
-                        // Delete button - removes author from database
+                        // Delete button - shows confirmation dialog
                         // Note: May fail if author has associated titles
                         Button {
                             text: @tr("Delete");
                             min-width: 80px;
                             height: 32px;
                             clicked => {
-                                root.delete-author(author.id);
+                                // Store author info and show confirmation dialog
+                                root.delete-author-id = author.id;
+                                root.delete-author-name = author.first-name + " " + author.last-name;
+                                root.show-delete-confirmation = true;
                             }
                         }
                     }
