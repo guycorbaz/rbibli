@@ -215,14 +215,14 @@ pub async fn get_library_statistics(data: web::Data<AppState>) -> impl Responder
         .unwrap_or(0);
 
     let active_loans = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM loans WHERE returned_at IS NULL"
+        "SELECT COUNT(*) FROM loans WHERE return_date IS NULL"
     )
     .fetch_one(&data.db_pool)
     .await
     .unwrap_or(0);
 
     let overdue_loans = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(*) FROM loans WHERE returned_at IS NULL AND due_date < CURDATE()"
+        "SELECT COUNT(*) FROM loans WHERE return_date IS NULL AND due_date < CURDATE()"
     )
     .fetch_one(&data.db_pool)
     .await
