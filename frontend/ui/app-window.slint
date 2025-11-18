@@ -202,6 +202,11 @@ export component AppWindow inherits Window {
     // Returns: Index position in the dropdown, or -1 if not found
     callback find-publisher-index(string) -> int;
 
+    // Finds the index of a location in the location dropdown list
+    // Parameter: location-id (UUID string)
+    // Returns: Index position in the dropdown (0 = no location), or 0 if not found
+    callback find-location-index(string) -> int;
+
     // ========================================================================
     // Callbacks - Volume Operations
     // ========================================================================
@@ -530,6 +535,9 @@ export component AppWindow inherits Window {
             }
             find-publisher-index(publisher-id) => {
                 return root.find-publisher-index(publisher-id);
+            }
+            find-location-index(location-id) => {
+                return root.find-location-index(location-id);
             }
             load-volumes(title-id) => {
                 root.load-volumes(title-id);

@@ -162,6 +162,7 @@ export component TitlesPage inherits Page {
     callback fetch-from-isbn-edit(string); // isbn - fetches and populates edit form fields
     callback find-genre-index(string) -> int; // Find genre index by ID
     callback find-publisher-index(string) -> int; // Find publisher index by ID
+    callback find-location-index(string) -> int; // Find location index by ID
 
     // Volume callbacks
     callback load-volumes(string); // title-id
@@ -1526,10 +1527,8 @@ export component TitlesPage inherits Page {
                                                 root.edit-volume-notes = volume.individual-notes;
                                                 root.edit-volume-location-id = volume.location-id;
 
-                                                // Set location index (0 = no location)
-                                                // Note: The actual index finding is complex, so we'll set it to 0 for now
-                                                // The user can reselect the location if needed
-                                                root.edit-volume-location-index = 0;
+                                                // Find the location index for this location_id
+                                                root.edit-volume-location-index = root.find-location-index(volume.location-id);
 
                                                 root.show-volume-edit-dialog = true;
                                             }

@@ -827,6 +827,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect the find-location-index callback
+    {
+        let ui_weak = ui.as_weak();
+        ui.on_find_location_index(move |location_id| {
+            if let Some(ui) = ui_weak.upgrade() {
+                let locations = ui.get_locations();
+                // Index 0 is "(No location)", so we start from 1
+                for (i, location) in locations.iter().enumerate() {
+                    if location.id == location_id {
+                        return (i + 1) as i32;  // +1 because index 0 is "(No location)"
+                    }
+                }
+            }
+            0  // Return 0 for "(No location)" if not found
+        });
+    }
+
     // Connect the create-title callback
     {
         let load_titles = load_titles.clone();
