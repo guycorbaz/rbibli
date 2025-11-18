@@ -493,6 +493,29 @@ export component AppWindow inherits Window {
                 // 0: Titles, 1: Locations, 2: Authors, 3: Publishers,
                 // 4: Genres, 5: Series, 6: Loans, 7: Statistics, 8: About
                 model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Genres"), @tr("Menu" => "Series"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
+
+                // Auto-load data when page changes
+                changed current-item => {
+                    if (self.current-item == 0) {
+                        root.load-titles();
+                    } else if (self.current-item == 1) {
+                        root.load-locations();
+                    } else if (self.current-item == 2) {
+                        root.load-authors();
+                    } else if (self.current-item == 3) {
+                        root.load-publishers();
+                    } else if (self.current-item == 4) {
+                        root.load-genres();
+                    } else if (self.current-item == 5) {
+                        root.load-series();
+                    } else if (self.current-item == 6) {
+                        root.load-active-loans();
+                        root.load-borrowers();
+                        root.load-borrower-groups();
+                    } else if (self.current-item == 7) {
+                        root.load-statistics();
+                    }
+                }
             }
 
             // ====================================================================
