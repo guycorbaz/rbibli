@@ -1,3 +1,23 @@
+//! Series management API handlers.
+//!
+//! This module provides HTTP handlers for managing book series (collections) in the library.
+//! Series allow grouping related titles such as comic series, book series, or magazine collections.
+//!
+//! # Endpoints
+//!
+//! - `GET /api/v1/series` - List all series with title counts
+//! - `GET /api/v1/series/{id}` - Get a single series by ID
+//! - `POST /api/v1/series` - Create a new series
+//! - `PUT /api/v1/series/{id}` - Update an existing series
+//! - `DELETE /api/v1/series/{id}` - Delete a series (only if no titles associated)
+//!
+//! # Business Rules
+//!
+//! - Series can contain multiple titles (one-to-many relationship)
+//! - Each title can belong to at most one series
+//! - Series with associated titles cannot be deleted (delete protection)
+//! - Series are ordered alphabetically by name
+
 use actix_web::{web, HttpResponse, Responder};
 use sqlx::MySqlPool;
 use uuid::Uuid;
@@ -5,7 +25,49 @@ use uuid::Uuid;
 use crate::models::{CreateSeriesRequest, Series, SeriesWithTitleCount, UpdateSeriesRequest};
 use crate::AppState;
 
-/// GET /api/series - List all series with title counts
+/// Lists all series with their associated title counts.
+///
+/// # Endpoint
+///
+/// `GET /api/v1/series`
+///
+/// # Description
+///
+/// Retrieves all series ordered alphabetically by name, with a count of how many
+/// titles belong to each series. Uses a LEFT JOIN to include series even if they
+/// have no titles yet.
+///
+/// # Query Details
+///
+/// - Uses LEFT JOIN to include series with 0 titles
+/// - Groups by series fields to aggregate title counts
+/// - Orders results by series name (A-Z)
+///
+/// # Returns
+///
+/// * `200 OK` - Array of SeriesWithTitleCount objects
+/// * `500 Internal Server Error` - Database query failed
+///
+/// # Success Response
+///
+/// ```json
+/// [
+///   {
+///     "id": "series-uuid",
+///     "name": "Asterix",
+///     "description": "French comic book series about Gaulish warriors",
+///     "created_at": 1699564800,
+///     "updated_at": 1699564800,
+///     "title_count": 38
+///   }
+/// ]
+/// ```
+///
+/// # Usage
+///
+/// - Display series list in management UI
+/// - Show collection statistics
+/// - Populate series dropdown for title assignment
 pub async fn list_series(data: web::Data<AppState>) -> impl Responder {
     // Query to get all series with their title counts
     let query = r#"
@@ -52,7 +114,39 @@ pub async fn list_series(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// GET /api/series/{id} - Get a single series by ID
+/// Retrieves a single series by its unique identifier.
+///
+/// # Endpoint
+///
+/// `GET /api/v1/series/{id}`
+///
+/// # Path Parameters
+///
+/// * `id` - UUID of the series to retrieve
+///
+/// # Returns
+///
+/// * `200 OK` - Series object
+/// * `404 Not Found` - Series doesn't exist
+/// * `500 Internal Server Error` - Database query failed
+///
+/// # Success Response
+///
+/// ```json
+/// {
+///   "id": "series-uuid",
+///   "name": "Harry Potter",
+///   "description": "Fantasy series by J.K. Rowling",
+///   "created_at": 1699564800,
+///   "updated_at": 1699564800
+/// }
+/// ```
+///
+/// # Use Cases
+///
+/// - Display series details page
+/// - Fetch series for editing
+/// - Verify series exists before operations
 pub async fn get_series(data: web::Data<AppState>, series_id: web::Path<String>) -> impl Responder {
     let series_id = series_id.into_inner();
 
@@ -72,7 +166,44 @@ pub async fn get_series(data: web::Data<AppState>, series_id: web::Path<String>)
     }
 }
 
-/// POST /api/series - Create a new series
+/// Creates a new series in the library.
+///
+/// # Endpoint
+///
+/// `POST /api/v1/series`
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "name": "Lord of the Rings",
+///   "description": "Epic fantasy trilogy by J.R.R. Tolkien"
+/// }
+/// ```
+///
+/// # Validation
+///
+/// - Name is required and must not be empty
+/// - Description is optional
+/// - No duplicate name validation (multiple series can have similar names)
+///
+/// # Returns
+///
+/// * `201 Created` - Series created successfully with new ID
+/// * `500 Internal Server Error` - Database insert failed
+///
+/// # Success Response
+///
+/// ```json
+/// {
+///   "id": "new-series-uuid"
+/// }
+/// ```
+///
+/// # Side Effects
+///
+/// - Generates new UUID for the series
+/// - Sets created_at and updated_at to current timestamp (via database defaults)
 pub async fn create_series(
     data: web::Data<AppState>,
     request: web::Json<CreateSeriesRequest>,
@@ -99,7 +230,47 @@ pub async fn create_series(
     }
 }
 
-/// PUT /api/series/{id} - Update an existing series
+/// Updates an existing series with partial data.
+///
+/// # Endpoint
+///
+/// `PUT /api/v1/series/{id}`
+///
+/// # Path Parameters
+///
+/// * `id` - UUID of the series to update
+///
+/// # Request Body
+///
+/// All fields are optional. Only provided fields will be updated.
+///
+/// ```json
+/// {
+///   "name": "Updated Series Name",
+///   "description": "Updated description"
+/// }
+/// ```
+///
+/// # Validation
+///
+/// - At least one field must be provided
+/// - Returns 400 Bad Request if request body is empty
+///
+/// # Returns
+///
+/// * `200 OK` - Series updated successfully
+/// * `400 Bad Request` - No fields provided to update
+/// * `404 Not Found` - Series doesn't exist
+/// * `500 Internal Server Error` - Database update failed
+///
+/// # Dynamic Query Building
+///
+/// Constructs UPDATE query dynamically based on which fields are provided,
+/// preventing unnecessary updates and allowing partial updates.
+///
+/// # Side Effects
+///
+/// - Database automatically updates `updated_at` timestamp via trigger
 pub async fn update_series(
     data: web::Data<AppState>,
     series_id: web::Path<String>,
@@ -157,7 +328,52 @@ pub async fn update_series(
     }
 }
 
-/// DELETE /api/series/{id} - Delete a series
+/// Deletes a series if it has no associated titles.
+///
+/// # Endpoint
+///
+/// `DELETE /api/v1/series/{id}`
+///
+/// # Path Parameters
+///
+/// * `id` - UUID of the series to delete
+///
+/// # Business Rule: Delete Protection
+///
+/// Series can only be deleted if they have NO associated titles. This prevents
+/// orphaning titles and maintains referential integrity.
+///
+/// # Workflow
+///
+/// 1. **Check Title Count**: Query how many titles reference this series
+/// 2. **Validate Deletion**: If count > 0, reject with 400 Bad Request
+/// 3. **Delete Series**: Only if no titles are associated
+///
+/// # Returns
+///
+/// * `200 OK` - Series deleted successfully
+/// * `400 Bad Request` - Series has associated titles (cannot delete)
+/// * `404 Not Found` - Series doesn't exist
+/// * `500 Internal Server Error` - Database query failed
+///
+/// # Error Response Example
+///
+/// ```json
+/// {
+///   "error": "Cannot delete series: 7 title(s) are associated with this series"
+/// }
+/// ```
+///
+/// # Alternative Approach
+///
+/// To delete a series with titles:
+/// 1. First update all associated titles to remove series_id (set to NULL)
+/// 2. Then delete the series
+///
+/// # Side Effects
+///
+/// - Removes series from database permanently
+/// - No cascade deletion (titles remain with NULL series_id due to ON DELETE SET NULL)
 pub async fn delete_series(data: web::Data<AppState>, series_id: web::Path<String>) -> impl Responder {
     let series_id = series_id.into_inner();
 

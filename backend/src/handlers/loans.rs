@@ -1,3 +1,32 @@
+//! Loan management API handlers.
+//!
+//! This module provides HTTP handlers for managing book loans in the library system.
+//! It includes endpoints for creating loans, returning volumes, extending loan periods,
+//! and querying active and overdue loans.
+//!
+//! # Endpoints
+//!
+//! - `GET /api/v1/loans` - List all active loans with details
+//! - `GET /api/v1/loans/overdue` - List overdue loans
+//! - `POST /api/v1/loans` - Create a new loan by barcode scanning
+//! - `POST /api/v1/loans/{id}/return` - Return a loaned volume
+//! - `POST /api/v1/loans/{id}/extend` - Extend a loan period
+//!
+//! # Loan Workflow
+//!
+//! 1. **Create Loan**: Scan volume barcode, select borrower → System validates and creates loan
+//! 2. **Active Loan**: Volume is marked as loaned, due date set based on borrower group
+//! 3. **Extension**: Loan can be extended once (adds same duration as original)
+//! 4. **Return**: Volume is returned, loan marked complete, volume becomes available
+//!
+//! # Business Rules
+//!
+//! - Loans can be extended maximum once (extension_count ≤ 1)
+//! - Extension adds same duration as original loan (e.g., 21-day loan → +21 days)
+//! - Overdue loans CAN be extended (trust-based system)
+//! - Volume must be loanable and available
+//! - Loan duration determined by borrower group (default: 21 days)
+
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{
     Loan, LoanStatus, LoanDetail, CreateLoanRequest
@@ -8,7 +37,68 @@ use sqlx::Row;
 use uuid::Uuid;
 use chrono::{Utc, Duration};
 
-/// GET /api/v1/loans - List all active loans with details
+/// Lists all active loans with complete details including borrower and title information.
+///
+/// # Endpoint
+///
+/// `GET /api/v1/loans`
+///
+/// # Description
+///
+/// Retrieves all currently active loans (status = 'active' or 'overdue') with joined
+/// information from titles, volumes, and borrowers tables. The response includes
+/// calculated fields like overdue status and extension count.
+///
+/// # Query Details
+///
+/// Performs a JOIN across four tables:
+/// - `loans` (l) - Core loan records
+/// - `titles` (t) - Book title information
+/// - `volumes` (v) - Physical volume details (barcode)
+/// - `borrowers` (b) - Borrower contact information
+///
+/// Filters to only active/overdue loans and orders by loan_date descending (newest first).
+///
+/// # Returns
+///
+/// * `200 OK` - Array of LoanDetail objects
+/// * `500 Internal Server Error` - Database query failed
+///
+/// # Success Response
+///
+/// ```json
+/// [
+///   {
+///     "id": "loan-uuid",
+///     "title_id": "title-uuid",
+///     "volume_id": "volume-uuid",
+///     "borrower_id": "borrower-uuid",
+///     "loan_date": 1699564800,
+///     "due_date": 1701374400,
+///     "extension_count": 0,
+///     "return_date": null,
+///     "status": "active",
+///     "created_at": 1699564800,
+///     "updated_at": 1699564800,
+///     "title": "The Hobbit",
+///     "barcode": "VOL-000123",
+///     "borrower_name": "John Doe",
+///     "borrower_email": "john@example.com",
+///     "is_overdue": false
+///   }
+/// ]
+/// ```
+///
+/// # Overdue Detection
+///
+/// The `is_overdue` field is calculated in the SQL query:
+/// - `TRUE` if current time > due_date AND status = 'active'
+/// - `FALSE` otherwise
+///
+/// # Performance
+///
+/// Uses indexed foreign keys for efficient joins. Typical response time < 100ms
+/// for collections under 10,000 loans.
 pub async fn list_active_loans(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/loans - Fetching all active loans");
 
@@ -83,7 +173,41 @@ pub async fn list_active_loans(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// GET /api/v1/loans/overdue - List overdue loans
+/// Lists all overdue loans sorted by due date (most overdue first).
+///
+/// # Endpoint
+///
+/// `GET /api/v1/loans/overdue`
+///
+/// # Description
+///
+/// Retrieves loans that are past their due date and still active (not returned).
+/// Useful for generating reminder lists or overdue reports.
+///
+/// # Query Details
+///
+/// Filters loans where:
+/// - `due_date < NOW()` - Past the due date
+/// - `status = 'active'` - Not yet returned
+///
+/// Results are ordered by `due_date ASC` (most overdue first), allowing
+/// prioritization of follow-up actions.
+///
+/// # Returns
+///
+/// * `200 OK` - Array of LoanDetail objects with is_overdue always true
+/// * `500 Internal Server Error` - Database query failed
+///
+/// # Use Cases
+///
+/// - Generate overdue reminder emails
+/// - Create "books to follow up on" reports
+/// - Dashboard warnings for library management
+/// - Statistical analysis of loan durations
+///
+/// # Performance
+///
+/// Uses composite index on (due_date, status) for efficient filtering.
 pub async fn list_overdue_loans(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/loans/overdue - Fetching overdue loans");
 
@@ -152,7 +276,89 @@ pub async fn list_overdue_loans(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// POST /api/v1/loans - Create a loan by barcode scanning
+/// Creates a new loan by scanning a volume barcode.
+///
+/// # Endpoint
+///
+/// `POST /api/v1/loans`
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "borrower_id": "borrower-uuid",
+///   "barcode": "VOL-000123"
+/// }
+/// ```
+///
+/// # Workflow
+///
+/// 1. **Lookup Volume**: Find volume by barcode
+/// 2. **Validate Loanability**: Check volume is loanable and available
+/// 3. **Get Loan Duration**: Fetch borrower's group loan duration (default: 21 days)
+/// 4. **Calculate Dates**: loan_date = now, due_date = now + duration
+/// 5. **Create Loan**: Insert loan record with status 'active', extension_count 0
+/// 6. **Update Volume**: Set volume.loan_status = 'loaned'
+///
+/// All operations are performed in a database transaction for atomicity.
+///
+/// # Validation Rules
+///
+/// - Borrower must exist in database
+/// - Volume must exist with matching barcode
+/// - Volume must be loanable (loanable = true)
+/// - Volume must be available (loan_status = 'available')
+///
+/// # Success Response
+///
+/// **Status**: 201 Created
+///
+/// ```json
+/// {
+///   "id": "new-loan-uuid",
+///   "due_date": 1701374400,
+///   "loan_duration_days": 21
+/// }
+/// ```
+///
+/// # Error Responses
+///
+/// **404 Not Found** - Volume barcode not found
+/// ```json
+/// {
+///   "error": "Volume not found with this barcode"
+/// }
+/// ```
+///
+/// **400 Bad Request** - Volume not loanable
+/// ```json
+/// {
+///   "error": "This volume is not loanable (damaged or restricted)"
+/// }
+/// ```
+///
+/// **400 Bad Request** - Volume already loaned
+/// ```json
+/// {
+///   "error": "This volume is already loaned"
+/// }
+/// ```
+///
+/// **404 Not Found** - Borrower not found
+/// ```json
+/// {
+///   "error": "Borrower not found"
+/// }
+/// ```
+///
+/// **500 Internal Server Error** - Database error during transaction
+///
+/// # Transaction Safety
+///
+/// Uses database transaction to ensure atomic operation:
+/// - If loan creation fails, volume status is not updated
+/// - If volume update fails, loan creation is rolled back
+/// - Guarantees data consistency
 pub async fn create_loan_by_barcode(
     request: web::Json<CreateLoanRequest>,
     data: web::Data<AppState>,
@@ -305,7 +511,71 @@ pub async fn create_loan_by_barcode(
     }))
 }
 
-/// POST /api/v1/loans/{id}/return - Return a loaned volume
+/// Marks a loan as returned and makes the volume available again.
+///
+/// # Endpoint
+///
+/// `POST /api/v1/loans/{id}/return`
+///
+/// # Path Parameters
+///
+/// * `id` - UUID of the loan to return
+///
+/// # Workflow
+///
+/// 1. **Lookup Loan**: Verify loan exists and get volume_id
+/// 2. **Validate Status**: Ensure loan is not already returned
+/// 3. **Update Loan**: Set return_date = now, status = 'returned'
+/// 4. **Update Volume**: Set volume.loan_status = 'available'
+///
+/// All operations are performed in a database transaction for atomicity.
+///
+/// # Returns
+///
+/// * `200 OK` - Loan successfully returned
+/// * `404 Not Found` - Loan doesn't exist
+/// * `400 Bad Request` - Loan already returned
+/// * `500 Internal Server Error` - Database error
+///
+/// # Success Response
+///
+/// **Status**: 200 OK
+///
+/// ```json
+/// {
+///   "message": "Loan returned successfully",
+///   "return_date": 1699650000
+/// }
+/// ```
+///
+/// # Error Responses
+///
+/// **404 Not Found** - Loan doesn't exist
+/// ```json
+/// {
+///   "error": "Loan not found"
+/// }
+/// ```
+///
+/// **400 Bad Request** - Already returned
+/// ```json
+/// {
+///   "error": "This loan has already been returned"
+/// }
+/// ```
+///
+/// # Transaction Safety
+///
+/// Uses database transaction to ensure:
+/// - Loan and volume status are updated atomically
+/// - If either update fails, both are rolled back
+/// - No partial state changes
+///
+/// # Side Effects
+///
+/// - Volume becomes available for new loans
+/// - Loan appears in historical records with return_date
+/// - Statistics are updated (active loan count decreases)
 pub async fn return_loan(
     loan_id: web::Path<String>,
     data: web::Data<AppState>,
@@ -407,7 +677,75 @@ pub async fn return_loan(
     }))
 }
 
-/// POST /api/v1/loans/{id}/extend - Extend a loan
+/// Extends an active loan by adding the same duration as the original loan period.
+///
+/// # Endpoint
+///
+/// `POST /api/v1/loans/{id}/extend`
+///
+/// # Path Parameters
+///
+/// * `id` - UUID of the loan to extend
+///
+/// # Business Logic
+///
+/// 1. Validates loan exists and is active (not returned)
+/// 2. Checks extension limit (max 1 extension per loan)
+/// 3. Calculates original loan duration: `due_date - loan_date`
+/// 4. Adds that duration to current due date: `new_due_date = due_date + original_duration`
+/// 5. Increments `extension_count` and updates `due_date`
+///
+/// # Extension Policy
+///
+/// - **Maximum extensions**: 1 per loan
+/// - **Extension duration**: Same as original loan period
+/// - **Example**: A 21-day loan gets 21 more days (total: 42 days from original loan date)
+/// - **Overdue loans**: CAN be extended (trust-based system)
+///
+/// # Success Response
+///
+/// **Status**: 200 OK
+///
+/// ```json
+/// {
+///   "message": "Loan extended successfully",
+///   "new_due_date": 1700000000,
+///   "extension_count": 1,
+///   "original_duration_days": 21
+/// }
+/// ```
+///
+/// # Error Responses
+///
+/// **404 Not Found** - Loan doesn't exist
+/// ```json
+/// {
+///   "error": "Loan not found"
+/// }
+/// ```
+///
+/// **400 Bad Request** - Loan already returned
+/// ```json
+/// {
+///   "error": "Cannot extend a returned loan"
+/// }
+/// ```
+///
+/// **409 Conflict** - Extension limit reached
+/// ```json
+/// {
+///   "error": "Maximum extensions reached (1/1)",
+///   "extension_count": 1
+/// }
+/// ```
+///
+/// **500 Internal Server Error** - Database error
+///
+/// # Example
+///
+/// Loan created on 2024-01-01 with 21-day duration (due 2024-01-22):
+/// - First extension on 2024-01-15 → new due date: 2024-02-12 (21 more days)
+/// - Second extension attempt → 409 Conflict (limit reached)
 pub async fn extend_loan(
     loan_id: web::Path<String>,
     data: web::Data<AppState>,

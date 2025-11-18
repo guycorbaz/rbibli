@@ -47,6 +47,20 @@ export struct BorrowerData {
 }
 
 // LoanData - Data structure for active loans
+//
+// Represents a single loan with all necessary information for display in the UI.
+// This struct is populated from the backend LoanDetail API response.
+//
+// Fields:
+// - id: Unique loan identifier (UUID)
+// - title: Book title being loaned
+// - barcode: Volume barcode (e.g., "VOL-000001")
+// - borrower-name: Name of the person who borrowed the volume
+// - borrower-email: Contact email of the borrower
+// - loan-date: Date when the loan was created (YYYY-MM-DD format)
+// - due-date: Date when the volume is due back (YYYY-MM-DD format)
+// - extension-count: Number of times this loan has been extended (0 or 1, max 1 extension)
+// - is-overdue: Whether the loan is past its due date
 export struct LoanData {
     id: string,
     title: string,
@@ -55,7 +69,7 @@ export struct LoanData {
     borrower-email: string,
     loan-date: string,
     due-date: string,
-    extension-count: int,
+    extension-count: int,  // 0 = not extended, 1 = extended once (maximum)
     is-overdue: bool,
 }
 
@@ -71,19 +85,25 @@ export component LoansPage inherits Page {
     in-out property <[string]> borrower-names: [];
     in-out property <[string]> group-names: [];
 
-    // Callbacks
-    callback load-active-loans();
-    callback load-borrowers();
-    callback load-borrower-groups();
-    callback create-loan(string /* borrower-id */, string /* barcode */);
-    callback return-loan(string /* loan-id */);
-    callback extend-loan(string /* loan-id */);
+    // Callbacks - Functions that connect the UI to the Rust backend
+    //
+    // Loan operations:
+    callback load-active-loans();                                  // Fetches all active loans from backend
+    callback create-loan(string /* borrower-id */, string /* barcode */);  // Creates new loan by barcode
+    callback return-loan(string /* loan-id */);                    // Marks loan as returned
+    callback extend-loan(string /* loan-id */);                    // Extends loan period (max once)
+
+    // Borrower operations:
+    callback load-borrowers();                                     // Fetches all borrowers from backend
     callback create-borrower(string /* name */, string /* email */, string /* phone */, string /* address */, string /* city */, string /* zip */, string /* group-id */);
     callback update-borrower(string /* id */, string /* name */, string /* email */, string /* phone */, string /* address */, string /* city */, string /* zip */, string /* group-id */);
-    callback delete-borrower(string /* id */);
+    callback delete-borrower(string /* id */);                     // Deletes a borrower (if no active loans)
+
+    // Borrower group operations:
+    callback load-borrower-groups();                               // Fetches all borrower groups from backend
     callback create-borrower-group(string /* name */, int /* loan-duration-days */, string /* description */);
     callback update-borrower-group(string /* id */, string /* name */, int /* loan-duration-days */, string /* description */);
-    callback delete-borrower-group(string /* id */);
+    callback delete-borrower-group(string /* id */);               // Deletes a group (if no borrowers assigned)
 
     // Create loan form state
     in-out property <int> new-loan-borrower-index: 0;
