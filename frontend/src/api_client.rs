@@ -2018,6 +2018,30 @@ impl ApiClient {
         Ok(())
     }
 
+    /// Extend a loan by adding the same duration as the original loan period
+    pub fn extend_loan(&self, loan_id: &str) -> Result<LoanDetail, Box<dyn Error>> {
+        let url = format!("{}/api/v1/loans/{}/extend", self.base_url, loan_id);
+
+        println!("Extending loan: {}", loan_id);
+
+        let response = self.client
+            .post(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("Failed to extend loan: {}", error_text).into());
+        }
+
+        println!("Successfully extended loan: {}", loan_id);
+
+        // After extending, fetch the updated loan details
+        self.get_active_loans()?
+            .into_iter()
+            .find(|loan| loan.loan.id == loan_id)
+            .ok_or_else(|| "Extended loan not found in active loans".into())
+    }
+
     // ========================================================================
     // Dewey Classification API Methods
     // ========================================================================

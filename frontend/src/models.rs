@@ -527,6 +527,7 @@ pub struct Loan {
     pub loan_date: DateTime<Utc>,
     #[serde(with = "chrono::serde::ts_seconds")]
     pub due_date: DateTime<Utc>,
+    pub extension_count: i32,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[serde(with = "optional_ts_seconds")]
     pub return_date: Option<DateTime<Utc>>,

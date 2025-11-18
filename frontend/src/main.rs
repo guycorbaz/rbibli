@@ -2056,6 +2056,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                             borrower_email: l.borrower_email.clone().unwrap_or_default().into(),
                             loan_date: l.loan.loan_date.format("%Y-%m-%d").to_string().into(),
                             due_date: l.loan.due_date.format("%Y-%m-%d").to_string().into(),
+                            extension_count: l.loan.extension_count,
                             is_overdue: l.is_overdue,
                         })
                         .collect();
@@ -2125,6 +2126,26 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
                 Err(e) => {
                     eprintln!("Failed to return loan: {}", e);
+                }
+            }
+        });
+    }
+
+    // Handle extend loan callback
+    {
+        let load_active_loans = load_active_loans.clone();
+        let api_client = api_client.clone();
+        ui.on_extend_loan(move |loan_id| {
+            println!("Extending loan: {}", loan_id);
+
+            match api_client.extend_loan(&loan_id.to_string()) {
+                Ok(updated_loan) => {
+                    println!("Successfully extended loan. New due date: {}",
+                             updated_loan.loan.due_date.format("%Y-%m-%d"));
+                    load_active_loans();
+                }
+                Err(e) => {
+                    eprintln!("Failed to extend loan: {}", e);
                 }
             }
         });

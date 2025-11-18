@@ -15,7 +15,7 @@ pub async fn list_active_loans(data: web::Data<AppState>) -> impl Responder {
     let query = "
         SELECT
             l.id, l.title_id, l.volume_id, l.borrower_id,
-            l.loan_date, l.due_date, l.return_date, l.status,
+            l.loan_date, l.due_date, l.extension_count, l.return_date, l.status,
             l.created_at, l.updated_at,
             t.title,
             v.barcode,
@@ -51,6 +51,7 @@ pub async fn list_active_loans(data: web::Data<AppState>) -> impl Responder {
                             borrower_id: row.get("borrower_id"),
                             loan_date: chrono::DateTime::from_naive_utc_and_offset(loan_date, Utc),
                             due_date: chrono::DateTime::from_naive_utc_and_offset(due_date, Utc),
+                            extension_count: row.get("extension_count"),
                             return_date: return_date.map(|dt| chrono::DateTime::from_naive_utc_and_offset(dt, Utc)),
                             status: match status_str.as_str() {
                                 "active" => LoanStatus::Active,
@@ -89,7 +90,7 @@ pub async fn list_overdue_loans(data: web::Data<AppState>) -> impl Responder {
     let query = "
         SELECT
             l.id, l.title_id, l.volume_id, l.borrower_id,
-            l.loan_date, l.due_date, l.return_date, l.status,
+            l.loan_date, l.due_date, l.extension_count, l.return_date, l.status,
             l.created_at, l.updated_at,
             t.title,
             v.barcode,
@@ -124,6 +125,7 @@ pub async fn list_overdue_loans(data: web::Data<AppState>) -> impl Responder {
                             borrower_id: row.get("borrower_id"),
                             loan_date: chrono::DateTime::from_naive_utc_and_offset(loan_date, Utc),
                             due_date: chrono::DateTime::from_naive_utc_and_offset(due_date, Utc),
+                            extension_count: row.get("extension_count"),
                             return_date: return_date.map(|dt| chrono::DateTime::from_naive_utc_and_offset(dt, Utc)),
                             status: LoanStatus::Overdue,
                             created_at: chrono::DateTime::from_naive_utc_and_offset(created_at, Utc),
@@ -402,5 +404,95 @@ pub async fn return_loan(
     HttpResponse::Ok().json(serde_json::json!({
         "message": "Loan returned successfully",
         "return_date": return_date.timestamp()
+    }))
+}
+
+/// POST /api/v1/loans/{id}/extend - Extend a loan
+pub async fn extend_loan(
+    loan_id: web::Path<String>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    info!("POST /api/v1/loans/{}/extend - Extending loan", loan_id);
+
+    // 1. Get loan details
+    let loan_query = "
+        SELECT id, loan_date, due_date, extension_count, status
+        FROM loans
+        WHERE id = ?
+    ";
+
+    let loan_row = match sqlx::query(loan_query)
+        .bind(loan_id.as_str())
+        .fetch_optional(&data.db_pool)
+        .await
+    {
+        Ok(Some(row)) => row,
+        Ok(None) => {
+            error!("Loan not found: {}", loan_id);
+            return HttpResponse::NotFound().json(serde_json::json!({
+                "error": "Loan not found"
+            }));
+        }
+        Err(e) => {
+            error!("Failed to fetch loan: {}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": "Failed to fetch loan"
+            }));
+        }
+    };
+
+    let status: String = loan_row.get("status");
+    let extension_count: i32 = loan_row.get("extension_count");
+    let loan_date: chrono::NaiveDateTime = loan_row.get("loan_date");
+    let due_date: chrono::NaiveDateTime = loan_row.get("due_date");
+
+    // 2. Check if loan is active (not returned)
+    if status == "returned" {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": "Cannot extend a returned loan"
+        }));
+    }
+
+    // 3. Check if extension limit reached (max 1 extension)
+    if extension_count >= 1 {
+        return HttpResponse::Conflict().json(serde_json::json!({
+            "error": "Maximum extensions reached (1/1)",
+            "extension_count": extension_count
+        }));
+    }
+
+    // 4. Calculate original loan duration and new due date
+    let loan_date_utc: chrono::DateTime<Utc> = chrono::DateTime::from_naive_utc_and_offset(loan_date, Utc);
+    let due_date_utc: chrono::DateTime<Utc> = chrono::DateTime::from_naive_utc_and_offset(due_date, Utc);
+
+    let original_duration = due_date_utc.signed_duration_since(loan_date_utc);
+    let new_due_date = due_date_utc + original_duration;
+
+    // 5. Update loan with new due date and increment extension_count
+    let update_query = "
+        UPDATE loans
+        SET due_date = ?, extension_count = extension_count + 1, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+    ";
+
+    if let Err(e) = sqlx::query(update_query)
+        .bind(new_due_date.naive_utc())
+        .bind(loan_id.as_str())
+        .execute(&data.db_pool)
+        .await
+    {
+        error!("Failed to extend loan: {}", e);
+        return HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "Failed to extend loan"
+        }));
+    }
+
+    info!("Successfully extended loan: {} - New due date: {}", loan_id, new_due_date);
+
+    HttpResponse::Ok().json(serde_json::json!({
+        "message": "Loan extended successfully",
+        "new_due_date": new_due_date.timestamp(),
+        "extension_count": extension_count + 1,
+        "original_duration_days": original_duration.num_days()
     }))
 }

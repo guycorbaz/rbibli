@@ -390,6 +390,10 @@ export component AppWindow inherits Window {
     // Parameter: loan-id (UUID string)
     callback return-loan(string);
 
+    // Extends a loan by adding the same duration as the original loan
+    // Parameter: loan-id (UUID string)
+    callback extend-loan(string);
+
     // ========================================================================
     // Callbacks - Borrowers Operations
     // ========================================================================
@@ -733,6 +737,9 @@ export component AppWindow inherits Window {
             }
             return-loan(loan-id) => {
                 root.return-loan(loan-id);
+            }
+            extend-loan(loan-id) => {
+                root.extend-loan(loan-id);
             }
             create-borrower(name, email, phone, address, city, zip, group-id) => {
                 root.create-borrower(name, email, phone, address, city, zip, group-id);
