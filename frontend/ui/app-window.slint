@@ -28,7 +28,7 @@
 
 import { Button, VerticalBox, ScrollView, StyleMetrics, ScrollView } from "std-widgets.slint";
 import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, VolumeData, AuthorWithRoleData, AuthorItem, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData, LoansPage, LoanData, BorrowerData, BorrowerGroupData, StatisticsPage, GenreStatistic, LocationStatistic, LoanStatistic, LibraryStatistics} from "pages/pages.slint";
+import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, SeriesItem, VolumeData, AuthorWithRoleData, AuthorItem, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData, SeriesPage, SeriesData, LoansPage, LoanData, BorrowerData, BorrowerGroupData, StatisticsPage, GenreStatistic, LocationStatistic, LoanStatistic, LibraryStatistics} from "pages/pages.slint";
 import { Styles } from "styles.slint";
 
 // AppWindow - Main application window component
@@ -119,6 +119,15 @@ export component AppWindow inherits Window {
     // Array of genre names for ComboBox widgets
     in-out property <[string]> genre-names: [];
 
+    // Array of series with title counts
+    in-out property <[SeriesData]> series: [];
+
+    // Array of series items formatted for dropdown selection
+    in-out property <[SeriesItem]> series-items: [];
+
+    // Array of series names for ComboBox widgets
+    in-out property <[string]> series-names: [];
+
     // Array of volumes for the currently expanded title
     in-out property <[VolumeData]> volumes: [];
 
@@ -162,11 +171,11 @@ export component AppWindow inherits Window {
 
     // Creates a new title in the library
     // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category
-    callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string);
+    callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string);
 
     // Updates an existing title's information
     // Parameters: id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category
-    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string);
+    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string);
 
     // Search Dewey classification
     callback search-dewey(string);
@@ -201,6 +210,11 @@ export component AppWindow inherits Window {
     // Parameter: publisher-id (UUID string)
     // Returns: Index position in the dropdown, or -1 if not found
     callback find-publisher-index(string) -> int;
+
+    // Finds the index of a series in the series dropdown list
+    // Parameter: series-id (UUID string)
+    // Returns: Index position in the dropdown, or -1 if not found
+    callback find-series-index(string) -> int;
 
     // Finds the index of a location in the location dropdown list
     // Parameter: location-id (UUID string)
@@ -322,6 +336,25 @@ export component AppWindow inherits Window {
     // Deletes a genre by ID
     // Parameter: id (UUID string)
     callback delete-genre(string);
+
+    // ========================================================================
+    // Callbacks - Series Operations
+    // ========================================================================
+
+    // Triggers loading of all series from the backend
+    callback load-series();
+
+    // Creates a new series
+    // Parameters: name, description
+    callback create-series(string, string);
+
+    // Updates an existing series
+    // Parameters: id, name, description
+    callback update-series(string, string, string);
+
+    // Deletes a series by ID
+    // Parameter: id (UUID string)
+    callback delete-series(string);
 
     // ========================================================================
     // Data Properties - Loans Management
@@ -458,8 +491,8 @@ export component AppWindow inherits Window {
                 title: @tr("Personal Library");
                 // Menu items (internationalized):
                 // 0: Titles, 1: Locations, 2: Authors, 3: Publishers,
-                // 4: Genres, 5: Loans (TODO), 6: Statistics (TODO), 7: About
-                model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Genres"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
+                // 4: Genres, 5: Series, 6: Loans, 7: Statistics, 8: About
+                model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Genres"), @tr("Menu" => "Series"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
             }
 
             // ====================================================================
@@ -474,6 +507,8 @@ export component AppWindow inherits Window {
             genre-names: root.genre-names;
             publishers: root.publisher-items;
             publisher-names: root.publisher-names;
+            series-list: root.series-items;
+            series-names: root.series-names;
             locations: root.locations;
             location-names: root.location-names;
             volumes <=> root.volumes;
@@ -507,10 +542,10 @@ export component AppWindow inherits Window {
                 root.load-titles();
             }
             create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category) => {
-                root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category);
+                root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, "", "", summary, cover-url, dewey-code, dewey-category);
             }
-            update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category) => {
-                root.update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category);
+            update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code, dewey-category) => {
+                root.update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code, dewey-category);
             }
             search-dewey(query) => {
                 root.search-dewey(query);
@@ -535,6 +570,9 @@ export component AppWindow inherits Window {
             }
             find-publisher-index(publisher-id) => {
                 return root.find-publisher-index(publisher-id);
+            }
+            find-series-index(series-id) => {
+                return root.find-series-index(series-id);
             }
             find-location-index(location-id) => {
                 return root.find-location-index(location-id);
@@ -633,8 +671,25 @@ export component AppWindow inherits Window {
             }
         }
 
-        // PAGE 5: Loans Page - Manage book loans, borrowers, and groups
-        if(side-bar.current-item == 5) : LoansPage {
+        // PAGE 5: Series Page - Manage book series
+        if(side-bar.current-item == 5) : SeriesPage {
+            series: root.series;
+            load-series => {
+                root.load-series();
+            }
+            create-series(name, description) => {
+                root.create-series(name, description);
+            }
+            update-series(id, name, description) => {
+                root.update-series(id, name, description);
+            }
+            delete-series(id) => {
+                root.delete-series(id);
+            }
+        }
+
+        // PAGE 6: Loans Page - Manage book loans, borrowers, and groups
+        if(side-bar.current-item == 6) : LoansPage {
             active-loans: root.active-loans;
             borrowers: root.borrowers;
             borrower-groups: root.borrower-groups;
@@ -676,8 +731,8 @@ export component AppWindow inherits Window {
             }
         }
 
-        // PAGE 6: Statistics Page - View library statistics
-        if(side-bar.current-item == 6) : StatisticsPage {
+        // PAGE 7: Statistics Page - View library statistics
+        if(side-bar.current-item == 7) : StatisticsPage {
             library-stats: root.library-statistics;
             genre-stats: root.genre-statistics;
             location-stats: root.location-statistics;
@@ -688,8 +743,8 @@ export component AppWindow inherits Window {
             }
         }
 
-        // PAGE 7: About Page - Application information and version
-            if(side-bar.current-item == 7) : AboutPage {}
+        // PAGE 8: About Page - Application information and version
+            if(side-bar.current-item == 8) : AboutPage {}
         }
     }
 }

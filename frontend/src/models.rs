@@ -17,6 +17,9 @@ pub struct Title {
     pub dewey_category: Option<String>,
     pub genre: Option<String>,
     pub genre_id: Option<String>,
+    pub series_name: Option<String>,
+    pub series_id: Option<String>,
+    pub series_number: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
     #[serde(with = "chrono::serde::ts_seconds")]
@@ -48,6 +51,8 @@ pub struct CreateTitleRequest {
     pub dewey_category: Option<String>,
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
+    pub series_id: Option<String>,
+    pub series_number: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
 }
@@ -67,8 +72,44 @@ pub struct UpdateTitleRequest {
     pub dewey_category: Option<String>,
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
+    pub series_id: Option<String>,
+    pub series_number: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
+}
+
+/// Series represents a collection of related titles
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Series {
+    pub id: String,
+    pub name: String,
+    pub description: Option<String>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub created_at: DateTime<Utc>,
+    #[serde(with = "chrono::serde::ts_seconds")]
+    pub updated_at: DateTime<Utc>,
+}
+
+/// SeriesWithTitleCount includes the title count
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SeriesWithTitleCount {
+    #[serde(flatten)]
+    pub series: Series,
+    pub title_count: i64,
+}
+
+/// CreateSeriesRequest for creating a new series
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateSeriesRequest {
+    pub name: String,
+    pub description: Option<String>,
+}
+
+/// UpdateSeriesRequest for updating an existing series
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateSeriesRequest {
+    pub name: Option<String>,
+    pub description: Option<String>,
 }
 
 /// Location represents a physical location where volumes can be stored

@@ -1,0 +1,518 @@
+// ============================================================================
+// series_page.slint
+// ============================================================================
+// Series management page for the rbibli personal library application.
+//
+// This page provides a complete interface for managing book series (categories)
+// in the library database. It allows users to:
+// - View a list of all series with descriptions and title counts
+// - Create new series with name and description
+// - Edit existing series to update name and description
+// - Delete series (if they have no associated titles)
+// - Refresh the series list from the backend
+//
+// Series are used to categorize books into broad categories such as:
+// - Fiction, Non-Fiction, Science Fiction, Mystery, Biography, etc.
+//
+// The page uses a simple list layout with alternating row colors for better
+// readability. Each series item displays:
+// - Series name (bold)
+// - Description (if available)
+// - Title count showing how many books are in this series
+// - Edit and Delete action buttons
+//
+// The page supports both create and edit dialogs with similar form fields:
+// - Name (required)
+// - Description (optional multi-line text)
+//
+// All text is internationalized using @tr() for multi-language support.
+// ============================================================================
+
+import { Page } from "page.slint";
+import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+
+// SeriesData - Data structure for series information (EXPORTED)
+//
+// This struct represents a single book series/category with its metadata
+// and statistics. It mirrors the backend API's series data structure.
+//
+// Fields:
+//   - id: Unique identifier (UUID string) for the series
+//   - name: Series name (e.g., "Science Fiction", "Biography")
+//   - description: Description of what this series encompasses
+//   - title-count: Number of titles categorized under this series
+//
+// Example:
+//   SeriesData {
+//       id: "123e4567-e89b-12d3-a456-426614174000",
+//       name: "Science Fiction",
+//       description: "Speculative fiction based on scientific concepts",
+//       title-count: 42
+//   }
+export struct SeriesData {
+    id: string,
+    name: string,
+    description: string,
+    title-count: int,
+}
+
+// SeriesPage - Series management page component (EXPORTED)
+//
+// This component provides the complete user interface for managing book series
+// and categories in the library. It inherits from the base Page component to
+// maintain consistent styling with other pages.
+//
+// Features:
+//   - List view of all series with descriptions and title counts
+//   - Create new series via modal dialog form
+//   - Edit existing series via modal dialog form
+//   - Delete series with confirmation
+//   - Empty state message when no series exist
+//   - Alternating row colors for better readability
+//   - Title count display showing number of books in each series
+//
+// Layout Structure:
+//   1. Header: Page title with Refresh and New Series buttons
+//   2. Create Dialog: Modal form for adding new series (conditional)
+//   3. Edit Dialog: Modal form for updating series (conditional)
+//   4. Empty State: Message when no series exist (conditional)
+//   5. Series List: Simple list view of all series (conditional)
+//
+// Data Flow:
+//   - Series data is passed from AppWindow via the series property
+//   - Create/update/delete operations trigger callbacks to Rust backend
+//   - Backend updates database and returns new data
+//   - Series property is updated, triggering UI refresh
+//
+// Validation:
+//   - Series name is a required field
+//   - Save button is disabled until name field is filled
+//   - Description is optional multi-line text
+export component SeriesPage inherits Page {
+    // Page title and description (internationalized)
+    title: @tr("Series");
+    description: @tr("Manage book series and categories");
+
+    // ========================================================================
+    // Properties
+    // ========================================================================
+
+    // Array of all series loaded from the backend
+    in-out property <[SeriesData]> series: [];
+
+    // Create dialog state
+    in-out property <bool> show-create-dialog: false;    // Whether create dialog is visible
+    in-out property <string> new-name: "";               // Name for new series (required)
+    in-out property <string> new-description: "";        // Description for new series (optional)
+
+    // Edit dialog state
+    in-out property <bool> show-edit-dialog: false;      // Whether edit dialog is visible
+    in-out property <string> edit-id: "";                // ID of series being edited
+    in-out property <string> edit-name: "";              // Updated name (required)
+    in-out property <string> edit-description: "";       // Updated description (optional)
+
+    // Delete confirmation dialog state
+    in-out property <bool> show-delete-confirmation: false;  // Whether delete confirmation dialog is visible
+    in-out property <string> delete-series-id: "";            // ID of series to delete
+    in-out property <string> delete-series-name: "";          // Name of series to delete (for display)
+
+    // ========================================================================
+    // Callbacks (connected to Rust backend)
+    // ========================================================================
+
+    // Triggers reloading of all series from the backend
+    callback load-series();
+
+    // Creates a new series in the database
+    // Parameters: name, description
+    callback create-series(string, string);
+
+    // Updates an existing series's information
+    // Parameters: id, name, description
+    callback update-series(string, string, string);
+
+    // Deletes a series by ID
+    // Parameter: series id (UUID string)
+    // Note: May fail if series has associated titles
+    callback delete-series(string);
+
+    // ========================================================================
+    // Main Content Layout
+    // ========================================================================
+    VerticalBox {
+        alignment: stretch;
+        padding: 20px;
+
+        // ====================================================================
+        // Header Section - Title and action buttons
+        // ====================================================================
+        HorizontalBox {
+            alignment: space-between;
+            height: 50px;
+
+            // Page title
+            Text {
+                text: @tr("Book Series");
+                font-size: 24px;
+                font-weight: 700;
+            }
+
+            // Action buttons (right-aligned)
+            HorizontalBox {
+                spacing: 10px;
+
+                // Refresh button - reloads series from backend
+                Button {
+                    text: @tr("Refresh");
+                    min-width: 100px;
+                    height: 35px;
+                    clicked => {
+                        root.load-series();
+                    }
+                }
+
+                // New Series button - opens create dialog
+                Button {
+                    text: @tr("+ New Series");
+                    primary: true;
+                    min-width: 150px;
+                    height: 35px;
+                    clicked => {
+                        // Show dialog and reset all form fields
+                        root.show-create-dialog = true;
+                        root.new-name = "";
+                        root.new-description = "";
+                    }
+                }
+            }
+        }
+
+        // ====================================================================
+        // Create Series Dialog - Modal form for adding new series
+        // ====================================================================
+        // This dialog appears when show-create-dialog is true.
+        // It provides form fields for series name and description.
+        if show-create-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 12px;
+
+                // Dialog title
+                Text {
+                    text: @tr("Create New Series");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                // Series Name field (REQUIRED)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.new-name;
+                        placeholder-text: @tr("Series name (required)");
+                    }
+                }
+
+                // Series Description field (Optional multi-line)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Description:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.new-description;
+                        height: 100px;
+                    }
+                }
+
+                // Dialog action buttons (Cancel and Save)
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    // Cancel button - closes dialog without creating
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-create-dialog = false;
+                        }
+                    }
+
+                    // Save button - submits form and creates series
+                    // Disabled if required field (name) is empty
+                    Button {
+                        text: @tr("Save");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.new-name != "";
+                        clicked => {
+                            // Call backend to create series
+                            root.create-series(root.new-name, root.new-description);
+                            // Close dialog after submission
+                            root.show-create-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ====================================================================
+        // Edit Series Dialog - Modal form for updating existing series
+        // ====================================================================
+        // This dialog appears when show-edit-dialog is true.
+        // It provides the same form fields as create, pre-filled with existing data.
+        if show-edit-dialog: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #0066cc;
+            border-radius: 8px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 12px;
+
+                // Dialog title
+                Text {
+                    text: @tr("Edit Series");
+                    font-size: 18px;
+                    font-weight: 600;
+                }
+
+                // Series Name field (REQUIRED)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Name:");
+                        width: 120px;
+                        vertical-alignment: center;
+                    }
+                    LineEdit {
+                        text <=> root.edit-name;
+                        placeholder-text: @tr("Series name (required)");
+                    }
+                }
+
+                // Series Description field (Optional multi-line)
+                HorizontalBox {
+                    spacing: 10px;
+                    Text {
+                        text: @tr("Description:");
+                        width: 120px;
+                        vertical-alignment: top;
+                    }
+                    TextEdit {
+                        text <=> root.edit-description;
+                        height: 100px;
+                    }
+                }
+
+                // Dialog action buttons (Cancel and Save)
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    // Cancel button - closes dialog without saving changes
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-edit-dialog = false;
+                        }
+                    }
+
+                    // Save button - submits form and updates series
+                    // Disabled if required field (name) is empty
+                    Button {
+                        text: @tr("Save");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        enabled: root.edit-name != "";
+                        clicked => {
+                            // Call backend to update series
+                            root.update-series(root.edit-id, root.edit-name, root.edit-description);
+                            // Close dialog after submission
+                            root.show-edit-dialog = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ====================================================================
+        // Delete Confirmation Dialog - Shown when deleting a series
+        // ====================================================================
+        // This dialog appears when show-delete-confirmation is true.
+        // It displays the series name and asks for confirmation before deletion.
+        if show-delete-confirmation: Rectangle {
+            background: white;
+            border-width: 2px;
+            border-color: #cc0000;
+            border-radius: 8px;
+
+            VerticalBox {
+                padding: 20px;
+                spacing: 20px;
+
+                // Dialog title (warning style)
+                Text {
+                    text: @tr("Delete Series?");
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #cc0000;
+                }
+
+                // Confirmation message with series name
+                Text {
+                    text: @tr("Are you sure you want to delete this series?\n\n") + "\"" + root.delete-series-name + "\"";
+                    font-size: 14px;
+                    color: #333;
+                    wrap: word-wrap;
+                }
+
+                // Dialog action buttons (Cancel and Delete)
+                HorizontalBox {
+                    spacing: 10px;
+                    alignment: end;
+
+                    // Cancel button - closes dialog without deleting
+                    Button {
+                        text: @tr("Cancel");
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            root.show-delete-confirmation = false;
+                        }
+                    }
+
+                    // Delete button - confirms deletion
+                    Button {
+                        text: @tr("Delete");
+                        primary: true;
+                        min-width: 100px;
+                        height: 35px;
+                        clicked => {
+                            // Call backend to delete series
+                            root.delete-series(root.delete-series-id);
+                            // Close dialog after submission
+                            root.show-delete-confirmation = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // ====================================================================
+        // Empty State - Shown when no series exist
+        // ====================================================================
+        if series.length == 0 && !show-create-dialog && !show-edit-dialog: Text {
+            text: @tr("No series found. Click Refresh to load series from the backend.");
+            color: #888;
+        }
+
+        // ====================================================================
+        // Series List - Simple list view of all series
+        // ====================================================================
+        // Each series is displayed with name, description, title count,
+        // and action buttons (Edit and Delete).
+        if series.length > 0: ListView {
+            // Each series item is rendered as a simple card
+            for series[index] in series: Rectangle {
+                height: 70px;
+                border-width: 1px;
+                border-color: #ddd;
+                border-radius: 4px;
+                // Alternating row colors for better readability
+                background: Math.mod(index, 2) == 0 ? #fafafa : white;
+
+                HorizontalLayout {
+                    padding: 8px;
+                    spacing: 10px;
+
+                    // Left side: Series information
+                    VerticalLayout {
+                        alignment: start;
+                        spacing: 4px;
+
+                        // Series name
+                        Text {
+                            text: series.name;
+                            font-size: 15px;
+                            font-weight: 600;
+                            overflow: elide;
+                        }
+
+                        // Description (conditional, only shown if not empty)
+                        if series.description != "": Text {
+                            text: series.description;
+                            font-size: 12px;
+                            color: #666;
+                            overflow: elide;
+                        }
+
+                        // Title count - shows how many books are in this series
+                        Text {
+                            text: "Titles: " + series.title-count;
+                            font-size: 11px;
+                            color: #0066cc;
+                            font-weight: 600;
+                        }
+                    }
+
+                    // Right side: Action buttons
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 5px;
+                        width: 90px;
+
+                        // Edit button - opens edit dialog with pre-filled data
+                        Button {
+                            text: @tr("Edit");
+                            min-width: 80px;
+                            height: 32px;
+                            clicked => {
+                                // Pre-fill edit form with current series data
+                                root.edit-id = series.id;
+                                root.edit-name = series.name;
+                                root.edit-description = series.description;
+                                // Show edit dialog
+                                root.show-edit-dialog = true;
+                            }
+                        }
+
+                        // Delete button - shows confirmation dialog
+                        // Note: Disabled if series has associated titles
+                        Button {
+                            text: @tr("Delete");
+                            min-width: 80px;
+                            height: 32px;
+                            enabled: series.title-count == 0;
+                            clicked => {
+                                // Store series info and show confirmation dialog
+                                root.delete-series-id = series.id;
+                                root.delete-series-name = series.name;
+                                root.show-delete-confirmation = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

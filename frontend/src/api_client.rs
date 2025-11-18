@@ -2,7 +2,8 @@ use crate::models::{
     TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest,
     UpdateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, UpdateAuthorRequest,
     PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest, GenreWithTitleCount,
-    CreateGenreRequest, UpdateGenreRequest, Volume, CreateVolumeRequest, UpdateVolumeRequest,
+    CreateGenreRequest, UpdateGenreRequest, SeriesWithTitleCount, CreateSeriesRequest, UpdateSeriesRequest,
+    Volume, CreateVolumeRequest, UpdateVolumeRequest,
     IsbnLookupResponse, BorrowerGroup, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
     BorrowerWithGroup, CreateBorrowerRequest, UpdateBorrowerRequest,
     LoanDetail, CreateLoanRequest, CreateLoanResponse,
@@ -1292,6 +1293,96 @@ impl ApiClient {
         }
 
         println!("Successfully deleted genre: {}", genre_id);
+
+        Ok(())
+    }
+
+    // ========================================================================
+    // Series Operations
+    // ========================================================================
+
+    /// Fetches all series with their title counts from the backend API.
+    pub fn get_series(&self) -> Result<Vec<SeriesWithTitleCount>, Box<dyn Error>> {
+        let url = format!("{}/api/v1/series", self.base_url);
+
+        println!("Fetching series from: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            return Err(format!("API returned status: {}", response.status()).into());
+        }
+
+        let series: Vec<SeriesWithTitleCount> = response.json()?;
+
+        println!("Successfully fetched {} series", series.len());
+
+        Ok(series)
+    }
+
+    /// Creates a new series in the library database.
+    pub fn create_series(&self, request: CreateSeriesRequest) -> Result<String, Box<dyn Error>> {
+        let url = format!("{}/api/v1/series", self.base_url);
+
+        println!("Creating series: {}", request.name);
+
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        let result: serde_json::Value = response.json()?;
+        let series_id = result["id"].as_str()
+            .ok_or("No ID in response")?
+            .to_string();
+
+        println!("Successfully created series with ID: {}", series_id);
+
+        Ok(series_id)
+    }
+
+    /// Updates an existing series's information.
+    pub fn update_series(&self, series_id: &str, request: UpdateSeriesRequest) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/series/{}", self.base_url, series_id);
+
+        println!("Updating series: {}", series_id);
+
+        let response = self.client
+            .put(&url)
+            .json(&request)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully updated series: {}", series_id);
+
+        Ok(())
+    }
+
+    /// Deletes a series from the library database.
+    pub fn delete_series(&self, series_id: &str) -> Result<(), Box<dyn Error>> {
+        let url = format!("{}/api/v1/series/{}", self.base_url, series_id);
+
+        println!("Deleting series: {}", series_id);
+
+        let response = self.client
+            .delete(&url)
+            .send()?;
+
+        if !response.status().is_success() {
+            let error_text = response.text()?;
+            return Err(format!("API returned status with error: {}", error_text).into());
+        }
+
+        println!("Successfully deleted series: {}", series_id);
 
         Ok(())
     }

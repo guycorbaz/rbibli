@@ -67,6 +67,9 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             t.dewey_category,
             t.genre_old as genre,
             t.genre_id,
+            s.name as series_name,
+            t.series_id,
+            t.series_number,
             t.summary,
             t.cover_url,
             t.image_mime_type,
@@ -76,9 +79,10 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             COUNT(v.id) as volume_count
         FROM titles t
         LEFT JOIN volumes v ON t.id = v.title_id
+        LEFT JOIN series s ON t.series_id = s.id
         GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publisher_id, t.publication_year,
-                 t.pages, t.language, t.dewey_code, t.dewey_category, t.genre_old, t.genre_id,
-                 t.summary, t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at
+                 t.pages, t.language, t.dewey_code, t.dewey_category, t.genre_old, t.genre_id, s.name,
+                 t.series_id, t.series_number, t.summary, t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at
         ORDER BY t.title ASC
     "#;
 
@@ -123,6 +127,9 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
                             dewey_category: row.get("dewey_category"),
                             genre: row.get("genre"),
                             genre_id: row.get("genre_id"),
+                            series_name: row.get("series_name"),
+                            series_id: row.get("series_id"),
+                            series_number: row.get("series_number"),
                             summary: row.get("summary"),
                             cover_url: row.get("cover_url"),
                             // Don't fetch image_data in list queries for performance
@@ -217,9 +224,9 @@ pub async fn create_title(
 
     let query = r#"
         INSERT INTO titles (id, title, subtitle, isbn, publisher_old, publisher_id, publication_year, pages,
-                           language, dewey_code, dewey_category, genre_id, summary, cover_url,
+                           language, dewey_code, dewey_category, genre_id, series_id, series_number, summary, cover_url,
                            created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     "#;
 
     match sqlx::query(query)
@@ -235,6 +242,8 @@ pub async fn create_title(
         .bind(&req.dewey_code)
         .bind(&req.dewey_category)
         .bind(&req.genre_id)
+        .bind(&req.series_id)
+        .bind(&req.series_number)
         .bind(&req.summary)
         .bind(&req.cover_url)
         .execute(&data.db_pool)
@@ -374,6 +383,14 @@ pub async fn update_title(
         update_parts.push("genre_id = ?");
         has_updates = true;
     }
+    if req.series_id.is_some() {
+        update_parts.push("series_id = ?");
+        has_updates = true;
+    }
+    if req.series_number.is_some() {
+        update_parts.push("series_number = ?");
+        has_updates = true;
+    }
     if req.summary.is_some() {
         update_parts.push("summary = ?");
         has_updates = true;
@@ -434,6 +451,12 @@ pub async fn update_title(
     }
     if let Some(ref genre_id) = req.genre_id {
         query_builder = query_builder.bind(genre_id);
+    }
+    if let Some(ref series_id) = req.series_id {
+        query_builder = query_builder.bind(series_id);
+    }
+    if let Some(ref series_number) = req.series_number {
+        query_builder = query_builder.bind(series_number);
     }
     if let Some(ref summary) = req.summary {
         query_builder = query_builder.bind(summary);

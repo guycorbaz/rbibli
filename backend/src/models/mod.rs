@@ -3,6 +3,7 @@ pub mod location;
 pub mod author;
 pub mod publisher;
 pub mod genre;
+pub mod series;
 pub mod volume;
 pub mod borrower;
 pub mod loan;
@@ -19,6 +20,9 @@ pub use publisher::{
 };
 pub use genre::{
     Genre, GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest
+};
+pub use series::{
+    Series, SeriesWithTitleCount, CreateSeriesRequest, UpdateSeriesRequest
 };
 pub use volume::{
     Volume, VolumeCondition, LoanStatus as VolumeLoanStatus, CreateVolumeRequest, UpdateVolumeRequest

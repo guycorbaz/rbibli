@@ -11,6 +11,7 @@ A modern, full-featured personal library management system built entirely in Rus
 - **✍️ Author Management** - Complete biographical information and title associations
 - **🏢 Publisher Management** - Company details and catalogs
 - **🎭 Genre Management** - Categorize your collection
+- **📚 Series Management** - Organize titles into series (e.g., Asterix, Harry Potter)
 - **📍 Location Management** - Hierarchical storage organization (House > Room > Shelf)
 - **👥 Borrower Management** - Track who you lend books to
 - **👪 Borrower Groups** - Organize borrowers with custom loan policies
@@ -122,6 +123,7 @@ A modern, full-featured personal library management system built entirely in Rus
 - **Authors** - Manage author information
 - **Publishers** - Track publishing companies
 - **Genres** - Categorize your books
+- **Series** - Organize titles into series collections
 - **Loans** - Check out, return, and manage loans
 - **Statistics** - View library analytics
 - **About** - Application information
@@ -168,17 +170,17 @@ Comprehensive documentation is available in the [`documentation/`](documentation
 **Current Phase: Late Phase 3 (75% Complete)**
 
 ### ✅ Completed
-- Database integration with 13 migrations
-- Full CRUD for titles, authors, publishers, genres, locations
+- Database integration with 15 migrations
+- Full CRUD for titles, authors, publishers, genres, series, locations
 - Volume management with barcode support
 - Complete loan management system
 - Statistics dashboard with visualizations
 - ISBN lookup integration
 - Dewey Decimal Classification search
+- Series management with title associations
 
 ### 🔄 In Progress
 - Title-Author relationship management
-- Series management
 
 ### ⏳ Planned (Phase 4)
 - Barcode generation (Code 128)

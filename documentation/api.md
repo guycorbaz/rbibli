@@ -17,6 +17,7 @@ The backend has comprehensive functionality with MariaDB integration and full CR
 - **Authors API** (full CRUD)
 - **Publishers API** (full CRUD)
 - **Genres API** (full CRUD)
+- **Series API** (full CRUD with title associations)
 - **Locations API** (full CRUD with hierarchical paths)
 - **Borrowers API** (full CRUD with group association)
 - **Borrower Groups API** (full CRUD with loan policies)
@@ -31,7 +32,6 @@ The backend has comprehensive functionality with MariaDB integration and full CR
 
 ### ⏳ Planned / Not Yet Implemented
 - Title-Author relationship endpoints (junction table exists)
-- Series management endpoints
 - Loan extension functionality
 - Advanced search and filter endpoints
 - Import/export endpoints (CSV, JSON)
@@ -91,7 +91,8 @@ DELETE /api/v1/titles/{id}         - Delete a title (only if no volumes exist)
 
 **Features:**
 - LEFT JOIN with volumes to include `volume_count` in listings
-- Genre and publisher foreign key relationships
+- Genre, publisher, and series foreign key relationships
+- Series association with optional series_number field
 - Partial updates (only changed fields are updated)
 - **Business rule enforcement**: Titles with volumes cannot be deleted
 - ISBN, Dewey classification, cover URL support
@@ -126,6 +127,9 @@ DELETE /api/v1/titles/{id}         - Delete a title (only if no volumes exist)
   "dewey_category": "Computer programming",
   "genre": "Programming",
   "genre_id": "genre-uuid",
+  "series_name": "Programming Series",
+  "series_id": "series-uuid",
+  "series_number": "",
   "summary": "Learn Rust programming...",
   "cover_url": "https://...",
   "volume_count": 2,
@@ -265,6 +269,42 @@ DELETE /api/v1/genres/{id}         - Delete a genre
   "updated_at": 1699564800
 }
 ```
+
+---
+
+### Series Management ✅
+
+Manage book series collections (e.g., Harry Potter, Asterix, etc.).
+
+```
+GET    /api/v1/series              - List all series with title counts
+GET    /api/v1/series/{id}         - Get series details
+POST   /api/v1/series              - Create a new series
+PUT    /api/v1/series/{id}         - Update series information
+DELETE /api/v1/series/{id}         - Delete a series (only if no titles associated)
+```
+
+**Features:**
+- Series-to-title relationship (one-to-many)
+- Title count per series
+- Delete protection: cannot delete series with associated titles
+- Series can have optional description
+
+**Example Series Object:**
+```json
+{
+  "id": "series-uuid",
+  "name": "Asterix",
+  "description": "French comic book series about Gaulish warriors",
+  "title_count": 38,
+  "created_at": 1699564800,
+  "updated_at": 1699564800
+}
+```
+
+**DELETE Business Rules:**
+- **Success (200)**: Series deleted if `title_count == 0`
+- **Conflict (409)**: Series has associated titles, cannot delete
 
 ---
 

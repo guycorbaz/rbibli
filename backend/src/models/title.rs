@@ -19,6 +19,9 @@ pub struct Title {
     pub dewey_category: Option<String>,
     pub genre: Option<String>,
     pub genre_id: Option<String>,
+    pub series_name: Option<String>,
+    pub series_id: Option<String>,
+    pub series_number: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -88,6 +91,8 @@ pub struct CreateTitleRequest {
     pub dewey_category: Option<String>,
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
+    pub series_id: Option<String>,
+    pub series_number: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
 }
@@ -107,6 +112,8 @@ pub struct UpdateTitleRequest {
     pub dewey_category: Option<String>,
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
+    pub series_id: Option<String>,
+    pub series_number: Option<String>,
     pub summary: Option<String>,
     pub cover_url: Option<String>,
 }

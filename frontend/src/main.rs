@@ -12,8 +12,9 @@ use api_client::ApiClient;
 use models::{
     CreateTitleRequest, UpdateTitleRequest, CreateLocationRequest, UpdateLocationRequest,
     CreateAuthorRequest, UpdateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest,
-    CreateGenreRequest, UpdateGenreRequest, CreateBorrowerGroupRequest,
-    UpdateBorrowerGroupRequest, CreateBorrowerRequest, UpdateBorrowerRequest, CreateLoanRequest,
+    CreateGenreRequest, UpdateGenreRequest, CreateSeriesRequest, UpdateSeriesRequest,
+    CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest, CreateBorrowerRequest,
+    UpdateBorrowerRequest, CreateLoanRequest,
     LibraryStatistics as ModelsLibraryStatistics, GenreStatistic as ModelsGenreStatistic,
     LocationStatistic as ModelsLocationStatistic, LoanStatistic as ModelsLoanStatistic
 };
@@ -115,6 +116,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                             pages: t.title.pages.map(|p| p.to_string()).unwrap_or_default().into(),
                             genre: t.title.genre.clone().unwrap_or_default().into(),
                             genre_id: t.title.genre_id.clone().unwrap_or_default().into(),
+                            series_name: t.title.series_name.clone().unwrap_or_default().into(),
+                            series_id: t.title.series_id.clone().unwrap_or_default().into(),
+                            series_number: t.title.series_number.clone().unwrap_or_default().into(),
                             dewey_code: t.title.dewey_code.clone().unwrap_or_default().into(),
                             dewey_category: t.title.dewey_category.clone().unwrap_or_default().into(),
                             summary: t.title.summary.clone().unwrap_or_default().into(),
@@ -795,6 +799,150 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Function to load series and populate the UI
+    let load_series = {
+        let ui_weak = ui.as_weak();
+        let api_client = api_client.clone();
+
+        move || {
+            println!("Loading series from backend...");
+
+            match api_client.get_series() {
+                Ok(series_data) => {
+                    println!("Successfully fetched {} series", series_data.len());
+
+                    // Convert backend SeriesWithTitleCount to Slint SeriesData
+                    let slint_series: Vec<SeriesData> = series_data
+                        .iter()
+                        .map(|s| SeriesData {
+                            id: s.series.id.clone().into(),
+                            name: s.series.name.clone().into(),
+                            description: s.series.description.clone().unwrap_or_default().into(),
+                            title_count: s.title_count as i32,
+                        })
+                        .collect();
+
+                    // Convert to SeriesItem for dropdown usage in TitlesPage
+                    let series_items: Vec<SeriesItem> = series_data
+                        .iter()
+                        .map(|s| SeriesItem {
+                            id: s.series.id.clone().into(),
+                            name: s.series.name.clone().into(),
+                        })
+                        .collect();
+
+                    // Extract series names for ComboBox model
+                    let series_names: Vec<slint::SharedString> = series_data
+                        .iter()
+                        .map(|s| s.series.name.clone().into())
+                        .collect();
+
+                    // Update the UI with the series
+                    if let Some(ui) = ui_weak.upgrade() {
+                        let model = Rc::new(slint::VecModel::from(slint_series));
+                        ui.set_series(model.into());
+                        let items_model = Rc::new(slint::VecModel::from(series_items));
+                        ui.set_series_items(items_model.into());
+                        let names_model = Rc::new(slint::VecModel::from(series_names));
+                        ui.set_series_names(names_model.into());
+                        println!("UI updated with series");
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to fetch series: {}", e);
+                    eprintln!("Make sure the backend server is running on http://localhost:8000");
+                }
+            }
+        }
+    };
+
+    // Connect the load-series callback
+    {
+        let load_series = load_series.clone();
+        ui.on_load_series(move || {
+            load_series();
+        });
+    }
+
+    // Connect the create-series callback
+    {
+        let load_series = load_series.clone();
+        let api_client = api_client.clone();
+        ui.on_create_series(move |name, description| {
+            println!("Creating series: {}", name);
+
+            let request = CreateSeriesRequest {
+                name: name.to_string(),
+                description: if description.is_empty() {
+                    None
+                } else {
+                    Some(description.to_string())
+                },
+            };
+
+            match api_client.create_series(request) {
+                Ok(id) => {
+                    println!("Successfully created series with ID: {}", id);
+                    load_series();
+                }
+                Err(e) => {
+                    eprintln!("Failed to create series: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the update-series callback
+    {
+        let load_series = load_series.clone();
+        let api_client = api_client.clone();
+        ui.on_update_series(move |id, name, description| {
+            println!("Updating series: {}", id);
+
+            let request = UpdateSeriesRequest {
+                name: if name.is_empty() {
+                    None
+                } else {
+                    Some(name.to_string())
+                },
+                description: if description.is_empty() {
+                    None
+                } else {
+                    Some(description.to_string())
+                },
+            };
+
+            match api_client.update_series(&id.to_string(), request) {
+                Ok(_) => {
+                    println!("Successfully updated series");
+                    load_series();
+                }
+                Err(e) => {
+                    eprintln!("Failed to update series: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the delete-series callback
+    {
+        let load_series = load_series.clone();
+        let api_client = api_client.clone();
+        ui.on_delete_series(move |series_id| {
+            println!("Deleting series: {}", series_id);
+
+            match api_client.delete_series(&series_id.to_string()) {
+                Ok(_) => {
+                    println!("Successfully deleted series");
+                    load_series();
+                }
+                Err(e) => {
+                    eprintln!("Failed to delete series: {}", e);
+                }
+            }
+        });
+    }
+
     // Connect the find-genre-index callback
     {
         let ui_weak = ui.as_weak();
@@ -844,11 +992,27 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect the find-series-index callback
+    {
+        let ui_weak = ui.as_weak();
+        ui.on_find_series_index(move |series_id| {
+            if let Some(ui) = ui_weak.upgrade() {
+                let series_items = ui.get_series_items();
+                for (i, item) in series_items.iter().enumerate() {
+                    if item.id == series_id {
+                        return i as i32;
+                    }
+                }
+            }
+            -1
+        });
+    }
+
     // Connect the create-title callback
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_create_title(move |title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url, dewey_code, dewey_category| {
+        ui.on_create_title(move |title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code, dewey_category| {
             println!("Creating title: {}", title);
 
             let request = CreateTitleRequest {
@@ -899,6 +1063,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                 } else {
                     Some(genre_id.to_string())
                 },
+                series_id: if series_id.is_empty() {
+                    None
+                } else {
+                    Some(series_id.to_string())
+                },
+                series_number: if series_number.is_empty() {
+                    None
+                } else {
+                    Some(series_number.to_string())
+                },
                 summary: if summary.is_empty() {
                     None
                 } else {
@@ -927,7 +1101,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
-        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, summary, cover_url, dewey_code, dewey_category| {
+        ui.on_update_title(move |id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code, dewey_category| {
             println!("Updating title: {}", id);
 
             let request = UpdateTitleRequest {
@@ -985,6 +1159,16 @@ fn main() -> Result<(), Box<dyn Error>> {
                     None
                 } else {
                     Some(genre_id.to_string())
+                },
+                series_id: if series_id.is_empty() {
+                    None
+                } else {
+                    Some(series_id.to_string())
+                },
+                series_number: if series_number.is_empty() {
+                    None
+                } else {
+                    Some(series_number.to_string())
                 },
                 summary: if summary.is_empty() {
                     None

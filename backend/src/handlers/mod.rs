@@ -3,6 +3,7 @@ pub mod locations;
 pub mod authors;
 pub mod publishers;
 pub mod genres;
+pub mod series;
 pub mod volumes;
 pub mod uploads;
 pub mod isbn_lookup;
