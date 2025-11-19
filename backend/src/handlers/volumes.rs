@@ -496,43 +496,20 @@ pub async fn update_volume(
 }
 
 /// DELETE /api/v1/volumes/{id} - Delete a volume
-/// Business rule: Cannot delete if volume is loaned or overdue
+/// Business rule: Cannot delete if volume has active or overdue loans
 pub async fn delete_volume(
     data: web::Data<AppState>,
     id: web::Path<String>,
 ) -> impl Responder {
     info!("DELETE /api/v1/volumes/{} - Attempting to delete volume", id);
 
-    // First, check loan status
-    let check_query = r#"
-        SELECT loan_status
-        FROM volumes
-        WHERE id = ?
-    "#;
-
-    match sqlx::query(check_query)
+    // First, check if volume exists
+    let check_volume_query = "SELECT id FROM volumes WHERE id = ?";
+    match sqlx::query(check_volume_query)
         .bind(id.as_str())
         .fetch_optional(&data.db_pool)
         .await
     {
-        Ok(Some(row)) => {
-            let loan_status_str: String = row.get("loan_status");
-
-            if loan_status_str == "loaned" || loan_status_str == "overdue" {
-                warn!("Cannot delete volume {} - status: {}", id, loan_status_str);
-                return HttpResponse::Conflict().json(serde_json::json!({
-                    "error": {
-                        "code": "VOLUME_LOANED",
-                        "message": "Cannot delete volume that is loaned or overdue",
-                        "details": {
-                            "loan_status": loan_status_str
-                        }
-                    }
-                }));
-            }
-
-            debug!("Volume {} has loan status: {}, proceeding with deletion", id, loan_status_str);
-        }
         Ok(None) => {
             warn!("Volume {} not found", id);
             return HttpResponse::NotFound().json(serde_json::json!({
@@ -543,11 +520,86 @@ pub async fn delete_volume(
             }));
         }
         Err(e) => {
-            error!("Database error while checking volume loan status: {}", e);
+            error!("Database error while checking volume existence: {}", e);
             return HttpResponse::InternalServerError().json(serde_json::json!({
                 "error": {
                     "code": "DATABASE_ERROR",
-                    "message": "Failed to check volume status",
+                    "message": "Failed to check volume",
+                    "details": {
+                        "error": e.to_string()
+                    }
+                }
+            }));
+        }
+        Ok(Some(_)) => {
+            debug!("Volume {} found, checking for active loans", id);
+        }
+    }
+
+    // Check if there are any active or overdue loans for this volume
+    let check_loans_query = r#"
+        SELECT COUNT(*) as count
+        FROM loans
+        WHERE volume_id = ? AND status IN ('active', 'overdue')
+    "#;
+
+    match sqlx::query(check_loans_query)
+        .bind(id.as_str())
+        .fetch_one(&data.db_pool)
+        .await
+    {
+        Ok(row) => {
+            let active_loans: i64 = row.get("count");
+
+            if active_loans > 0 {
+                warn!("Cannot delete volume {} - has {} active/overdue loan(s)", id, active_loans);
+                return HttpResponse::Conflict().json(serde_json::json!({
+                    "error": {
+                        "code": "VOLUME_LOANED",
+                        "message": "Cannot delete volume that has active or overdue loans",
+                        "details": {
+                            "active_loans": active_loans
+                        }
+                    }
+                }));
+            }
+
+            debug!("Volume {} has no active loans, proceeding with deletion", id);
+        }
+        Err(e) => {
+            error!("Database error while checking active loans: {}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to check loan status",
+                    "details": {
+                        "error": e.to_string()
+                    }
+                }
+            }));
+        }
+    }
+
+    // Delete any returned loan records first (to satisfy foreign key constraint)
+    let delete_returned_loans_query = "DELETE FROM loans WHERE volume_id = ? AND status = 'returned'";
+
+    match sqlx::query(delete_returned_loans_query)
+        .bind(id.as_str())
+        .execute(&data.db_pool)
+        .await
+    {
+        Ok(result) => {
+            let deleted_loans = result.rows_affected();
+            if deleted_loans > 0 {
+                info!("Deleted {} returned loan record(s) for volume {}", deleted_loans, id);
+            }
+        }
+        Err(e) => {
+            error!("Database error while deleting returned loans: {}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to delete loan history",
                     "details": {
                         "error": e.to_string()
                     }
