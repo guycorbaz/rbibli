@@ -26,7 +26,7 @@
 // users with information about the software and its underlying technology.
 // ============================================================================
 
-import { AboutSlint } from "std-widgets.slint";
+import { AboutSlint, VerticalBox } from "std-widgets.slint";
 import { Page } from "page.slint";
 
 // AboutPage - Application information and credits (EXPORTED)
@@ -54,12 +54,45 @@ export component AboutPage inherits Page {
     // Application description
     description: @tr("Personal book library management");
 
-    // Standard Slint about widget with framework information
-    AboutSlint {
-        width: 100px;
+    VerticalBox {
+        padding: 20px;
+        spacing: 20px;
 
+        // Application description text
+        Text {
+            text: @tr("rbibli is a personal book library management application designed to help you organize, track, and discover your book collection. Built with modern technology, it offers an intuitive interface for managing your reading journey.");
+            wrap: word-wrap;
+            font-size: 14px;
+        }
+
+        // Authors section
+        VerticalBox {
+            spacing: 10px;
+
+            Text {
+                text: @tr("Authors");
+                font-size: 16px;
+                font-weight: 700;
+            }
+
+            Text {
+                text: "• Guy Corbaz";
+                font-size: 14px;
+            }
+        }
+
+        // Spacer to push logo to bottom
+        Rectangle {
+            vertical-stretch: 1;
+        }
+
+        // Centered Slint logo at bottom, 10% larger
+        HorizontalLayout {
+            alignment: center;
+
+            AboutSlint {
+                width: 120px;  // 10% larger than original 100px
+            }
+        }
     }
-
-    // Spacer to add vertical space
-    Rectangle { }
 }
