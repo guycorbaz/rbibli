@@ -71,6 +71,25 @@ export component StatisticsPage inherits Page {
     in-out property <[LocationStatistic]> location-stats: [];
     in-out property <[LoanStatistic]> loan-stats: [];
 
+    // Color palette for genre visualization
+    property <[color]> colors: [
+        #1976d2, #7b1fa2, #f57c00, #388e3c, #c62828,
+        #0097a7, #5d4037, #fbc02d, #e91e63, #00796b,
+        #303f9f, #c2185b, #689f38, #f57f17, #455a64
+    ];
+
+    // Calculate total volumes for pie chart (up to 10 genres)
+    property <int> genre-total-volumes: (genre-stats.length > 0 ? genre-stats[0].volume-count : 0) +
+                                         (genre-stats.length > 1 ? genre-stats[1].volume-count : 0) +
+                                         (genre-stats.length > 2 ? genre-stats[2].volume-count : 0) +
+                                         (genre-stats.length > 3 ? genre-stats[3].volume-count : 0) +
+                                         (genre-stats.length > 4 ? genre-stats[4].volume-count : 0) +
+                                         (genre-stats.length > 5 ? genre-stats[5].volume-count : 0) +
+                                         (genre-stats.length > 6 ? genre-stats[6].volume-count : 0) +
+                                         (genre-stats.length > 7 ? genre-stats[7].volume-count : 0) +
+                                         (genre-stats.length > 8 ? genre-stats[8].volume-count : 0) +
+                                         (genre-stats.length > 9 ? genre-stats[9].volume-count : 0);
+
     // Callbacks
     callback load-statistics();
 
@@ -359,66 +378,181 @@ export component StatisticsPage inherits Page {
             border-width: 1px;
             border-color: #ddd;
             border-radius: 8px;
+            min-height: 450px;
 
-            ListView {
-                for stat[index] in genre-stats: Rectangle {
-                    height: 60px;
-                    border-width: 1px;
-                    border-color: #eee;
-                    background: Math.mod(index, 2) == 0 ? #fafafa : white;
+            HorizontalBox {
+                padding: 20px;
+                spacing: 40px;
 
-                    HorizontalLayout {
-                        padding: 15px;
-                        spacing: 15px;
+                // Pie Chart Container
+                Rectangle {
+                    width: 350px;
+                    height: 350px;
 
-                        // Genre name
-                        VerticalLayout {
-                            width: 200px;
+                    // Helper properties for pie chart calculations
+                    property <float> center-x: 175.0;
+                    property <float> center-y: 175.0;
+                    property <float> radius: 135.0;
+                    property <float> pi: 3.14159265359;
+                    property <int> total: Math.max(1, root.genre-total-volumes);
+
+                    // Draw pie slices for each genre (up to 5 genres shown)
+                    if genre-stats.length > 0: Path {
+                        property <float> angle: 360.0 * genre-stats[0].volume-count / total;
+                        property <float> start-angle: 0;
+                        property <float> end-angle: start-angle + angle;
+                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
+                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
+
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
+                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
+                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
+                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        fill: root.colors[0];
+                        stroke: white;
+                        stroke-width: 2px;
+                    }
+
+                    if genre-stats.length > 1: Path {
+                        property <float> prev-angle: 360.0 * genre-stats[0].volume-count / total;
+                        property <float> angle: 360.0 * genre-stats[1].volume-count / total;
+                        property <float> start-angle: prev-angle;
+                        property <float> end-angle: start-angle + angle;
+                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
+                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
+
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
+                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
+                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
+                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        fill: root.colors[1];
+                        stroke: white;
+                        stroke-width: 2px;
+                    }
+
+                    if genre-stats.length > 2: Path {
+                        property <float> prev-angles: 360.0 * (genre-stats[0].volume-count + genre-stats[1].volume-count) / total;
+                        property <float> angle: 360.0 * genre-stats[2].volume-count / total;
+                        property <float> start-angle: prev-angles;
+                        property <float> end-angle: start-angle + angle;
+                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
+                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
+
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
+                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
+                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
+                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        fill: root.colors[2];
+                        stroke: white;
+                        stroke-width: 2px;
+                    }
+
+                    if genre-stats.length > 3: Path {
+                        property <float> prev-angles: 360.0 * (genre-stats[0].volume-count + genre-stats[1].volume-count + genre-stats[2].volume-count) / total;
+                        property <float> angle: 360.0 * genre-stats[3].volume-count / total;
+                        property <float> start-angle: prev-angles;
+                        property <float> end-angle: start-angle + angle;
+                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
+                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
+
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
+                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
+                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
+                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        fill: root.colors[3];
+                        stroke: white;
+                        stroke-width: 2px;
+                    }
+
+                    if genre-stats.length > 4: Path {
+                        property <float> prev-angles: 360.0 * (genre-stats[0].volume-count + genre-stats[1].volume-count + genre-stats[2].volume-count + genre-stats[3].volume-count) / total;
+                        property <float> angle: 360.0 * genre-stats[4].volume-count / total;
+                        property <float> start-angle: prev-angles;
+                        property <float> end-angle: start-angle + angle;
+                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
+                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
+
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
+                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
+                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
+                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        fill: root.colors[4];
+                        stroke: white;
+                        stroke-width: 2px;
+                    }
+
+                    // Center circle for donut effect
+                    Rectangle {
+                        x: 85px;
+                        y: 85px;
+                        width: 180px;
+                        height: 180px;
+                        border-radius: 90px;
+                        background: white;
+
+                        VerticalBox {
                             alignment: center;
 
                             Text {
-                                text: stat.genre-name;
-                                font-size: 14px;
-                                font-weight: 600;
-                                overflow: elide;
+                                text: total;
+                                font-size: 42px;
+                                font-weight: 700;
+                                color: #333;
+                                horizontal-alignment: center;
                             }
                             Text {
-                                text: stat.title-count + " " + @tr("titles");
-                                font-size: 11px;
+                                text: @tr("Total Volumes");
+                                font-size: 13px;
                                 color: #666;
+                                horizontal-alignment: center;
                             }
                         }
+                    }
+                }
 
-                        // Visual bar
-                        Rectangle {
-                            horizontal-stretch: 1;
+                // Legend
+                VerticalBox {
+                    spacing: 10px;
+                    alignment: start;
 
-                            // Background bar
+                    Text {
+                        text: @tr("Legend");
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: #333;
+                    }
+
+                    ListView {
+                        for stat[index] in genre-stats: HorizontalBox {
+                            height: 32px;
+                            spacing: 12px;
+
+                            // Color box
                             Rectangle {
-                                width: parent.width;
+                                width: 24px;
                                 height: 24px;
-                                background: #e0e0e0;
                                 border-radius: 4px;
+                                background: root.colors[Math.mod(index, root.colors.length)];
+                            }
 
-                                // Filled bar (proportional to volume count)
-                                Rectangle {
-                                    width: parent.width * (stat.volume-count / Math.max(1, genre-stats[0].volume-count));
-                                    height: parent.height;
-                                    background: #1976d2;
-                                    border-radius: 4px;
+                            // Genre info
+                            VerticalBox {
+                                spacing: 2px;
+                                alignment: center;
+
+                                Text {
+                                    text: stat.genre-name;
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    overflow: elide;
+                                }
+                                Text {
+                                    text: stat.volume-count + " volumes (" +
+                                          Math.round(100.0 * stat.volume-count / Math.max(1, root.genre-total-volumes)) + "%)";
+                                    font-size: 11px;
+                                    color: #666;
                                 }
                             }
-                        }
-
-                        // Volume count
-                        Text {
-                            text: stat.volume-count + " " + @tr("volumes");
-                            font-size: 14px;
-                            font-weight: 700;
-                            color: #1976d2;
-                            width: 100px;
-                            horizontal-alignment: right;
-                            vertical-alignment: center;
                         }
                     }
                 }
