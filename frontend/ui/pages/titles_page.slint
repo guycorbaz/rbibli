@@ -23,6 +23,13 @@ export struct TitleData {
     dewey-category: string,
     summary: string,
     cover-url: string,
+    // Duplicate detection fields
+    is-duplicate: bool,
+    duplicate-pair-id: string,  // ID of the paired duplicate title
+    duplicate-similarity: float,  // Similarity score (0-100)
+    duplicate-confidence: string,  // "High", "Medium", "Low"
+    duplicate-match-reasons: string,  // Comma-separated match reasons
+    is-duplicate-primary: bool,  // true if this should be the primary in merge
 }
 
 // Structure for genre dropdown
@@ -187,9 +194,27 @@ export component TitlesPage inherits Page {
     in-out property <bool> filter-available-only: false;  // Available volumes only
     in-out property <int> filter-location-index: -1;  // Location dropdown index
 
+    // Duplicate detection properties
+    in-out property <bool> show-duplicates-dialog: false;
+    in-out property <int> duplicate-count: 0;
+    in-out property <string> duplicate-primary-id: "";  // Selected primary title for merge
+    in-out property <string> duplicate-secondary-id: "";  // Selected secondary title for merge
+    in-out property <string> duplicate-status-message: "";  // Status message for duplicate operations
+
+    // Duplicate filter properties
+    in-out property <bool> filter-show-only-duplicates: false;  // Show only duplicate titles
+    in-out property <bool> filter-duplicates-high: true;  // Show high confidence duplicates
+    in-out property <bool> filter-duplicates-medium: true;  // Show medium confidence duplicates
+    in-out property <bool> filter-duplicates-low: true;  // Show low confidence duplicates
+    in-out property <bool> duplicates-detected: false;  // Whether duplicates have been detected
+
     // Callback to request loading titles
     callback load-titles();
     callback search-titles(string, string, string, string, string, string, string, string, string, string, string, string, bool, bool, bool, string); // search_text, title, subtitle, isbn, series_id, author_id, genre_id, publisher_id, year_from, year_to, language, dewey_code, has_volumes, wishlist_only, available_only, location_id
+    callback find-duplicates();  // Triggers duplicate detection scan
+    callback merge-titles(string, string);  // primary_id, secondary_id - Merges secondary into primary
+    callback dismiss-duplicate(string, string);  // title1_id, title2_id - Mark pair as not duplicate
+    callback clear-duplicates();  // Clear all duplicate detection results
     callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code, dewey_category
     callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code, dewey_category
     callback delete-title(string); // id
@@ -260,6 +285,15 @@ export component TitlesPage inherits Page {
                         root.new-series-index = -1;
                         root.new-series-id = "";
                         root.new-summary = "";
+                    }
+                }
+
+                Button {
+                    text: @tr("🔍 Find Duplicates");
+                    min-width: 160px;
+                    height: 35px;
+                    clicked => {
+                        root.find-duplicates();
                     }
                 }
             }
@@ -660,6 +694,156 @@ export component TitlesPage inherits Page {
                                     Text {
                                         text: @tr("Available for loan");
                                         font-size: 13px;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Duplicate Filters Section (visible when duplicates have been detected)
+                    if root.duplicates-detected: Rectangle {
+                        background: #fff8e6;
+                        border-width: 1px;
+                        border-color: #ffb84d;
+                        border-radius: 4px;
+
+                        VerticalBox {
+                            padding: 15px;
+                            spacing: 10px;
+
+                            HorizontalBox {
+                                spacing: 10px;
+                                alignment: space-between;
+
+                                Text {
+                                    text: @tr("🔍 Duplicate Filters");
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    color: #cc6600;
+                                }
+
+                                Button {
+                                    text: @tr("Clear Duplicates");
+                                    min-width: 120px;
+                                    height: 28px;
+                                    clicked => {
+                                        root.clear-duplicates();
+                                    }
+                                }
+                            }
+
+                            HorizontalBox {
+                                spacing: 20px;
+
+                                // Show only duplicates checkbox
+                                HorizontalBox {
+                                    spacing: 8px;
+
+                                    Rectangle {
+                                        width: 20px;
+                                        height: 20px;
+                                        border-width: 2px;
+                                        border-color: #cc6600;
+                                        border-radius: 3px;
+                                        background: root.filter-show-only-duplicates ? #cc6600 : white;
+
+                                        TouchArea {
+                                            clicked => {
+                                                root.filter-show-only-duplicates = !root.filter-show-only-duplicates;
+                                            }
+                                        }
+                                    }
+                                    Text {
+                                        text: @tr("Show only duplicates");
+                                        font-size: 13px;
+                                        font-weight: 600;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
+
+                            // Confidence level filters
+                            HorizontalBox {
+                                spacing: 20px;
+
+                                Text {
+                                    text: @tr("Confidence:");
+                                    font-size: 13px;
+                                    font-weight: 600;
+                                    vertical-alignment: center;
+                                    width: 90px;
+                                }
+
+                                HorizontalBox {
+                                    spacing: 15px;
+
+                                    // High confidence
+                                    Rectangle {
+                                        width: 20px;
+                                        height: 20px;
+                                        border-width: 2px;
+                                        border-color: #cc0000;
+                                        border-radius: 3px;
+                                        background: root.filter-duplicates-high ? #cc0000 : white;
+
+                                        TouchArea {
+                                            clicked => {
+                                                root.filter-duplicates-high = !root.filter-duplicates-high;
+                                            }
+                                        }
+                                    }
+                                    Text {
+                                        text: @tr("High");
+                                        font-size: 13px;
+                                        color: #cc0000;
+                                        font-weight: 600;
+                                        vertical-alignment: center;
+                                    }
+
+                                    // Medium confidence
+                                    Rectangle {
+                                        width: 20px;
+                                        height: 20px;
+                                        border-width: 2px;
+                                        border-color: #ff8800;
+                                        border-radius: 3px;
+                                        background: root.filter-duplicates-medium ? #ff8800 : white;
+
+                                        TouchArea {
+                                            clicked => {
+                                                root.filter-duplicates-medium = !root.filter-duplicates-medium;
+                                            }
+                                        }
+                                    }
+                                    Text {
+                                        text: @tr("Medium");
+                                        font-size: 13px;
+                                        color: #ff8800;
+                                        font-weight: 600;
+                                        vertical-alignment: center;
+                                    }
+
+                                    // Low confidence
+                                    Rectangle {
+                                        width: 20px;
+                                        height: 20px;
+                                        border-width: 2px;
+                                        border-color: #0088cc;
+                                        border-radius: 3px;
+                                        background: root.filter-duplicates-low ? #0088cc : white;
+
+                                        TouchArea {
+                                            clicked => {
+                                                root.filter-duplicates-low = !root.filter-duplicates-low;
+                                            }
+                                        }
+                                    }
+                                    Text {
+                                        text: @tr("Low");
+                                        font-size: 13px;
+                                        color: #0088cc;
+                                        font-weight: 600;
                                         vertical-alignment: center;
                                     }
                                 }
@@ -1713,10 +1897,12 @@ export component TitlesPage inherits Page {
                 // Title row
                 Rectangle {
                     height: 80px;
-                    border-width: 1px;
-                    border-color: #ddd;
+                    border-width: title.is-duplicate ? 3px : 1px;
+                    border-color: title.is-duplicate ?
+                        (title.duplicate-confidence == "High" ? #cc0000 :
+                         title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc) : #ddd;
                     border-radius: 4px;
-                    background: Math.mod(index, 2) == 0 ? #fafafa : white;
+                    background: title.is-duplicate ? #fffaef : (Math.mod(index, 2) == 0 ? #fafafa : white);
 
                     HorizontalLayout {
                         padding: 8px;
@@ -1726,11 +1912,51 @@ export component TitlesPage inherits Page {
                             alignment: start;
                             spacing: 4px;
 
-                            Text {
-                                text: title.title;
-                                font-size: 15px;
-                                font-weight: 600;
-                                overflow: elide;
+                            HorizontalBox {
+                                spacing: 8px;
+
+                                Text {
+                                    text: title.title;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                    overflow: elide;
+                                }
+
+                                // Duplicate badge
+                                if title.is-duplicate: Rectangle {
+                                    width: 65px;
+                                    height: 20px;
+                                    border-radius: 10px;
+                                    background: title.duplicate-confidence == "High" ? #cc0000 :
+                                        title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
+
+                                    Text {
+                                        text: "⚠ " + (title.duplicate-confidence == "High" ? "HIGH" :
+                                            title.duplicate-confidence == "Medium" ? "MED" : "LOW");
+                                        font-size: 10px;
+                                        font-weight: 700;
+                                        color: white;
+                                        horizontal-alignment: center;
+                                        vertical-alignment: center;
+                                    }
+                                }
+
+                                // Primary/Secondary indicator
+                                if title.is-duplicate: Rectangle {
+                                    width: 55px;
+                                    height: 20px;
+                                    border-radius: 10px;
+                                    background: title.is-duplicate-primary ? #00aa00 : #888888;
+
+                                    Text {
+                                        text: title.is-duplicate-primary ? "PRIMARY" : "SECOND";
+                                        font-size: 9px;
+                                        font-weight: 700;
+                                        color: white;
+                                        horizontal-alignment: center;
+                                        vertical-alignment: center;
+                                    }
+                                }
                             }
 
                             if title.subtitle != "": Text {
@@ -1775,6 +2001,27 @@ export component TitlesPage inherits Page {
                                     text: title.language;
                                     font-size: 11px;
                                     color: #888;
+                                }
+
+                                // Duplicate similarity score
+                                if title.is-duplicate: Text {
+                                    text: "Similarity: " + Math.round(title.duplicate-similarity) + "%";
+                                    font-size: 11px;
+                                    color: title.duplicate-confidence == "High" ? #cc0000 :
+                                        title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
+                                    font-weight: 700;
+                                }
+                            }
+
+                            // Match reasons (shown on second line for duplicates)
+                            if title.is-duplicate && title.duplicate-match-reasons != "": HorizontalBox {
+                                spacing: 8px;
+
+                                Text {
+                                    text: "Match: " + title.duplicate-match-reasons;
+                                    font-size: 10px;
+                                    color: #666;
+                                    overflow: elide;
                                 }
                             }
                         }
@@ -1853,6 +2100,27 @@ export component TitlesPage inherits Page {
                                     root.load-title-authors(title.id);
                                     root.load-all-authors();
                                     root.show-authors-dialog = true;
+                                }
+                            }
+
+                            // Duplicate action buttons (only shown for duplicates)
+                            if title.is-duplicate && title.is-duplicate-primary: Button {
+                                text: @tr("🔀 Merge");
+                                primary: true;
+                                min-width: 170px;
+                                height: 32px;
+                                clicked => {
+                                    // Merge: keep this (primary), delete the paired one (secondary)
+                                    root.merge-titles(title.id, title.duplicate-pair-id);
+                                }
+                            }
+
+                            if title.is-duplicate: Button {
+                                text: @tr("✖ Not Duplicate");
+                                min-width: 170px;
+                                height: 28px;
+                                clicked => {
+                                    root.dismiss-duplicate(title.id, title.duplicate-pair-id);
                                 }
                             }
                         }

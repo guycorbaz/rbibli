@@ -9,7 +9,11 @@ pub mod borrower;
 pub mod loan;
 pub mod dewey;
 
-pub use title::{Title, TitleWithCount, CreateTitleRequest, UpdateTitleRequest, TitleSearchParams};
+pub use title::{
+    Title, TitleWithCount, CreateTitleRequest, UpdateTitleRequest, TitleSearchParams,
+    DuplicateConfidence, DuplicatePair, DuplicateDetectionResponse,
+    MergeTitlesRequest, MergeTitlesResponse
+};
 pub use location::{Location, LocationWithPath, CreateLocationRequest, UpdateLocationRequest};
 pub use author::{
     Author, AuthorWithTitleCount, CreateAuthorRequest, UpdateAuthorRequest,

@@ -123,6 +123,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                             dewey_category: t.title.dewey_category.clone().unwrap_or_default().into(),
                             summary: t.title.summary.clone().unwrap_or_default().into(),
                             cover_url: t.title.cover_url.clone().unwrap_or_default().into(),
+                            // Duplicate detection fields (initially false/empty)
+                            is_duplicate: false,
+                            duplicate_pair_id: "".into(),
+                            duplicate_similarity: 0.0,
+                            duplicate_confidence: "".into(),
+                            duplicate_match_reasons: "".into(),
+                            is_duplicate_primary: false,
                         })
                         .collect();
 
@@ -437,6 +444,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                                 dewey_category: t.title.dewey_category.unwrap_or_default().into(),
                                 summary: t.title.summary.unwrap_or_default().into(),
                                 cover_url: t.title.cover_url.unwrap_or_default().into(),
+                                // Duplicate detection fields (initially false/empty)
+                                is_duplicate: false,
+                                duplicate_pair_id: "".into(),
+                                duplicate_similarity: 0.0,
+                                duplicate_confidence: "".into(),
+                                duplicate_match_reasons: "".into(),
+                                is_duplicate_primary: false,
                             }
                         })
                         .collect();
@@ -448,6 +462,184 @@ fn main() -> Result<(), Box<dyn Error>> {
                     eprintln!("Failed to search titles: {}", e);
                 }
             }
+        });
+    }
+
+    // Connect the find-duplicates callback
+    {
+        let api_client = api_client.clone();
+        let ui_weak = ui.as_weak();
+        ui.on_find_duplicates(move || {
+            let ui = ui_weak.unwrap();
+            println!("Finding duplicate titles...");
+
+            match api_client.detect_duplicates(Some(50.0)) {
+                Ok(result) => {
+                    println!(
+                        "Found {} duplicate pairs (High: {}, Medium: {}, Low: {})",
+                        result.total_pairs,
+                        result.high_confidence.len(),
+                        result.medium_confidence.len(),
+                        result.low_confidence.len()
+                    );
+
+                    if result.total_pairs > 0 {
+                        // Get current titles from UI
+                        let titles_model = ui.get_titles();
+                        let mut titles_vec: Vec<TitleData> = Vec::new();
+                        for i in 0..titles_model.row_count() {
+                            if let Some(title) = titles_model.row_data(i) {
+                                titles_vec.push(title);
+                            }
+                        }
+
+                        // Process all duplicate pairs and mark them in the titles
+                        let mut all_pairs = Vec::new();
+                        all_pairs.extend(result.high_confidence.iter().map(|p| (p, "High")));
+                        all_pairs.extend(result.medium_confidence.iter().map(|p| (p, "Medium")));
+                        all_pairs.extend(result.low_confidence.iter().map(|p| (p, "Low")));
+
+                        for (pair, confidence) in all_pairs {
+                            let title1_id = &pair.title1.title.id;
+                            let title2_id = &pair.title2.title.id;
+
+                            // Mark both titles as duplicates
+                            for title in titles_vec.iter_mut() {
+                                if title.id.as_str() == title1_id {
+                                    title.is_duplicate = true;
+                                    title.duplicate_pair_id = title2_id.clone().into();
+                                    title.duplicate_similarity = pair.similarity_score as f32;
+                                    title.duplicate_confidence = confidence.to_string().into();
+                                    title.duplicate_match_reasons = pair.match_reasons.join(", ").into();
+                                    title.is_duplicate_primary = true;  // First one is primary
+                                } else if title.id.as_str() == title2_id {
+                                    title.is_duplicate = true;
+                                    title.duplicate_pair_id = title1_id.clone().into();
+                                    title.duplicate_similarity = pair.similarity_score as f32;
+                                    title.duplicate_confidence = confidence.to_string().into();
+                                    title.duplicate_match_reasons = pair.match_reasons.join(", ").into();
+                                    title.is_duplicate_primary = false;  // Second one is secondary
+                                }
+                            }
+                        }
+
+                        // Update the UI with marked titles
+                        let titles_rc = std::rc::Rc::new(slint::VecModel::from(titles_vec));
+                        ui.set_titles(titles_rc.into());
+                        ui.set_duplicates_detected(true);
+                        ui.set_duplicate_count(result.total_pairs as i32);
+
+                        println!("✓ Duplicate titles are now highlighted in the list!");
+                        println!("  Use the duplicate filters to show only duplicates.");
+                    } else {
+                        println!("No duplicates found!");
+                        ui.set_duplicates_detected(false);
+                        ui.set_duplicate_count(0);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Failed to detect duplicates: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the merge-titles callback
+    {
+        let api_client = api_client.clone();
+        let load_titles = load_titles.clone();
+        let ui_weak = ui.as_weak();
+        ui.on_merge_titles(move |primary_id, secondary_id| {
+            let ui = ui_weak.unwrap();
+            println!("Merging title {} into {}", secondary_id, primary_id);
+
+            match api_client.merge_titles(primary_id.as_str(), secondary_id.as_str()) {
+                Ok(response) => {
+                    println!("✓ Merge successful: {}", response.message);
+                    println!("  {} volumes moved", response.volumes_moved);
+
+                    // Clear duplicate flags and reload
+                    ui.set_duplicates_detected(false);
+                    load_titles();
+                }
+                Err(e) => {
+                    eprintln!("✗ Failed to merge titles: {}", e);
+                }
+            }
+        });
+    }
+
+    // Connect the dismiss-duplicate callback
+    {
+        let ui_weak = ui.as_weak();
+        ui.on_dismiss_duplicate(move |title1_id, title2_id| {
+            let ui = ui_weak.unwrap();
+            println!("Dismissing duplicate pair: {} <-> {}", title1_id, title2_id);
+
+            // Remove duplicate flags from both titles in the pair
+            let titles_model = ui.get_titles();
+            let mut titles_vec: Vec<TitleData> = Vec::new();
+            for i in 0..titles_model.row_count() {
+                if let Some(mut title) = titles_model.row_data(i) {
+                    // Clear duplicate flags if this title is part of the dismissed pair
+                    if (title.id.as_str() == title1_id.as_str() && title.duplicate_pair_id.as_str() == title2_id.as_str()) ||
+                       (title.id.as_str() == title2_id.as_str() && title.duplicate_pair_id.as_str() == title1_id.as_str()) {
+                        title.is_duplicate = false;
+                        title.duplicate_pair_id = "".into();
+                        title.duplicate_similarity = 0.0;
+                        title.duplicate_confidence = "".into();
+                        title.duplicate_match_reasons = "".into();
+                        title.is_duplicate_primary = false;
+                    }
+                    titles_vec.push(title);
+                }
+            }
+
+            // Check if there are any remaining duplicates
+            let has_duplicates = titles_vec.iter().any(|t| t.is_duplicate);
+
+            // Update UI
+            let titles_rc = std::rc::Rc::new(slint::VecModel::from(titles_vec));
+            ui.set_titles(titles_rc.into());
+
+            if !has_duplicates {
+                ui.set_duplicates_detected(false);
+                ui.set_duplicate_count(0);
+            }
+
+            println!("✓ Pair dismissed. Titles are no longer marked as duplicates.");
+        });
+    }
+
+    // Connect the clear-duplicates callback
+    {
+        let ui_weak = ui.as_weak();
+        ui.on_clear_duplicates(move || {
+            let ui = ui_weak.unwrap();
+            println!("Clearing all duplicate detection results...");
+
+            // Remove all duplicate flags from titles
+            let titles_model = ui.get_titles();
+            let mut titles_vec: Vec<TitleData> = Vec::new();
+            for i in 0..titles_model.row_count() {
+                if let Some(mut title) = titles_model.row_data(i) {
+                    title.is_duplicate = false;
+                    title.duplicate_pair_id = "".into();
+                    title.duplicate_similarity = 0.0;
+                    title.duplicate_confidence = "".into();
+                    title.duplicate_match_reasons = "".into();
+                    title.is_duplicate_primary = false;
+                    titles_vec.push(title);
+                }
+            }
+
+            // Update UI
+            let titles_rc = std::rc::Rc::new(slint::VecModel::from(titles_vec));
+            ui.set_titles(titles_rc.into());
+            ui.set_duplicates_detected(false);
+            ui.set_duplicate_count(0);
+
+            println!("✓ All duplicate detection results cleared.");
         });
     }
 

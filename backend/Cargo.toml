@@ -27,5 +27,6 @@ env_logger = "0.11"
 futures-util = "0.3"
 base64 = "0.22"
 reqwest = { version = "0.12.24", features = ["json"] }
+strsim = "0.11"
 
 [dev-dependencies]

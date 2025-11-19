@@ -8,7 +8,8 @@ use crate::models::{
     BorrowerWithGroup, CreateBorrowerRequest, UpdateBorrowerRequest,
     LoanDetail, CreateLoanRequest, CreateLoanResponse,
     DeweySearchResult,
-    LibraryStatistics, GenreStatistic, LocationStatistic, LoanStatistic
+    LibraryStatistics, GenreStatistic, LocationStatistic, LoanStatistic,
+    DuplicateDetectionResponse, MergeTitlesRequest, MergeTitlesResponse
 };
 use std::error::Error;
 
@@ -261,6 +262,100 @@ impl ApiClient {
         println!("Search returned {} titles", titles.len());
 
         Ok(titles)
+    }
+
+    /// Detects potential duplicate titles in the library.
+    ///
+    /// Makes a GET request to `/api/v1/titles/duplicates` to find titles that may be duplicates
+    /// based on ISBN matching and fuzzy title matching.
+    ///
+    /// # Arguments
+    ///
+    /// * `min_score` - Optional minimum similarity score (0-100). Defaults to 50.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(DuplicateDetectionResponse)` - Duplicate pairs grouped by confidence level
+    /// * `Err(Box<dyn Error>)` - An error if the request fails
+    pub fn detect_duplicates(&self, min_score: Option<f64>) -> Result<DuplicateDetectionResponse, Box<dyn Error>> {
+        let mut url = format!("{}/api/v1/titles/duplicates", self.base_url);
+
+        if let Some(score) = min_score {
+            url.push_str(&format!("?min_score={}", score));
+        }
+
+        println!("Detecting duplicates: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().unwrap_or_default();
+            return Err(format!("API returned status: {} - {}", status, error_text).into());
+        }
+
+        let result: DuplicateDetectionResponse = response.json()?;
+
+        println!(
+            "Found {} duplicate pairs (High: {}, Medium: {}, Low: {})",
+            result.total_pairs,
+            result.high_confidence.len(),
+            result.medium_confidence.len(),
+            result.low_confidence.len()
+        );
+
+        Ok(result)
+    }
+
+    /// Merges a secondary title into a primary title.
+    ///
+    /// Makes a POST request to `/api/v1/titles/{primary_id}/merge/{secondary_id}` to merge two titles.
+    /// All volumes from the secondary title will be moved to the primary title, and the secondary
+    /// title will be deleted.
+    ///
+    /// # Arguments
+    ///
+    /// * `primary_id` - UUID of the title to keep (target)
+    /// * `secondary_id` - UUID of the title to remove (source)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(MergeTitlesResponse)` - Information about the merge operation
+    /// * `Err(Box<dyn Error>)` - An error if the request fails
+    ///
+    /// # Important
+    ///
+    /// This operation is NOT reversible. The secondary title will be permanently deleted.
+    pub fn merge_titles(
+        &self,
+        primary_id: &str,
+        secondary_id: &str,
+    ) -> Result<MergeTitlesResponse, Box<dyn Error>> {
+        let url = format!(
+            "{}/api/v1/titles/{}/merge/{}",
+            self.base_url, primary_id, secondary_id
+        );
+
+        println!("Merging titles: {} <- {}", primary_id, secondary_id);
+
+        let request_body = MergeTitlesRequest { confirm: true };
+
+        let response = self.client
+            .post(&url)
+            .json(&request_body)
+            .send()?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().unwrap_or_default();
+            return Err(format!("API returned status: {} - {}", status, error_text).into());
+        }
+
+        let result: MergeTitlesResponse = response.json()?;
+
+        println!("Merge successful: {}", result.message);
+
+        Ok(result)
     }
 
     /// Creates a new title in the library.

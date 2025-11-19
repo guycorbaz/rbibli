@@ -645,3 +645,46 @@ pub struct LibraryStatistics {
     pub active_loans: i64,
     pub overdue_loans: i64,
 }
+
+// ============================================================================
+// Duplicate Detection Models
+// ============================================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DuplicateConfidence {
+    High,
+    Medium,
+    Low,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DuplicatePair {
+    pub title1: TitleWithCount,
+    pub title2: TitleWithCount,
+    pub similarity_score: f64,
+    pub confidence: DuplicateConfidence,
+    pub match_reasons: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DuplicateDetectionResponse {
+    pub high_confidence: Vec<DuplicatePair>,
+    pub medium_confidence: Vec<DuplicatePair>,
+    pub low_confidence: Vec<DuplicatePair>,
+    pub total_pairs: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MergeTitlesRequest {
+    pub confirm: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MergeTitlesResponse {
+    pub success: bool,
+    pub primary_title_id: String,
+    pub volumes_moved: i64,
+    pub secondary_title_deleted: bool,
+    pub message: String,
+}

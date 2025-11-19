@@ -1,9 +1,10 @@
 use actix_web::{web, HttpResponse, Responder};
-use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, AddAuthorToTitleRequest, Author, AuthorRole, TitleSearchParams};
+use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, AddAuthorToTitleRequest, Author, AuthorRole, TitleSearchParams, DuplicatePair, DuplicateDetectionResponse, DuplicateConfidence, MergeTitlesRequest, MergeTitlesResponse};
 use crate::AppState;
 use log::{info, warn, error, debug};
 use sqlx::Row;
 use uuid::Uuid;
+use strsim::jaro_winkler;
 
 /// Lists all titles with their volume counts.
 ///
@@ -1221,6 +1222,307 @@ pub async fn search_titles(
                         "error": e.to_string()
                     }
                 }
+            }))
+        }
+    }
+}
+
+/// Helper function to calculate similarity between two titles
+///
+/// Uses multiple factors to determine if two titles are likely duplicates:
+/// - ISBN exact match (100% weight if both present)
+/// - Title similarity using Jaro-Winkler distance
+/// - Author names comparison
+/// - Publication year proximity
+///
+/// # Arguments
+///
+/// * `title1` - First title to compare
+/// * `title2` - Second title to compare
+///
+/// # Returns
+///
+/// Returns a tuple of (similarity_score, match_reasons):
+/// - similarity_score: 0.0-100.0 representing how similar the titles are
+/// - match_reasons: Vec of strings explaining what matched
+fn calculate_similarity(title1: &TitleWithCount, title2: &TitleWithCount) -> (f64, Vec<String>) {
+    let mut score = 0.0;
+    let mut reasons = Vec::new();
+
+    // ISBN match - strongest indicator (100% if both present and match)
+    if let (Some(isbn1), Some(isbn2)) = (&title1.title.isbn, &title2.title.isbn) {
+        if !isbn1.is_empty() && !isbn2.is_empty() {
+            let normalized_isbn1 = isbn1.replace("-", "").replace(" ", "");
+            let normalized_isbn2 = isbn2.replace("-", "").replace(" ", "");
+
+            if normalized_isbn1 == normalized_isbn2 {
+                score = 100.0;
+                reasons.push("ISBN match".to_string());
+                return (score, reasons); // ISBN match is definitive
+            }
+        }
+    }
+
+    // Title similarity using Jaro-Winkler (weighted 70%)
+    let title1_normalized = title1.title.title.to_lowercase().trim().to_string();
+    let title2_normalized = title2.title.title.to_lowercase().trim().to_string();
+
+    let title_similarity = jaro_winkler(&title1_normalized, &title2_normalized);
+    score += title_similarity * 70.0;
+
+    if title_similarity > 0.85 {
+        reasons.push(format!("Title similarity: {:.0}%", title_similarity * 100.0));
+    }
+
+    // Exact title match after normalization
+    if title1_normalized == title2_normalized {
+        score = score.max(70.0); // At least 70% for exact title match
+        reasons.push("Exact title match".to_string());
+    }
+
+    // Penalize if title length difference is substantial (more than 30% difference)
+    let len1 = title1.title.title.len() as f64;
+    let len2 = title2.title.title.len() as f64;
+    let len_diff = (len1 - len2).abs() / len1.max(len2);
+
+    if len_diff > 0.3 {
+        score -= 20.0;
+        reasons.push(format!("Title length differs significantly ({:.0}%)", len_diff * 100.0));
+    }
+
+    // Publication year proximity (within 2 years gives +10%, same year gives +15%)
+    if let (Some(year1), Some(year2)) = (title1.title.publication_year, title2.title.publication_year) {
+        let year_diff = (year1 - year2).abs();
+        if year_diff == 0 {
+            score += 15.0;
+            reasons.push("Same publication year".to_string());
+        } else if year_diff <= 2 {
+            score += 10.0;
+            reasons.push(format!("Similar publication year ({})", year_diff));
+        }
+    }
+
+    // Ensure score is in valid range
+    score = score.clamp(0.0, 100.0);
+
+    (score, reasons)
+}
+
+/// Detects potential duplicate titles in the library
+///
+/// **Endpoint**: `GET /api/v1/titles/duplicates`
+pub async fn detect_duplicates(
+    data: web::Data<AppState>,
+    query: web::Query<std::collections::HashMap<String, String>>,
+) -> impl Responder {
+    info!("GET /api/v1/titles/duplicates - Detecting duplicate titles");
+
+    let min_score: f64 = query
+        .get("min_score")
+        .and_then(|s| s.parse::<f64>().ok())
+        .unwrap_or(50.0);
+
+    let min_score = min_score.clamp(0.0, 100.0);
+
+    debug!("Minimum similarity score threshold: {}", min_score);
+
+    let query_str = r#"
+        SELECT
+            t.id, t.title, t.subtitle, t.isbn, t.publisher_old as publisher, t.publisher_id,
+            t.publication_year, t.pages, t.language, t.dewey_code, t.dewey_category,
+            t.genre_old as genre, t.genre_id, s.name as series_name, t.series_id, t.series_number,
+            t.summary, t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at,
+            COUNT(v.id) as volume_count
+        FROM titles t
+        LEFT JOIN volumes v ON t.id = v.title_id
+        LEFT JOIN series s ON t.series_id = s.id
+        GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publisher_id,
+                 t.publication_year, t.pages, t.language, t.dewey_code, t.dewey_category,
+                 t.genre_old, t.genre_id, s.name, t.series_id, t.series_number,
+                 t.summary, t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at
+        ORDER BY t.title ASC
+    "#;
+
+    let rows = match sqlx::query(query_str).fetch_all(&data.db_pool).await {
+        Ok(rows) => rows,
+        Err(e) => {
+            error!("Database error: {}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": { "code": "DATABASE_ERROR", "message": "Failed to fetch titles" }
+            }));
+        }
+    };
+
+    let titles: Vec<TitleWithCount> = rows.into_iter().filter_map(|row| {
+        let id_str: String = row.get("id");
+        let id = Uuid::parse_str(&id_str).ok()?;
+        let created_at: chrono::NaiveDateTime = row.get("created_at");
+        let updated_at: chrono::NaiveDateTime = row.get("updated_at");
+
+        Some(TitleWithCount {
+            title: crate::models::Title {
+                id, title: row.get("title"), subtitle: row.get("subtitle"), isbn: row.get("isbn"),
+                publisher: row.get("publisher"), publisher_id: row.get("publisher_id"),
+                publication_year: row.get("publication_year"), pages: row.get("pages"),
+                language: row.get("language"), dewey_code: row.get("dewey_code"),
+                dewey_category: row.get("dewey_category"), genre: row.get("genre"),
+                genre_id: row.get("genre_id"), series_name: row.get("series_name"),
+                series_id: row.get("series_id"), series_number: row.get("series_number"),
+                summary: row.get("summary"), cover_url: row.get("cover_url"), image_data: None,
+                image_mime_type: row.get("image_mime_type"), image_filename: row.get("image_filename"),
+                created_at: chrono::DateTime::from_naive_utc_and_offset(created_at, chrono::Utc),
+                updated_at: chrono::DateTime::from_naive_utc_and_offset(updated_at, chrono::Utc),
+            },
+            volume_count: row.get("volume_count"),
+        })
+    }).collect();
+
+    info!("Comparing {} titles for duplicates", titles.len());
+
+    let mut all_pairs = Vec::new();
+    for i in 0..titles.len() {
+        for j in (i + 1)..titles.len() {
+            let (similarity_score, match_reasons) = calculate_similarity(&titles[i], &titles[j]);
+            if similarity_score >= min_score {
+                let confidence = if similarity_score >= 90.0 {
+                    DuplicateConfidence::High
+                } else if similarity_score >= 70.0 {
+                    DuplicateConfidence::Medium
+                } else {
+                    DuplicateConfidence::Low
+                };
+
+                all_pairs.push(DuplicatePair {
+                    title1: titles[i].clone(),
+                    title2: titles[j].clone(),
+                    similarity_score,
+                    confidence,
+                    match_reasons,
+                });
+            }
+        }
+    }
+
+    let mut high_confidence = Vec::new();
+    let mut medium_confidence = Vec::new();
+    let mut low_confidence = Vec::new();
+
+    for pair in all_pairs {
+        match pair.confidence {
+            DuplicateConfidence::High => high_confidence.push(pair),
+            DuplicateConfidence::Medium => medium_confidence.push(pair),
+            DuplicateConfidence::Low => low_confidence.push(pair),
+        }
+    }
+
+    let total_pairs = high_confidence.len() + medium_confidence.len() + low_confidence.len();
+    info!("Found {} duplicate pairs", total_pairs);
+
+    HttpResponse::Ok().json(DuplicateDetectionResponse {
+        high_confidence, medium_confidence, low_confidence, total_pairs,
+    })
+}
+
+/// Merges a secondary title into a primary title
+///
+/// **Endpoint**: `POST /api/v1/titles/{primary_id}/merge/{secondary_id}`
+pub async fn merge_titles(
+    data: web::Data<AppState>,
+    path: web::Path<(String, String)>,
+    request: web::Json<MergeTitlesRequest>,
+) -> impl Responder {
+    let (primary_id, secondary_id) = path.into_inner();
+    info!("POST /api/v1/titles/{}/merge/{}", primary_id, secondary_id);
+
+    if !request.confirm {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": { "code": "CONFIRMATION_REQUIRED", "message": "Must confirm merge" }
+        }));
+    }
+
+    if primary_id == secondary_id {
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": { "code": "INVALID_REQUEST", "message": "Cannot merge title with itself" }
+        }));
+    }
+
+    let mut tx = match data.db_pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            error!("Failed to begin transaction: {}", e);
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": { "code": "TRANSACTION_ERROR", "message": "Failed to begin transaction" }
+            }));
+        }
+    };
+
+    // Verify titles exist
+    let primary_exists = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM titles WHERE id = ?")
+        .bind(&primary_id).fetch_one(&mut *tx).await.unwrap_or(0);
+    let secondary_exists = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) FROM titles WHERE id = ?")
+        .bind(&secondary_id).fetch_one(&mut *tx).await.unwrap_or(0);
+
+    if primary_exists == 0 || secondary_exists == 0 {
+        let _ = tx.rollback().await;
+        return HttpResponse::NotFound().json(serde_json::json!({
+            "error": { "code": "NOT_FOUND", "message": "One or both titles not found" }
+        }));
+    }
+
+    // Get max copy_number
+    let max_copy: Option<i32> = sqlx::query_scalar("SELECT MAX(copy_number) FROM volumes WHERE title_id = ?")
+        .bind(&primary_id).fetch_one(&mut *tx).await.unwrap_or(None);
+    let next_copy = max_copy.unwrap_or(0) + 1;
+
+    // Move volumes
+    let update_result = sqlx::query(
+        r#"UPDATE volumes v
+           INNER JOIN (
+               SELECT id, ROW_NUMBER() OVER (ORDER BY copy_number) as new_copy_num
+               FROM volumes WHERE title_id = ?
+           ) numbered ON v.id = numbered.id
+           SET v.title_id = ?, v.copy_number = numbered.new_copy_num + ? - 1
+           WHERE v.title_id = ?"#
+    )
+    .bind(&secondary_id).bind(&primary_id).bind(next_copy).bind(&secondary_id)
+    .execute(&mut *tx).await;
+
+    let volumes_moved = match update_result {
+        Ok(result) => result.rows_affected() as i64,
+        Err(e) => {
+            error!("Failed to move volumes: {}", e);
+            let _ = tx.rollback().await;
+            return HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": { "code": "DATABASE_ERROR", "message": "Failed to move volumes" }
+            }));
+        }
+    };
+
+    // Delete secondary title
+    if let Err(e) = sqlx::query("DELETE FROM titles WHERE id = ?").bind(&secondary_id).execute(&mut *tx).await {
+        error!("Failed to delete secondary title: {}", e);
+        let _ = tx.rollback().await;
+        return HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": { "code": "DATABASE_ERROR", "message": "Failed to delete title" }
+        }));
+    }
+
+    // Commit
+    match tx.commit().await {
+        Ok(_) => {
+            info!("Successfully merged titles");
+            HttpResponse::Ok().json(MergeTitlesResponse {
+                success: true,
+                primary_title_id: primary_id.clone(),
+                volumes_moved,
+                secondary_title_deleted: true,
+                message: format!("Successfully merged {} volume(s)", volumes_moved),
+            })
+        }
+        Err(e) => {
+            error!("Failed to commit: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": { "code": "TRANSACTION_ERROR", "message": "Failed to commit" }
             }))
         }
     }

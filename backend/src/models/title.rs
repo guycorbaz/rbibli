@@ -259,3 +259,157 @@ impl TitleSearchParams {
         Ok(())
     }
 }
+
+/// Confidence level for duplicate detection matches
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum DuplicateConfidence {
+    /// High confidence (≥90%): Likely the same title
+    High,
+    /// Medium confidence (70-89%): Possibly the same title
+    Medium,
+    /// Low confidence (50-69%): Might be related
+    Low,
+}
+
+/// Represents a potential duplicate title pair
+///
+/// Contains two titles that may be duplicates, along with a similarity score
+/// and confidence level to help users make merge decisions.
+///
+/// # Fields
+///
+/// * `title1` - First title in the potential duplicate pair
+/// * `title2` - Second title in the potential duplicate pair
+/// * `similarity_score` - Numeric similarity score (0.0-100.0)
+/// * `confidence` - Categorical confidence level (High/Medium/Low)
+/// * `match_reasons` - List of reasons why these titles matched (e.g., "ISBN match", "Title similarity: 95%")
+///
+/// # Example Response
+///
+/// ```json
+/// {
+///   "title1": {
+///     "id": "uuid1",
+///     "title": "Harry Potter and the Sorcerer's Stone",
+///     "isbn": "978-0439708180",
+///     "volume_count": 3
+///   },
+///   "title2": {
+///     "id": "uuid2",
+///     "title": "Harry Potter and the Philosopher's Stone",
+///     "isbn": "978-0439708180",
+///     "volume_count": 2
+///   },
+///   "similarity_score": 95.5,
+///   "confidence": "high",
+///   "match_reasons": ["ISBN match", "Title similarity: 87%"]
+/// }
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DuplicatePair {
+    /// First title in the pair
+    pub title1: TitleWithCount,
+    /// Second title in the pair
+    pub title2: TitleWithCount,
+    /// Similarity score from 0.0 to 100.0
+    pub similarity_score: f64,
+    /// Confidence level categorization
+    pub confidence: DuplicateConfidence,
+    /// Reasons why these titles matched
+    pub match_reasons: Vec<String>,
+}
+
+/// Response for duplicate detection endpoint
+///
+/// Groups potential duplicates by confidence level for easier review.
+///
+/// # Fields
+///
+/// * `high_confidence` - Pairs with high similarity (≥90%)
+/// * `medium_confidence` - Pairs with medium similarity (70-89%)
+/// * `low_confidence` - Pairs with low similarity (50-69%)
+/// * `total_pairs` - Total number of duplicate pairs found
+///
+/// # Example Response
+///
+/// ```json
+/// {
+///   "high_confidence": [
+///     { "title1": {...}, "title2": {...}, "similarity_score": 95.5, ... }
+///   ],
+///   "medium_confidence": [],
+///   "low_confidence": [],
+///   "total_pairs": 1
+/// }
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DuplicateDetectionResponse {
+    /// High confidence duplicates (≥90% similarity)
+    pub high_confidence: Vec<DuplicatePair>,
+    /// Medium confidence duplicates (70-89% similarity)
+    pub medium_confidence: Vec<DuplicatePair>,
+    /// Low confidence duplicates (50-69% similarity)
+    pub low_confidence: Vec<DuplicatePair>,
+    /// Total number of duplicate pairs found
+    pub total_pairs: usize,
+}
+
+/// Request to merge a secondary title into a primary title
+///
+/// All volumes from the secondary title will be moved to the primary title,
+/// and the secondary title will be deleted.
+///
+/// # Fields
+///
+/// * `confirm` - Must be true to proceed with merge (safety check)
+///
+/// # Example Request
+///
+/// ```json
+/// {
+///   "confirm": true
+/// }
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MergeTitlesRequest {
+    /// Confirmation flag - must be true to proceed
+    pub confirm: bool,
+}
+
+/// Response from merging two titles
+///
+/// Provides information about the merge operation results.
+///
+/// # Fields
+///
+/// * `success` - Whether the merge completed successfully
+/// * `primary_title_id` - ID of the title that was kept
+/// * `volumes_moved` - Number of volumes moved from secondary to primary
+/// * `secondary_title_deleted` - Whether the secondary title was deleted
+/// * `message` - Human-readable success message
+///
+/// # Example Response
+///
+/// ```json
+/// {
+///   "success": true,
+///   "primary_title_id": "uuid1",
+///   "volumes_moved": 2,
+///   "secondary_title_deleted": true,
+///   "message": "Successfully merged 2 volumes from secondary title into primary title"
+/// }
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MergeTitlesResponse {
+    /// Whether the operation succeeded
+    pub success: bool,
+    /// ID of the primary title (kept)
+    pub primary_title_id: String,
+    /// Number of volumes moved
+    pub volumes_moved: i64,
+    /// Whether secondary title was deleted
+    pub secondary_title_deleted: bool,
+    /// Success message
+    pub message: String,
+}

@@ -139,6 +139,10 @@ export component AppWindow inherits Window {
     in-out property <[AuthorItem]> all-authors: [];
     in-out property <[string]> author-names: [];
 
+    // Duplicate detection properties
+    in-out property <bool> duplicates-detected: false;
+    in-out property <int> duplicate-count: 0;
+
     // Expose title form properties for ISBN lookup functionality
     in-out property <string> new-title: "";
     in-out property <string> new-subtitle: "";
@@ -172,6 +176,12 @@ export component AppWindow inherits Window {
     // Searches titles with advanced filters
     // Parameters: search_text, title, subtitle, isbn, series_id, author_id, genre_id, publisher_id, year_from, year_to, language, dewey_code, has_volumes, wishlist_only, available_only, location_id
     callback search-titles(string, string, string, string, string, string, string, string, string, string, string, string, bool, bool, bool, string);
+
+    // Duplicate detection callbacks
+    callback find-duplicates();  // Scans for duplicate titles
+    callback merge-titles(string, string);  // Merges secondary into primary (primary_id, secondary_id)
+    callback dismiss-duplicate(string, string);  // Marks pair as not duplicate (title1_id, title2_id)
+    callback clear-duplicates();  // Clears all duplicate detection results
 
     // Creates a new title in the library
     // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category
@@ -548,6 +558,9 @@ export component AppWindow inherits Window {
             title-authors <=> root.title-authors;
             all-authors <=> root.all-authors;
             author-names <=> root.author-names;
+            // Bind duplicate detection properties
+            duplicates-detected <=> root.duplicates-detected;
+            duplicate-count <=> root.duplicate-count;
             // Bind form properties for ISBN lookup
             new-title <=> root.new-title;
             new-subtitle <=> root.new-subtitle;
@@ -574,6 +587,18 @@ export component AppWindow inherits Window {
             }
             search-titles(search-text, title, subtitle, isbn, series-id, author-id, genre-id, publisher-id, year-from, year-to, language, dewey-code, has-volumes, wishlist-only, available-only, location-id) => {
                 root.search-titles(search-text, title, subtitle, isbn, series-id, author-id, genre-id, publisher-id, year-from, year-to, language, dewey-code, has-volumes, wishlist-only, available-only, location-id);
+            }
+            find-duplicates => {
+                root.find-duplicates();
+            }
+            merge-titles(primary-id, secondary-id) => {
+                root.merge-titles(primary-id, secondary-id);
+            }
+            dismiss-duplicate(title1-id, title2-id) => {
+                root.dismiss-duplicate(title1-id, title2-id);
+            }
+            clear-duplicates => {
+                root.clear-duplicates();
             }
             create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category) => {
                 root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, "", "", summary, cover-url, dewey-code, dewey-category);
