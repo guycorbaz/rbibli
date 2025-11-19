@@ -258,13 +258,13 @@ pub async fn create_volume(
 
     let new_id = Uuid::new_v4();
 
-    // Validate barcode format (VOL-XXXXXX)
-    if !req.barcode.starts_with("VOL-") || req.barcode.len() < 5 {
+    // Validate barcode format (numeric only)
+    if req.barcode.is_empty() || !req.barcode.chars().all(|c| c.is_ascii_digit()) {
         warn!("Invalid barcode format: {}", req.barcode);
         return HttpResponse::BadRequest().json(serde_json::json!({
             "error": {
                 "code": "INVALID_BARCODE",
-                "message": "Barcode must start with 'VOL-' and have at least one digit"
+                "message": "Barcode must be a numeric value (e.g., 123456)"
             }
         }));
     }
@@ -422,13 +422,13 @@ pub async fn update_volume(
     let mut query_builder = sqlx::query(&query);
 
     if let Some(ref barcode) = req.barcode {
-        // Validate barcode format
-        if !barcode.starts_with("VOL-") || barcode.len() < 5 {
+        // Validate barcode format (numeric only)
+        if barcode.is_empty() || !barcode.chars().all(|c| c.is_ascii_digit()) {
             warn!("Invalid barcode format: {}", barcode);
             return HttpResponse::BadRequest().json(serde_json::json!({
                 "error": {
                     "code": "INVALID_BARCODE",
-                    "message": "Barcode must start with 'VOL-' and have at least one digit"
+                    "message": "Barcode must be a numeric value (e.g., 123456)"
                 }
             }));
         }

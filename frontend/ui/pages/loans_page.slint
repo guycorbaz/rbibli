@@ -55,7 +55,7 @@ export struct BorrowerData {
 // Fields:
 // - id: Unique loan identifier (UUID)
 // - title: Book title being loaned
-// - barcode: Volume barcode (e.g., "VOL-000001")
+// - barcode: Volume barcode (e.g., "123456")
 // - borrower-name: Name of the person who borrowed the volume
 // - borrower-email: Contact email of the borrower
 // - loan-date: Date when the loan was created (YYYY-MM-DD format)
@@ -381,7 +381,7 @@ export component LoansPage inherits Page {
 
                         LineEdit {
                             text <=> root.new-loan-barcode;
-                            placeholder-text: @tr("Scan or enter barcode (e.g., VOL-000001)");
+                            placeholder-text: @tr("Scan or enter barcode (e.g., 123456)");
                         }
                     }
 

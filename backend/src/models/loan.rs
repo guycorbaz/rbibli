@@ -169,7 +169,7 @@ pub struct LoanDetail {
 /// # Fields
 ///
 /// * `borrower_id` - UUID of the borrower (must exist in database)
-/// * `barcode` - Volume barcode to loan (format: VOL-XXXXXX)
+/// * `barcode` - Volume barcode to loan (format: numeric, e.g., 123456)
 ///
 /// # Workflow
 ///
@@ -189,7 +189,7 @@ pub struct LoanDetail {
 pub struct CreateLoanRequest {
     /// ID of the borrower
     pub borrower_id: String,
-    /// Barcode of the volume to loan (e.g., "VOL-000001")
+    /// Barcode of the volume to loan (e.g., "123456")
     pub barcode: String,
 }
 
