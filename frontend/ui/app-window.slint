@@ -169,6 +169,10 @@ export component AppWindow inherits Window {
     // Triggers loading of all titles from the backend
     callback load-titles();
 
+    // Searches titles with advanced filters
+    // Parameters: search_text, title, subtitle, isbn, series_id, author_id, genre_id, publisher_id, year_from, year_to, language, dewey_code, has_volumes, wishlist_only, available_only, location_id
+    callback search-titles(string, string, string, string, string, string, string, string, string, string, string, string, bool, bool, bool, string);
+
     // Creates a new title in the library
     // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category
     callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string);
@@ -567,6 +571,9 @@ export component AppWindow inherits Window {
             edit-summary <=> root.edit-summary;
             load-titles => {
                 root.load-titles();
+            }
+            search-titles(search-text, title, subtitle, isbn, series-id, author-id, genre-id, publisher-id, year-from, year-to, language, dewey-code, has-volumes, wishlist-only, available-only, location-id) => {
+                root.search-titles(search-text, title, subtitle, isbn, series-id, author-id, genre-id, publisher-id, year-from, year-to, language, dewey-code, has-volumes, wishlist-only, available-only, location-id);
             }
             create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category) => {
                 root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, "", "", summary, cover-url, dewey-code, dewey-category);

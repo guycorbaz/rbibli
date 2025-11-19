@@ -94,6 +94,175 @@ impl ApiClient {
         Ok(titles)
     }
 
+    /// Searches titles with advanced filtering options.
+    ///
+    /// This method makes a GET request to the `/api/v1/titles/search` endpoint with
+    /// query parameters for filtering and searching titles. All parameters are optional.
+    ///
+    /// # Arguments
+    ///
+    /// * `search_text` - Free text search across title, subtitle, author, ISBN (optional)
+    /// * `title` - Partial match on title field (optional)
+    /// * `subtitle` - Partial match on subtitle field (optional)
+    /// * `isbn` - Partial or exact match on ISBN (optional)
+    /// * `series_id` - Filter by series UUID (optional)
+    /// * `author_id` - Filter by author UUID (optional)
+    /// * `genre_id` - Filter by genre UUID (optional)
+    /// * `publisher_id` - Filter by publisher UUID (optional)
+    /// * `year_from` - Minimum publication year (optional)
+    /// * `year_to` - Maximum publication year (optional)
+    /// * `language` - Filter by language code (optional)
+    /// * `dewey_code` - Filter by Dewey classification (optional)
+    /// * `has_volumes` - Filter for owned books (true), wishlist (false), or all (None)
+    /// * `available_only` - Filter for books with available volumes (optional)
+    /// * `location_id` - Filter by storage location UUID (optional)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<TitleWithCount>)` - A vector of matching titles with volume counts
+    /// * `Err(Box<dyn Error>)` - An error if the request fails
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    ///
+    /// // Simple text search
+    /// match client.search_titles(Some("harry potter"), None, None, None, None, None, None, None, None, None, None, None, None, None, None) {
+    ///     Ok(titles) => println!("Found {} titles", titles.len()),
+    ///     Err(e) => eprintln!("Search failed: {}", e),
+    /// }
+    ///
+    /// // Search by genre and year range
+    /// match client.search_titles(None, None, None, None, None, None, Some("genre-uuid"), None, Some("2000"), Some("2023"), None, None, None, None, None) {
+    ///     Ok(titles) => println!("Found {} titles", titles.len()),
+    ///     Err(e) => eprintln!("Search failed: {}", e),
+    /// }
+    /// ```
+    pub fn search_titles(
+        &self,
+        search_text: Option<&str>,
+        title: Option<&str>,
+        subtitle: Option<&str>,
+        isbn: Option<&str>,
+        series_id: Option<&str>,
+        author_id: Option<&str>,
+        genre_id: Option<&str>,
+        publisher_id: Option<&str>,
+        year_from: Option<&str>,
+        year_to: Option<&str>,
+        language: Option<&str>,
+        dewey_code: Option<&str>,
+        has_volumes: Option<bool>,
+        available_only: Option<bool>,
+        location_id: Option<&str>,
+    ) -> Result<Vec<TitleWithCount>, Box<dyn Error>> {
+        let mut url = format!("{}/api/v1/titles/search?", self.base_url);
+        let mut params = Vec::new();
+
+        // Build query parameters
+        if let Some(q) = search_text {
+            if !q.is_empty() {
+                params.push(format!("q={}", urlencoding::encode(q)));
+            }
+        }
+        if let Some(t) = title {
+            if !t.is_empty() {
+                params.push(format!("title={}", urlencoding::encode(t)));
+            }
+        }
+        if let Some(s) = subtitle {
+            if !s.is_empty() {
+                params.push(format!("subtitle={}", urlencoding::encode(s)));
+            }
+        }
+        if let Some(i) = isbn {
+            if !i.is_empty() {
+                params.push(format!("isbn={}", urlencoding::encode(i)));
+            }
+        }
+        if let Some(sid) = series_id {
+            if !sid.is_empty() {
+                params.push(format!("series_id={}", urlencoding::encode(sid)));
+            }
+        }
+        if let Some(aid) = author_id {
+            if !aid.is_empty() {
+                params.push(format!("author_id={}", urlencoding::encode(aid)));
+            }
+        }
+        if let Some(gid) = genre_id {
+            if !gid.is_empty() {
+                params.push(format!("genre_id={}", urlencoding::encode(gid)));
+            }
+        }
+        if let Some(pid) = publisher_id {
+            if !pid.is_empty() {
+                params.push(format!("publisher_id={}", urlencoding::encode(pid)));
+            }
+        }
+        if let Some(yf) = year_from {
+            if !yf.is_empty() {
+                params.push(format!("year_from={}", yf));
+            }
+        }
+        if let Some(yt) = year_to {
+            if !yt.is_empty() {
+                params.push(format!("year_to={}", yt));
+            }
+        }
+        if let Some(lang) = language {
+            if !lang.is_empty() {
+                params.push(format!("language={}", urlencoding::encode(lang)));
+            }
+        }
+        if let Some(dewey) = dewey_code {
+            if !dewey.is_empty() {
+                params.push(format!("dewey_code={}", urlencoding::encode(dewey)));
+            }
+        }
+        if let Some(has_vols) = has_volumes {
+            params.push(format!("has_volumes={}", has_vols));
+        }
+        if let Some(available) = available_only {
+            if available {
+                params.push("available=true".to_string());
+            }
+        }
+        if let Some(lid) = location_id {
+            if !lid.is_empty() {
+                params.push(format!("location_id={}", urlencoding::encode(lid)));
+            }
+        }
+
+        // Join parameters with &
+        url.push_str(&params.join("&"));
+
+        println!("Searching titles with URL: {}", url);
+
+        let response = self.client.get(&url).send()?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_text = response.text().unwrap_or_default();
+            return Err(format!("API returned status: {} - {}", status, error_text).into());
+        }
+
+        // Parse response - backend returns {"results": [...], "total": N, ...}
+        let json: serde_json::Value = response.json()?;
+        let titles: Vec<TitleWithCount> = serde_json::from_value(
+            json.get("results")
+                .ok_or("Missing 'results' field in response")?
+                .clone()
+        )?;
+
+        println!("Search returned {} titles", titles.len());
+
+        Ok(titles)
+    }
+
     /// Creates a new title in the library.
     ///
     /// This method makes a POST request to the `/api/v1/titles` endpoint to create

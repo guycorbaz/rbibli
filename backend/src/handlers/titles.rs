@@ -1,5 +1,5 @@
 use actix_web::{web, HttpResponse, Responder};
-use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, AddAuthorToTitleRequest, Author, AuthorRole};
+use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, AddAuthorToTitleRequest, Author, AuthorRole, TitleSearchParams};
 use crate::AppState;
 use log::{info, warn, error, debug};
 use sqlx::Row;
@@ -845,6 +845,381 @@ pub async fn remove_author_from_title(
                     "code": "DATABASE_ERROR",
                     "message": "Failed to remove author from title",
                     "details": { "error": e.to_string() }
+                }
+            }))
+        }
+    }
+}
+
+/// Advanced search and filtering for titles.
+///
+/// **Endpoint**: `GET /api/v1/titles/search`
+///
+/// This handler provides comprehensive search and filtering capabilities for titles.
+/// It supports multiple filter criteria that can be combined, free text search,
+/// and various sorting options. Results include volume counts and availability information.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `params` - Query parameters containing search filters (see TitleSearchParams)
+///
+/// # Query Parameters
+///
+/// All parameters are optional and can be combined:
+///
+/// * `q` - Free text search (searches title, subtitle, author names, ISBN)
+/// * `title` - Filter by title (partial match, case-insensitive)
+/// * `subtitle` - Filter by subtitle (partial match)
+/// * `isbn` - Filter by ISBN (partial or exact match)
+/// * `series_id` - Filter by series UUID
+/// * `author_id` - Filter by author UUID
+/// * `genre_id` - Filter by genre UUID
+/// * `publisher_id` - Filter by publisher UUID
+/// * `year_from` - Minimum publication year (inclusive)
+/// * `year_to` - Maximum publication year (inclusive)
+/// * `language` - Filter by language code (exact match)
+/// * `dewey_code` - Filter by Dewey classification (partial match)
+/// * `has_volumes` - Filter by ownership (true=owned, false=wishlist)
+/// * `available` - Filter by availability (true=at least one available volume)
+/// * `location_id` - Filter by storage location
+/// * `sort_by` - Sort field (title, publication_year, created_at)
+/// * `sort_order` - Sort direction (asc, desc)
+/// * `limit` - Maximum results (default: 100, max: 500)
+/// * `offset` - Results to skip (for pagination)
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of TitleWithCount objects on success
+/// * `HttpResponse::BadRequest` if validation fails
+/// * `HttpResponse::InternalServerError` if the database query fails
+///
+/// # Response Format
+///
+/// ```json
+/// {
+///   "results": [
+///     {
+///       "id": "uuid-string",
+///       "title": "Book Title",
+///       "subtitle": "Optional Subtitle",
+///       "isbn": "978-1234567890",
+///       "publication_year": 2020,
+///       "volume_count": 3,
+///       "available_count": 2,
+///       ...
+///     }
+///   ],
+///   "total": 42,
+///   "limit": 100,
+///   "offset": 0
+/// }
+/// ```
+///
+/// # Examples
+///
+/// ```
+/// // Search for "Harry Potter" books
+/// GET /api/v1/titles/search?q=harry+potter
+///
+/// // Find all books in a series, sorted by series number
+/// GET /api/v1/titles/search?series_id=uuid-here&sort_by=title
+///
+/// // Find wishlist items (books without volumes)
+/// GET /api/v1/titles/search?has_volumes=false
+///
+/// // Find available fiction books published after 2010
+/// GET /api/v1/titles/search?genre_id=fiction-uuid&year_from=2010&available=true
+///
+/// // Complex search with multiple filters
+/// GET /api/v1/titles/search?author_id=uuid&language=en&year_from=2000&year_to=2023&sort_by=publication_year&sort_order=desc
+/// ```
+///
+/// # Performance
+///
+/// - Uses DISTINCT to avoid duplicates from JOINs
+/// - Employs database indexes for optimized filtering
+/// - LEFT JOINs preserve titles without volumes/authors
+/// - Query is built dynamically based on provided filters
+/// - LIMIT is enforced to prevent excessive result sets
+pub async fn search_titles(
+    data: web::Data<AppState>,
+    mut params: web::Query<TitleSearchParams>,
+) -> impl Responder {
+    info!("GET /api/v1/titles/search - Advanced title search with filters: {:?}", params);
+
+    // Validate parameters
+    if let Err(e) = params.validate() {
+        warn!("Invalid search parameters: {}", e);
+        return HttpResponse::BadRequest().json(serde_json::json!({
+            "error": {
+                "code": "INVALID_PARAMETERS",
+                "message": e
+            }
+        }));
+    }
+
+    // Build the base query with all necessary JOINs
+    let base_query = r#"
+        SELECT DISTINCT
+            t.id,
+            t.title,
+            t.subtitle,
+            t.isbn,
+            t.publisher_old as publisher,
+            t.publisher_id,
+            t.publication_year,
+            t.pages,
+            t.language,
+            t.dewey_code,
+            t.dewey_category,
+            t.genre_old as genre,
+            t.genre_id,
+            s.name as series_name,
+            t.series_id,
+            t.series_number,
+            t.summary,
+            t.cover_url,
+            t.image_mime_type,
+            t.image_filename,
+            t.created_at,
+            t.updated_at,
+            COUNT(DISTINCT v.id) as volume_count,
+            SUM(CASE WHEN v.loan_status = 'Available' THEN 1 ELSE 0 END) as available_count
+        FROM titles t
+        LEFT JOIN volumes v ON t.id = v.title_id
+        LEFT JOIN series s ON t.series_id = s.id
+        LEFT JOIN publishers p ON t.publisher_id = p.id
+        LEFT JOIN genres g ON t.genre_id = g.id
+        LEFT JOIN title_authors ta ON t.id = ta.title_id
+        LEFT JOIN authors a ON ta.author_id = a.id
+    "#;
+
+    // Build WHERE clauses dynamically
+    let mut where_clauses = vec!["1=1".to_string()]; // Always true, simplifies logic
+    let mut bind_values: Vec<String> = Vec::new();
+
+    // Free text search across multiple fields
+    if let Some(ref q) = params.q {
+        let search_term = format!("%{}%", q);
+        where_clauses.push(
+            "(t.title LIKE ? OR t.subtitle LIKE ? OR t.isbn LIKE ? OR \
+             CONCAT(a.first_name, ' ', a.last_name) LIKE ?)"
+            .to_string()
+        );
+        bind_values.push(search_term.clone());
+        bind_values.push(search_term.clone());
+        bind_values.push(search_term.clone());
+        bind_values.push(search_term);
+    }
+
+    // Title filter
+    if let Some(ref title) = params.title {
+        where_clauses.push("t.title LIKE ?".to_string());
+        bind_values.push(format!("%{}%", title));
+    }
+
+    // Subtitle filter
+    if let Some(ref subtitle) = params.subtitle {
+        where_clauses.push("t.subtitle LIKE ?".to_string());
+        bind_values.push(format!("%{}%", subtitle));
+    }
+
+    // ISBN filter
+    if let Some(ref isbn) = params.isbn {
+        where_clauses.push("t.isbn LIKE ?".to_string());
+        bind_values.push(format!("%{}%", isbn));
+    }
+
+    // Series filter
+    if let Some(ref series_id) = params.series_id {
+        where_clauses.push("t.series_id = ?".to_string());
+        bind_values.push(series_id.to_string());
+    }
+
+    // Author filter
+    if let Some(ref author_id) = params.author_id {
+        where_clauses.push("ta.author_id = ?".to_string());
+        bind_values.push(author_id.to_string());
+    }
+
+    // Genre filter
+    if let Some(ref genre_id) = params.genre_id {
+        where_clauses.push("t.genre_id = ?".to_string());
+        bind_values.push(genre_id.to_string());
+    }
+
+    // Publisher filter
+    if let Some(ref publisher_id) = params.publisher_id {
+        where_clauses.push("t.publisher_id = ?".to_string());
+        bind_values.push(publisher_id.to_string());
+    }
+
+    // Publication year range
+    if let Some(year_from) = params.year_from {
+        where_clauses.push("t.publication_year >= ?".to_string());
+        bind_values.push(year_from.to_string());
+    }
+
+    if let Some(year_to) = params.year_to {
+        where_clauses.push("t.publication_year <= ?".to_string());
+        bind_values.push(year_to.to_string());
+    }
+
+    // Language filter
+    if let Some(ref language) = params.language {
+        where_clauses.push("t.language = ?".to_string());
+        bind_values.push(language.to_string());
+    }
+
+    // Dewey classification filter
+    if let Some(ref dewey_code) = params.dewey_code {
+        where_clauses.push("t.dewey_code LIKE ?".to_string());
+        bind_values.push(format!("{}%", dewey_code));
+    }
+
+    // Location filter (only for titles with volumes in that location)
+    if let Some(ref location_id) = params.location_id {
+        where_clauses.push("v.location_id = ?".to_string());
+        bind_values.push(location_id.to_string());
+    }
+
+    // Build the complete WHERE clause
+    let where_clause = format!("WHERE {}", where_clauses.join(" AND "));
+
+    // Build GROUP BY and HAVING clauses
+    let group_by = r#"
+        GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publisher_id,
+                 t.publication_year, t.pages, t.language, t.dewey_code, t.dewey_category,
+                 t.genre_old, t.genre_id, s.name, t.series_id, t.series_number, t.summary,
+                 t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at
+    "#;
+
+    let mut having_clauses = Vec::new();
+
+    // Filter by ownership status (has volumes or not)
+    if let Some(has_volumes) = params.has_volumes {
+        if has_volumes {
+            having_clauses.push("COUNT(DISTINCT v.id) > 0");
+        } else {
+            having_clauses.push("COUNT(DISTINCT v.id) = 0");
+        }
+    }
+
+    // Filter by availability (at least one available volume)
+    if let Some(available) = params.available {
+        if available {
+            having_clauses.push("SUM(CASE WHEN v.loan_status = 'Available' THEN 1 ELSE 0 END) > 0");
+        }
+    }
+
+    let having_clause = if !having_clauses.is_empty() {
+        format!("HAVING {}", having_clauses.join(" AND "))
+    } else {
+        String::new()
+    };
+
+    // Build ORDER BY clause
+    let order_field = match params.sort_by.as_str() {
+        "publication_year" => "t.publication_year",
+        "created_at" => "t.created_at",
+        _ => "t.title", // default to title
+    };
+
+    let order_direction = if params.sort_order.to_lowercase() == "desc" {
+        "DESC"
+    } else {
+        "ASC"
+    };
+
+    let order_by = format!("ORDER BY {} {}", order_field, order_direction);
+
+    // Build pagination
+    let limit_clause = format!("LIMIT {} OFFSET {}", params.limit, params.offset);
+
+    // Combine all parts into final query
+    let final_query = format!(
+        "{} {} {} {} {} {}",
+        base_query, where_clause, group_by, having_clause, order_by, limit_clause
+    );
+
+    debug!("Executing search query: {}", final_query);
+    debug!("Bind values: {:?}", bind_values);
+
+    // Execute the query with dynamic binding
+    let mut query_builder = sqlx::query(&final_query);
+    for value in &bind_values {
+        query_builder = query_builder.bind(value);
+    }
+
+    match query_builder.fetch_all(&data.db_pool).await {
+        Ok(rows) => {
+            debug!("Query successful, fetched {} rows", rows.len());
+
+            // Manually construct TitleWithCount from rows
+            let titles: Vec<TitleWithCount> = rows
+                .into_iter()
+                .filter_map(|row| {
+                    let id_str: String = row.get("id");
+                    let id = match Uuid::parse_str(&id_str) {
+                        Ok(uuid) => uuid,
+                        Err(e) => {
+                            warn!("Failed to parse UUID '{}': {}", id_str, e);
+                            return None;
+                        }
+                    };
+
+                    let created_at: chrono::NaiveDateTime = row.get("created_at");
+                    let updated_at: chrono::NaiveDateTime = row.get("updated_at");
+
+                    Some(TitleWithCount {
+                        title: crate::models::Title {
+                            id,
+                            title: row.get("title"),
+                            subtitle: row.get("subtitle"),
+                            isbn: row.get("isbn"),
+                            publisher: row.get("publisher"),
+                            publisher_id: row.get("publisher_id"),
+                            publication_year: row.get("publication_year"),
+                            pages: row.get("pages"),
+                            language: row.get("language"),
+                            dewey_code: row.get("dewey_code"),
+                            dewey_category: row.get("dewey_category"),
+                            genre: row.get("genre"),
+                            genre_id: row.get("genre_id"),
+                            series_name: row.get("series_name"),
+                            series_id: row.get("series_id"),
+                            series_number: row.get("series_number"),
+                            summary: row.get("summary"),
+                            cover_url: row.get("cover_url"),
+                            image_data: None,
+                            image_mime_type: row.get("image_mime_type"),
+                            image_filename: row.get("image_filename"),
+                            created_at: chrono::DateTime::from_naive_utc_and_offset(created_at, chrono::Utc),
+                            updated_at: chrono::DateTime::from_naive_utc_and_offset(updated_at, chrono::Utc),
+                        },
+                        volume_count: row.get("volume_count"),
+                    })
+                })
+                .collect();
+
+            info!("Successfully returning {} search results", titles.len());
+            HttpResponse::Ok().json(serde_json::json!({
+                "results": titles,
+                "total": titles.len(),
+                "limit": params.limit,
+                "offset": params.offset
+            }))
+        }
+        Err(e) => {
+            error!("Database error while searching titles: {}", e);
+            HttpResponse::InternalServerError().json(serde_json::json!({
+                "error": {
+                    "code": "DATABASE_ERROR",
+                    "message": "Failed to search titles",
+                    "details": {
+                        "error": e.to_string()
+                    }
                 }
             }))
         }

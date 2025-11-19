@@ -117,3 +117,145 @@ pub struct UpdateTitleRequest {
     pub summary: Option<String>,
     pub cover_url: Option<String>,
 }
+
+/// TitleSearchParams for advanced search and filtering
+///
+/// All fields are optional. When a field is provided, it will be used as a filter criterion.
+/// Multiple fields are combined with AND logic.
+///
+/// # Query Parameters
+///
+/// * `q` - Free text search across title, subtitle, author names, and ISBN
+/// * `title` - Partial match on title (case-insensitive, uses LIKE %value%)
+/// * `subtitle` - Partial match on subtitle
+/// * `isbn` - Partial or exact match on ISBN
+/// * `series_id` - Filter by series UUID
+/// * `author_id` - Filter by author UUID (searches through title_authors junction)
+/// * `genre_id` - Filter by genre UUID
+/// * `publisher_id` - Filter by publisher UUID
+/// * `year_from` - Minimum publication year (inclusive)
+/// * `year_to` - Maximum publication year (inclusive)
+/// * `language` - Exact match on language code (e.g., "en", "fr")
+/// * `dewey_code` - Partial match on Dewey classification code
+/// * `has_volumes` - Filter by ownership status (true = owned, false = wishlist, None = all)
+/// * `available` - Filter by availability (true = at least one available volume)
+/// * `location_id` - Filter by storage location (for titles with volumes)
+/// * `sort_by` - Field to sort by (title, publication_year, created_at)
+/// * `sort_order` - Sort direction (asc, desc)
+/// * `limit` - Maximum number of results (default: 100, max: 500)
+/// * `offset` - Number of results to skip (for pagination)
+///
+/// # Examples
+///
+/// ```
+/// // Search for Harry Potter books in English
+/// ?q=harry potter&language=en
+///
+/// // Find all books in a series
+/// ?series_id=uuid-here
+///
+/// // Find books by author published between 2000-2010
+/// ?author_id=uuid-here&year_from=2000&year_to=2010
+///
+/// // Find wishlist items (books without volumes)
+/// ?has_volumes=false
+///
+/// // Find available books by genre
+/// ?genre_id=uuid-here&available=true
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TitleSearchParams {
+    /// Free text search across multiple fields
+    pub q: Option<String>,
+    /// Filter by title (partial match)
+    pub title: Option<String>,
+    /// Filter by subtitle (partial match)
+    pub subtitle: Option<String>,
+    /// Filter by ISBN (partial or exact match)
+    pub isbn: Option<String>,
+    /// Filter by series UUID
+    pub series_id: Option<String>,
+    /// Filter by author UUID
+    pub author_id: Option<String>,
+    /// Filter by genre UUID
+    pub genre_id: Option<String>,
+    /// Filter by publisher UUID
+    pub publisher_id: Option<String>,
+    /// Minimum publication year (inclusive)
+    pub year_from: Option<i32>,
+    /// Maximum publication year (inclusive)
+    pub year_to: Option<i32>,
+    /// Filter by language code
+    pub language: Option<String>,
+    /// Filter by Dewey classification (partial match)
+    pub dewey_code: Option<String>,
+    /// Filter by ownership status (true=owned, false=wishlist)
+    pub has_volumes: Option<bool>,
+    /// Filter by availability (true=at least one available volume)
+    pub available: Option<bool>,
+    /// Filter by storage location UUID
+    pub location_id: Option<String>,
+    /// Sort field (title, publication_year, created_at)
+    #[serde(default = "default_sort_by")]
+    pub sort_by: String,
+    /// Sort direction (asc, desc)
+    #[serde(default = "default_sort_order")]
+    pub sort_order: String,
+    /// Maximum number of results
+    #[serde(default = "default_limit")]
+    pub limit: i64,
+    /// Number of results to skip (pagination)
+    #[serde(default)]
+    pub offset: i64,
+}
+
+fn default_sort_by() -> String {
+    "title".to_string()
+}
+
+fn default_sort_order() -> String {
+    "asc".to_string()
+}
+
+fn default_limit() -> i64 {
+    100
+}
+
+impl TitleSearchParams {
+    /// Validates and sanitizes the search parameters
+    pub fn validate(&mut self) -> Result<(), String> {
+        // Validate sort_by field
+        match self.sort_by.as_str() {
+            "title" | "publication_year" | "created_at" => {},
+            _ => return Err(format!("Invalid sort_by field: {}. Must be one of: title, publication_year, created_at", self.sort_by)),
+        }
+
+        // Validate sort_order
+        match self.sort_order.as_str() {
+            "asc" | "desc" => {},
+            _ => return Err(format!("Invalid sort_order: {}. Must be asc or desc", self.sort_order)),
+        }
+
+        // Validate and cap limit
+        if self.limit < 1 {
+            self.limit = 1;
+        }
+        if self.limit > 500 {
+            self.limit = 500;
+        }
+
+        // Validate offset
+        if self.offset < 0 {
+            self.offset = 0;
+        }
+
+        // Validate year range
+        if let (Some(from), Some(to)) = (self.year_from, self.year_to) {
+            if from > to {
+                return Err("year_from cannot be greater than year_to".to_string());
+            }
+        }
+
+        Ok(())
+    }
+}

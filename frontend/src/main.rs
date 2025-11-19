@@ -365,6 +365,92 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
     }
 
+    // Connect the search-titles callback
+    {
+        let api_client = api_client.clone();
+        let ui_weak = ui.as_weak();
+        ui.on_search_titles(move |search_text, title, subtitle, isbn, series_id, author_id, genre_id, publisher_id, year_from, year_to, language, dewey_code, has_volumes, wishlist_only, available_only, location_id| {
+            let ui = ui_weak.unwrap();
+
+            println!("Searching titles with filters:");
+            println!("  search_text: {}", search_text);
+            println!("  series_id: {}", series_id);
+            println!("  has_volumes: {}, wishlist_only: {}", has_volumes, wishlist_only);
+
+            // Convert has_volumes and wishlist_only to the appropriate filter value
+            let has_volumes_filter = if wishlist_only {
+                Some(false)  // Wishlist = books without volumes
+            } else if has_volumes {
+                Some(true)   // Owned = books with volumes
+            } else {
+                None         // Show all
+            };
+
+            // Convert available_only bool to Option<bool>
+            let available_filter = if available_only {
+                Some(true)
+            } else {
+                None
+            };
+
+            match api_client.search_titles(
+                if search_text.is_empty() { None } else { Some(search_text.as_str()) },
+                if title.is_empty() { None } else { Some(title.as_str()) },
+                if subtitle.is_empty() { None } else { Some(subtitle.as_str()) },
+                if isbn.is_empty() { None } else { Some(isbn.as_str()) },
+                if series_id.is_empty() { None } else { Some(series_id.as_str()) },
+                if author_id.is_empty() { None } else { Some(author_id.as_str()) },
+                if genre_id.is_empty() { None } else { Some(genre_id.as_str()) },
+                if publisher_id.is_empty() { None } else { Some(publisher_id.as_str()) },
+                if year_from.is_empty() { None } else { Some(year_from.as_str()) },
+                if year_to.is_empty() { None } else { Some(year_to.as_str()) },
+                if language.is_empty() { None } else { Some(language.as_str()) },
+                if dewey_code.is_empty() { None } else { Some(dewey_code.as_str()) },
+                has_volumes_filter,
+                available_filter,
+                if location_id.is_empty() { None } else { Some(location_id.as_str()) },
+            ) {
+                Ok(titles) => {
+                    println!("Search returned {} titles", titles.len());
+
+                    // Convert backend titles to Slint TitleData format
+                    let slint_titles: Vec<TitleData> = titles
+                        .into_iter()
+                        .map(|t| {
+                            TitleData {
+                                id: t.title.id.to_string().into(),
+                                title: t.title.title.into(),
+                                subtitle: t.title.subtitle.unwrap_or_default().into(),
+                                isbn: t.title.isbn.unwrap_or_default().into(),
+                                publisher: t.title.publisher.unwrap_or_default().into(),
+                                publisher_id: t.title.publisher_id.unwrap_or_default().into(),
+                                volume_count: t.volume_count as i32,
+                                language: t.title.language.into(),
+                                publication_year: t.title.publication_year.map(|y| y.to_string()).unwrap_or_default().into(),
+                                pages: t.title.pages.map(|p| p.to_string()).unwrap_or_default().into(),
+                                genre: t.title.genre.unwrap_or_default().into(),
+                                genre_id: t.title.genre_id.unwrap_or_default().into(),
+                                series_name: t.title.series_name.unwrap_or_default().into(),
+                                series_id: t.title.series_id.unwrap_or_default().into(),
+                                series_number: t.title.series_number.unwrap_or_default().into(),
+                                dewey_code: t.title.dewey_code.unwrap_or_default().into(),
+                                dewey_category: t.title.dewey_category.unwrap_or_default().into(),
+                                summary: t.title.summary.unwrap_or_default().into(),
+                                cover_url: t.title.cover_url.unwrap_or_default().into(),
+                            }
+                        })
+                        .collect();
+
+                    let titles_model = std::rc::Rc::new(slint::VecModel::from(slint_titles));
+                    ui.set_titles(titles_model.into());
+                }
+                Err(e) => {
+                    eprintln!("Failed to search titles: {}", e);
+                }
+            }
+        });
+    }
+
     // Connect the load-locations callback
     {
         let load_locations = load_locations.clone();

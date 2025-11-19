@@ -167,8 +167,29 @@ export component TitlesPage inherits Page {
     in-out property <int> add-author-index: -1;
     in-out property <int> add-author-role-index: 0;
 
+    // Search/Filter properties
+    in-out property <bool> show-filters: false;  // Toggle for filter panel visibility
+    in-out property <bool> show-advanced-filters: false;  // Toggle for advanced filters section
+    in-out property <string> filter-search-text: "";  // Free text search (q parameter)
+    in-out property <string> filter-title: "";  // Title filter (partial match)
+    in-out property <string> filter-subtitle: "";  // Subtitle filter
+    in-out property <string> filter-isbn: "";  // ISBN filter
+    in-out property <int> filter-series-index: -1;  // Series dropdown index
+    in-out property <int> filter-author-index: -1;  // Author dropdown index
+    in-out property <int> filter-genre-index: -1;  // Genre dropdown index
+    in-out property <int> filter-publisher-index: -1;  // Publisher dropdown index
+    in-out property <string> filter-year-from: "";  // Publication year from
+    in-out property <string> filter-year-to: "";  // Publication year to
+    in-out property <string> filter-language: "";  // Language code (en, fr, etc.)
+    in-out property <string> filter-dewey-code: "";  // Dewey classification filter
+    in-out property <bool> filter-has-volumes: false;  // Owned books only
+    in-out property <bool> filter-wishlist-only: false;  // Wishlist only
+    in-out property <bool> filter-available-only: false;  // Available volumes only
+    in-out property <int> filter-location-index: -1;  // Location dropdown index
+
     // Callback to request loading titles
     callback load-titles();
+    callback search-titles(string, string, string, string, string, string, string, string, string, string, string, string, bool, bool, bool, string); // search_text, title, subtitle, isbn, series_id, author_id, genre_id, publisher_id, year_from, year_to, language, dewey_code, has_volumes, wishlist_only, available_only, location_id
     callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code, dewey_category
     callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code, dewey_category
     callback delete-title(string); // id
@@ -239,6 +260,411 @@ export component TitlesPage inherits Page {
                         root.new-series-index = -1;
                         root.new-series-id = "";
                         root.new-summary = "";
+                    }
+                }
+            }
+        }
+
+        // Search/Filter Panel (Collapsible)
+        Rectangle {
+            background: #f8f9fa;
+            border-width: 1px;
+            border-color: #ddd;
+            border-radius: 6px;
+
+            VerticalBox {
+                padding: 15px;
+                spacing: 10px;
+
+                // Filter toggle header
+                HorizontalBox {
+                    spacing: 10px;
+                    height: 40px;
+
+                    Button {
+                        text: root.show-filters ? @tr("▼ Hide Filters") : @tr("▶ Show Filters");
+                        min-width: 140px;
+                        height: 35px;
+                        clicked => {
+                            root.show-filters = !root.show-filters;
+                        }
+                    }
+
+                    if root.show-filters: Button {
+                        text: @tr("Clear All Filters");
+                        min-width: 140px;
+                        height: 35px;
+                        clicked => {
+                            root.filter-search-text = "";
+                            root.filter-title = "";
+                            root.filter-subtitle = "";
+                            root.filter-isbn = "";
+                            root.filter-series-index = -1;
+                            root.filter-author-index = -1;
+                            root.filter-genre-index = -1;
+                            root.filter-publisher-index = -1;
+                            root.filter-year-from = "";
+                            root.filter-year-to = "";
+                            root.filter-language = "";
+                            root.filter-dewey-code = "";
+                            root.filter-has-volumes = false;
+                            root.filter-wishlist-only = false;
+                            root.filter-available-only = false;
+                            root.filter-location-index = -1;
+                            root.show-advanced-filters = false;
+                            root.load-titles();  // Load all titles without filters
+                        }
+                    }
+
+                    if root.show-filters: Button {
+                        text: @tr("Search");
+                        primary: true;
+                        min-width: 120px;
+                        height: 35px;
+                        clicked => {
+                            // Convert indices to IDs
+                            root.search-titles(
+                                root.filter-search-text,
+                                root.filter-title,
+                                root.filter-subtitle,
+                                root.filter-isbn,
+                                (root.filter-series-index >= 0 && root.filter-series-index < root.series-list.length) ? root.series-list[root.filter-series-index].id : "",
+                                (root.filter-author-index >= 0 && root.filter-author-index < root.all-authors.length) ? root.all-authors[root.filter-author-index].id : "",
+                                (root.filter-genre-index >= 0 && root.filter-genre-index < root.genres.length) ? root.genres[root.filter-genre-index].id : "",
+                                (root.filter-publisher-index > 0 && root.filter-publisher-index <= root.publishers.length) ? root.publishers[root.filter-publisher-index - 1].id : "",
+                                root.filter-year-from,
+                                root.filter-year-to,
+                                root.filter-language,
+                                root.filter-dewey-code,
+                                root.filter-has-volumes,
+                                root.filter-wishlist-only,
+                                root.filter-available-only,
+                                (root.filter-location-index > 0 && root.filter-location-index <= root.locations.length) ? root.locations[root.filter-location-index - 1].id : ""
+                            );
+                        }
+                    }
+                }
+
+                // Filter fields (visible when show-filters is true)
+                if root.show-filters: VerticalBox {
+                    spacing: 12px;
+
+                    // Basic Filters Section
+                    Rectangle {
+                        background: white;
+                        border-width: 1px;
+                        border-color: #e0e0e0;
+                        border-radius: 4px;
+
+                        VerticalBox {
+                            padding: 15px;
+                            spacing: 10px;
+
+                            Text {
+                                text: @tr("Basic Filters");
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: #333;
+                            }
+
+                            // Free text search
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Search:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                LineEdit {
+                                    text <=> root.filter-search-text;
+                                    placeholder-text: @tr("Search title, subtitle, author, ISBN...");
+                                }
+                            }
+
+                            // Series filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Series:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                ComboBox {
+                                    model: root.series-names;
+                                    current-index <=> root.filter-series-index;
+                                }
+                            }
+
+                            // Author filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Author:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                ComboBox {
+                                    model: root.author-names;
+                                    current-index <=> root.filter-author-index;
+                                }
+                            }
+
+                            // Genre filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Genre:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                ComboBox {
+                                    model: root.genre-names;
+                                    current-index <=> root.filter-genre-index;
+                                }
+                            }
+
+                            // Publisher filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Publisher:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                ComboBox {
+                                    model: root.publisher-names;
+                                    current-index <=> root.filter-publisher-index;
+                                }
+                            }
+                        }
+                    }
+
+                    // Advanced Filters Toggle
+                    Button {
+                        text: root.show-advanced-filters ? @tr("▼ Hide Advanced Filters") : @tr("▶ Show Advanced Filters");
+                        min-width: 200px;
+                        height: 32px;
+                        clicked => {
+                            root.show-advanced-filters = !root.show-advanced-filters;
+                        }
+                    }
+
+                    // Advanced Filters Section
+                    if root.show-advanced-filters: Rectangle {
+                        background: white;
+                        border-width: 1px;
+                        border-color: #e0e0e0;
+                        border-radius: 4px;
+
+                        VerticalBox {
+                            padding: 15px;
+                            spacing: 10px;
+
+                            Text {
+                                text: @tr("Advanced Filters");
+                                font-size: 14px;
+                                font-weight: 600;
+                                color: #333;
+                            }
+
+                            // Title filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Title contains:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                LineEdit {
+                                    text <=> root.filter-title;
+                                    placeholder-text: @tr("Partial title match...");
+                                }
+                            }
+
+                            // Subtitle filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Subtitle:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                LineEdit {
+                                    text <=> root.filter-subtitle;
+                                    placeholder-text: @tr("Partial subtitle match...");
+                                }
+                            }
+
+                            // ISBN filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("ISBN:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                LineEdit {
+                                    text <=> root.filter-isbn;
+                                    placeholder-text: @tr("Full or partial ISBN...");
+                                }
+                            }
+
+                            // Year range
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Year:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                Text {
+                                    text: @tr("From");
+                                    width: 40px;
+                                    vertical-alignment: center;
+                                }
+                                LineEdit {
+                                    text <=> root.filter-year-from;
+                                    placeholder-text: @tr("2000");
+                                    width: 100px;
+                                }
+                                Text {
+                                    text: @tr("To");
+                                    width: 30px;
+                                    vertical-alignment: center;
+                                }
+                                LineEdit {
+                                    text <=> root.filter-year-to;
+                                    placeholder-text: @tr("2024");
+                                    width: 100px;
+                                }
+                            }
+
+                            // Language filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Language:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                LineEdit {
+                                    text <=> root.filter-language;
+                                    placeholder-text: @tr("e.g., en, fr, es");
+                                }
+                            }
+
+                            // Dewey code filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Dewey Code:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                LineEdit {
+                                    text <=> root.filter-dewey-code;
+                                    placeholder-text: @tr("e.g., 800 (Literature)");
+                                }
+                            }
+
+                            // Location filter
+                            HorizontalBox {
+                                spacing: 10px;
+                                Text {
+                                    text: @tr("Location:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+                                ComboBox {
+                                    model: root.location-names;
+                                    current-index <=> root.filter-location-index;
+                                }
+                            }
+
+                            // Ownership status checkboxes
+                            HorizontalBox {
+                                spacing: 20px;
+                                Text {
+                                    text: @tr("Show:");
+                                    width: 120px;
+                                    vertical-alignment: center;
+                                }
+
+                                HorizontalBox {
+                                    spacing: 15px;
+
+                                    Rectangle {
+                                        width: 20px;
+                                        height: 20px;
+                                        border-width: 2px;
+                                        border-color: #0066cc;
+                                        border-radius: 3px;
+                                        background: root.filter-has-volumes ? #0066cc : white;
+
+                                        TouchArea {
+                                            clicked => {
+                                                root.filter-has-volumes = !root.filter-has-volumes;
+                                                if (root.filter-has-volumes) {
+                                                    root.filter-wishlist-only = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Text {
+                                        text: @tr("Owned (has volumes)");
+                                        font-size: 13px;
+                                        vertical-alignment: center;
+                                    }
+
+                                    Rectangle {
+                                        width: 20px;
+                                        height: 20px;
+                                        border-width: 2px;
+                                        border-color: #0066cc;
+                                        border-radius: 3px;
+                                        background: root.filter-wishlist-only ? #0066cc : white;
+
+                                        TouchArea {
+                                            clicked => {
+                                                root.filter-wishlist-only = !root.filter-wishlist-only;
+                                                if (root.filter-wishlist-only) {
+                                                    root.filter-has-volumes = false;
+                                                    root.filter-available-only = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Text {
+                                        text: @tr("Wishlist only");
+                                        font-size: 13px;
+                                        vertical-alignment: center;
+                                    }
+
+                                    Rectangle {
+                                        width: 20px;
+                                        height: 20px;
+                                        border-width: 2px;
+                                        border-color: #0066cc;
+                                        border-radius: 3px;
+                                        background: root.filter-available-only ? #0066cc : white;
+
+                                        TouchArea {
+                                            clicked => {
+                                                root.filter-available-only = !root.filter-available-only;
+                                                if (root.filter-available-only) {
+                                                    root.filter-wishlist-only = false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    Text {
+                                        text: @tr("Available for loan");
+                                        font-size: 13px;
+                                        vertical-alignment: center;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
