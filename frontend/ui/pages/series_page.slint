@@ -28,6 +28,7 @@
 // All text is internationalized using @tr() for multi-language support.
 // ============================================================================
 
+import { Styles } from "../styles.slint";
 import { Page } from "page.slint";
 import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
 
@@ -484,8 +485,8 @@ export component SeriesPage inherits Page {
                         // Edit button - opens edit dialog with pre-filled data
                         Button {
                             text: @tr("Edit");
-                            min-width: 80px;
-                            height: 32px;
+                            width: Styles.small_button_width;
+                            height: Styles.small_button_height;
                             clicked => {
                                 // Pre-fill edit form with current series data
                                 root.edit-id = series.id;
@@ -500,8 +501,8 @@ export component SeriesPage inherits Page {
                         // Note: Disabled if series has associated titles
                         Button {
                             text: @tr("Delete");
-                            min-width: 80px;
-                            height: 32px;
+                            width: Styles.small_button_width;
+                            height: Styles.small_button_height;
                             enabled: series.title-count == 0;
                             clicked => {
                                 // Store series info and show confirmation dialog

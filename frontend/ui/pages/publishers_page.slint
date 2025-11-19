@@ -1,3 +1,4 @@
+import { Styles } from "../styles.slint";
 import { Page } from "page.slint";
 import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
 
@@ -479,8 +480,8 @@ export component PublishersPage inherits Page {
 
                         Button {
                             text: @tr("Edit");
-                            min-width: 80px;
-                            height: 32px;
+                            width: Styles.small_button_width;
+                            height: Styles.small_button_height;
                             clicked => {
                                 root.edit-id = publisher.id;
                                 root.edit-name = publisher.name;
@@ -494,8 +495,8 @@ export component PublishersPage inherits Page {
 
                         Button {
                             text: @tr("Delete");
-                            min-width: 80px;
-                            height: 32px;
+                            width: Styles.small_button_width;
+                            height: Styles.small_button_height;
                             clicked => {
                                 root.delete-publisher-id = publisher.id;
                                 root.delete-publisher-name = publisher.name;

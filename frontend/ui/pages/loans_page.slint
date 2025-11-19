@@ -20,6 +20,7 @@
 // All text is internationalized using @tr() for multi-language support.
 // ============================================================================
 
+import { Styles } from "../styles.slint";
 import { Page } from "page.slint";
 import { ListView, ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, ComboBox, TextEdit, TabWidget } from "std-widgets.slint";
 
@@ -236,7 +237,7 @@ export component LoansPage inherits Page {
                             spacing: 8px;
 
                             for loan[index] in root.active-loans: Rectangle {
-                                height: 120px;
+                                //height: 120px;
                                 border-radius: 8px;
                                 background: Math.mod(index, 2) == 0 ? #f8f8f8 : #ffffff;
                                 border-width: 1px;
@@ -299,6 +300,8 @@ export component LoansPage inherits Page {
 
                                         Button {
                                             text: @tr("Extend");
+                                            width: Styles.small_button_width;
+                                            height: Styles.small_button_height;
                                             enabled: loan.extension-count < 1;
                                             clicked => {
                                                 root.extend-loan(loan.id);
@@ -307,6 +310,8 @@ export component LoansPage inherits Page {
 
                                         Button {
                                             text: @tr("Return");
+                                            width: Styles.small_button_width;
+                                            height: Styles.small_button_height;
                                             primary: true;
                                             clicked => {
                                                 root.return-loan(loan.id);

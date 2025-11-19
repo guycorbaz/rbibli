@@ -31,6 +31,7 @@
 // All text is internationalized using @tr() for multi-language support.
 // ============================================================================
 
+import { Styles } from "../styles.slint";
 import { Page } from "page.slint";
 import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
 
@@ -724,8 +725,10 @@ export component AuthorsPage inherits Page {
                         // Edit button - opens edit dialog with pre-filled data
                         Button {
                             text: @tr("Edit");
-                            min-width: 80px;
-                            height: 32px;
+                            //min-width: 80px;
+                            //height: 32px;
+                            width: Styles.small_button_width;
+                            height: Styles.small_button_height;
                             clicked => {
                                 // Pre-fill edit form with current author data
                                 root.edit-id = author.id;
@@ -745,8 +748,10 @@ export component AuthorsPage inherits Page {
                         // Note: May fail if author has associated titles
                         Button {
                             text: @tr("Delete");
-                            min-width: 80px;
-                            height: 32px;
+                            //min-width: 80px;
+                            //height: 32px;
+                            width: Styles.small_button_width;
+                            height: Styles.small_button_height;
                             clicked => {
                                 // Store author info and show confirmation dialog
                                 root.delete-author-id = author.id;

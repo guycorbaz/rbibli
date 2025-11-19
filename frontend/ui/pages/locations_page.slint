@@ -39,6 +39,7 @@
 // All text is internationalized using @tr() for multi-language support.
 // ============================================================================
 
+import { Styles } from "../styles.slint";
 import { Page } from "page.slint";
 import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
 
@@ -549,8 +550,8 @@ export component LocationsPage inherits Page {
                         // Opens create dialog with this location's ID as parent
                         Button {
                             text: @tr("Add Child");
-                            min-width: 90px;
-                            height: 32px;
+                            width: Styles.small_button_width;
+                            height: Styles.small_button_height;
                             clicked => {
                                 // Show create dialog with this location as parent
                                 root.show-create-dialog = true;
@@ -563,8 +564,8 @@ export component LocationsPage inherits Page {
                         // Edit button - opens edit dialog with pre-filled data
                         Button {
                             text: @tr("Edit");
-                            min-width: 80px;
-                            height: 32px;
+                            width: Styles.small_button_width;
+                            height: Styles.small_button_height;
                             clicked => {
                                 // Pre-fill edit form with current location data
                                 root.edit-location-id = location.id;
@@ -582,8 +583,8 @@ export component LocationsPage inherits Page {
                             text: location.child-count > 0 || location.volume-count > 0 ?
                                   @tr("Delete") + " (" + (location.child-count + location.volume-count) + ")" :
                                   @tr("Delete");
-                            min-width: 80px;
-                            height: 32px;
+                            width: Styles.small_button_width;
+                            height: Styles.small_button_height;
                             enabled: location.child-count == 0 && location.volume-count == 0;
                             clicked => {
                                 // Store location info and show confirmation dialog
