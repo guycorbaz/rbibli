@@ -89,6 +89,9 @@ export component AppWindow inherits Window {
     // These properties store the application data fetched from the backend.
     // They are updated by the Rust code when data is loaded or modified.
 
+    // Application version from Cargo.toml
+    in-out property <string> app-version: "";
+
     // Array of titles with volume counts (books in the library)
     in-out property <[TitleData]> titles: [];
 
@@ -806,7 +809,9 @@ export component AppWindow inherits Window {
         }
 
         // PAGE 8: About Page - Application information and version
-            if(side-bar.current-item == 8) : AboutPage {}
+            if(side-bar.current-item == 8) : AboutPage {
+            app-version: root.app-version;
+        }
         }
     }
 }

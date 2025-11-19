@@ -85,6 +85,9 @@ slint::include_modules!();
 fn main() -> Result<(), Box<dyn Error>> {
     let ui = AppWindow::new()?;
 
+    // Set application version from Cargo.toml
+    ui.set_app_version(env!("CARGO_PKG_VERSION").into());
+
     // Create API client
     let api_client = Rc::new(ApiClient::default());
 

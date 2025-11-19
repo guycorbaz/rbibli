@@ -45,6 +45,9 @@ import { Page } from "page.slint";
 //   - Title: Internationalized "About"
 //   - Description: "Personal book library management"
 export component AboutPage inherits Page {
+    // Application version passed from main window
+    in property <string> app-version;
+
     // Page title (internationalized)
     title: @tr("About");
 
@@ -63,6 +66,22 @@ export component AboutPage inherits Page {
             text: @tr("rbibli is a personal book library management application designed to help you organize, track, and discover your book collection. Built with modern technology, it offers an intuitive interface for managing your reading journey.");
             wrap: word-wrap;
             font-size: 14px;
+        }
+
+        // Version section
+        if root.app-version != "": VerticalBox {
+            spacing: 10px;
+
+            Text {
+                text: @tr("rbibli Version");
+                font-size: 16px;
+                font-weight: 700;
+            }
+
+            Text {
+                text: root.app-version;
+                font-size: 14px;
+            }
         }
 
         // Authors section
