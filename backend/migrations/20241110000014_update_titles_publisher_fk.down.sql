@@ -1,11 +1,3 @@
--- Remove index
-DROP INDEX idx_titles_publisher_id ON titles;
+-- This migration is redundant as the changes were already applied in 20241110000011_fix_publishers_collation.up.sql
+-- Keeping the file to maintain migration history sequence
 
--- Remove foreign key constraint
-ALTER TABLE titles DROP FOREIGN KEY fk_titles_publisher;
-
--- Remove publisher_id column
-ALTER TABLE titles DROP COLUMN publisher_id;
-
--- Rename publisher_old back to publisher
-ALTER TABLE titles CHANGE COLUMN publisher_old publisher VARCHAR(200);

@@ -1,0 +1,34 @@
+{
+  "db_name": "MySQL",
+  "query": "SELECT image_data, image_mime_type\n         FROM titles\n         WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "image_data",
+        "type_info": {
+          "type": "Blob",
+          "flags": "BLOB | BINARY",
+          "max_size": 16777215
+        }
+      },
+      {
+        "ordinal": 1,
+        "name": "image_mime_type",
+        "type_info": {
+          "type": "VarString",
+          "flags": "",
+          "max_size": 200
+        }
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "788dc2ea3943d4445768e1a9ffb5896a9441e08af44401daeeba4e872cb9fd2f"
+}

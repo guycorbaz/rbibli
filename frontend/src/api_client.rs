@@ -1853,8 +1853,17 @@ impl Default for ApiClient {
     /// For production deployments, use `ApiClient::new()` with the appropriate server URL
     /// instead of relying on this default implementation.
     fn default() -> Self {
-        // Default to localhost:8000
-        Self::new("http://localhost:8000".to_string())
+        #[cfg(target_arch = "wasm32")]
+        {
+            let window = web_sys::window().expect("no global `window` exists");
+            let location = window.location();
+            let origin = location.origin().expect("no origin");
+            Self::new(origin)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            Self::new("http://localhost:8000".to_string())
+        }
     }
 }
 
