@@ -93,6 +93,18 @@ async fn main() -> Result<(), std::io::Error> {
         })?;
 
     info!("Database connection established successfully");
+
+    // Run database migrations
+    info!("Running database migrations...");
+    sqlx::migrate!("./migrations")
+        .run(&db_pool)
+        .await
+        .map_err(|e| {
+            error!("Failed to run database migrations: {}", e);
+            std::io::Error::new(std::io::ErrorKind::Other, e)
+        })?;
+    info!("Database migrations applied successfully");
+
     info!("Starting server on {}", address);
 
     // Create TCP listener

@@ -7,7 +7,6 @@ use crate::models::{
     IsbnLookupResponse, BorrowerGroup, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest,
     BorrowerWithGroup, CreateBorrowerRequest, UpdateBorrowerRequest,
     LoanDetail, CreateLoanRequest, CreateLoanResponse,
-    DeweySearchResult,
     LibraryStatistics, GenreStatistic, LocationStatistic, LoanStatistic,
     DuplicateDetectionResponse, MergeTitlesRequest, MergeTitlesResponse
 };
@@ -16,7 +15,7 @@ use std::error::Error;
 /// API client for communicating with the rbibli backend
 pub struct ApiClient {
     base_url: String,
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
 }
 
 impl ApiClient {
@@ -48,7 +47,7 @@ impl ApiClient {
     pub fn new(base_url: String) -> Self {
         Self {
             base_url,
-            client: reqwest::blocking::Client::new(),
+            client: reqwest::Client::new(),
         }
     }
 
@@ -77,18 +76,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to fetch titles: {}", e),
     /// }
     /// ```
-    pub fn get_titles(&self) -> Result<Vec<TitleWithCount>, Box<dyn Error>> {
+    pub async fn get_titles(&self) -> Result<Vec<TitleWithCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/titles", self.base_url);
 
         println!("Fetching titles from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let titles: Vec<TitleWithCount> = response.json()?;
+        let titles: Vec<TitleWithCount> = response.json().await?;
 
         println!("Successfully fetched {} titles", titles.len());
 
@@ -142,7 +141,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Search failed: {}", e),
     /// }
     /// ```
-    pub fn search_titles(
+    pub async fn search_titles(
         &self,
         search_text: Option<&str>,
         title: Option<&str>,
@@ -243,16 +242,16 @@ impl ApiClient {
 
         println!("Searching titles with URL: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().unwrap_or_default();
+            let error_text = response.text().await.unwrap_or_default();
             return Err(format!("API returned status: {} - {}", status, error_text).into());
         }
 
         // Parse response - backend returns {"results": [...], "total": N, ...}
-        let json: serde_json::Value = response.json()?;
+        let json: serde_json::Value = response.json().await?;
         let titles: Vec<TitleWithCount> = serde_json::from_value(
             json.get("results")
                 .ok_or("Missing 'results' field in response")?
@@ -277,7 +276,7 @@ impl ApiClient {
     ///
     /// * `Ok(DuplicateDetectionResponse)` - Duplicate pairs grouped by confidence level
     /// * `Err(Box<dyn Error>)` - An error if the request fails
-    pub fn detect_duplicates(&self, min_score: Option<f64>) -> Result<DuplicateDetectionResponse, Box<dyn Error>> {
+    pub async fn detect_duplicates(&self, min_score: Option<f64>) -> Result<DuplicateDetectionResponse, Box<dyn Error>> {
         let mut url = format!("{}/api/v1/titles/duplicates", self.base_url);
 
         if let Some(score) = min_score {
@@ -286,15 +285,15 @@ impl ApiClient {
 
         println!("Detecting duplicates: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().unwrap_or_default();
+            let error_text = response.text().await.unwrap_or_default();
             return Err(format!("API returned status: {} - {}", status, error_text).into());
         }
 
-        let result: DuplicateDetectionResponse = response.json()?;
+        let result: DuplicateDetectionResponse = response.json().await?;
 
         println!(
             "Found {} duplicate pairs (High: {}, Medium: {}, Low: {})",
@@ -326,7 +325,7 @@ impl ApiClient {
     /// # Important
     ///
     /// This operation is NOT reversible. The secondary title will be permanently deleted.
-    pub fn merge_titles(
+    pub async fn merge_titles(
         &self,
         primary_id: &str,
         secondary_id: &str,
@@ -343,15 +342,16 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(&request_body)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
             let status = response.status();
-            let error_text = response.text().unwrap_or_default();
+            let error_text = response.text().await.unwrap_or_default();
             return Err(format!("API returned status: {} - {}", status, error_text).into());
         }
 
-        let result: MergeTitlesResponse = response.json()?;
+        let result: MergeTitlesResponse = response.json().await?;
 
         println!("Merge successful: {}", result.message);
 
@@ -401,7 +401,6 @@ impl ApiClient {
     ///     pages: Some(552),
     ///     language: "en".to_string(),
     ///     dewey_code: None,
-    ///     dewey_category: None,
     ///     genre_id: None,
     ///     summary: Some("The official book on Rust".to_string()),
     ///     cover_url: None,
@@ -412,7 +411,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to create title: {}", e),
     /// }
     /// ```
-    pub fn create_title(&self, request: CreateTitleRequest) -> Result<String, Box<dyn Error>> {
+    pub async fn create_title(&self, request: CreateTitleRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/titles", self.base_url);
 
         println!("Creating title: {}", request.title);
@@ -420,14 +419,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
-        let result: serde_json::Value = response.json()?;
+        let result: serde_json::Value = response.json().await?;
         let title_id = result["id"].as_str()
             .ok_or("No ID in response")?
             .to_string();
@@ -476,7 +476,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to update title: {}", e),
     /// }
     /// ```
-    pub fn update_title(&self, title_id: &str, request: UpdateTitleRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_title(&self, title_id: &str, request: UpdateTitleRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/titles/{}", self.base_url, title_id);
 
         println!("Updating title: {}", title_id);
@@ -484,10 +484,11 @@ impl ApiClient {
         let response = self.client
             .put(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -535,17 +536,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to delete title: {}", e),
     /// }
     /// ```
-    pub fn delete_title(&self, title_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_title(&self, title_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/titles/{}", self.base_url, title_id);
 
         println!("Deleting title: {}", title_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to delete title: {}", error_text).into());
         }
 
@@ -564,21 +566,22 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<AuthorWithRole>)` - List of authors with their roles and display order
     /// * `Err(Box<dyn Error>)` - If the request fails
-    pub fn get_title_authors(&self, title_id: &str) -> Result<Vec<crate::models::AuthorWithRole>, Box<dyn Error>> {
+    pub async fn get_title_authors(&self, title_id: &str) -> Result<Vec<crate::models::AuthorWithRole>, Box<dyn Error>> {
         let url = format!("{}/api/v1/titles/{}/authors", self.base_url, title_id);
 
         println!("Fetching authors for title: {}", title_id);
 
         let response = self.client
             .get(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to fetch title authors: {}", error_text).into());
         }
 
-        let authors = response.json::<Vec<crate::models::AuthorWithRole>>()?;
+        let authors = response.json::<Vec<crate::models::AuthorWithRole>>().await?;
         println!("Successfully fetched {} authors for title", authors.len());
 
         Ok(authors)
@@ -595,7 +598,7 @@ impl ApiClient {
     ///
     /// * `Ok(String)` - The ID of the created relationship
     /// * `Err(Box<dyn Error>)` - If the request fails
-    pub fn add_author_to_title(&self, title_id: &str, request: crate::models::AddAuthorToTitleRequest) -> Result<String, Box<dyn Error>> {
+    pub async fn add_author_to_title(&self, title_id: &str, request: crate::models::AddAuthorToTitleRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/titles/{}/authors", self.base_url, title_id);
 
         println!("Adding author {} to title {} with role {:?}", request.author_id, title_id, request.role);
@@ -603,14 +606,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to add author to title: {}", error_text).into());
         }
 
-        let result: serde_json::Value = response.json()?;
+        let result: serde_json::Value = response.json().await?;
         let id = result["id"].as_str()
             .ok_or("Response missing 'id' field")?
             .to_string();
@@ -631,17 +635,18 @@ impl ApiClient {
     ///
     /// * `Ok(())` - If the author was successfully removed
     /// * `Err(Box<dyn Error>)` - If the request fails
-    pub fn remove_author_from_title(&self, title_id: &str, author_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn remove_author_from_title(&self, title_id: &str, author_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/titles/{}/authors/{}", self.base_url, title_id, author_id);
 
         println!("Removing author {} from title {}", author_id, title_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to remove author from title: {}", error_text).into());
         }
 
@@ -682,18 +687,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to fetch locations: {}", e),
     /// }
     /// ```
-    pub fn get_locations(&self) -> Result<Vec<LocationWithPath>, Box<dyn Error>> {
+    pub async fn get_locations(&self) -> Result<Vec<LocationWithPath>, Box<dyn Error>> {
         let url = format!("{}/api/v1/locations", self.base_url);
 
         println!("Fetching locations from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let locations: Vec<LocationWithPath> = response.json()?;
+        let locations: Vec<LocationWithPath> = response.json().await?;
 
         println!("Successfully fetched {} locations", locations.len());
 
@@ -745,7 +750,7 @@ impl ApiClient {
     /// };
     /// client.create_location(shelf_request).unwrap();
     /// ```
-    pub fn create_location(&self, request: CreateLocationRequest) -> Result<String, Box<dyn Error>> {
+    pub async fn create_location(&self, request: CreateLocationRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/locations", self.base_url);
 
         println!("Creating location: {}", request.name);
@@ -753,14 +758,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
-        let result: serde_json::Value = response.json()?;
+        let result: serde_json::Value = response.json().await?;
         let location_id = result["id"].as_str()
             .ok_or("No ID in response")?
             .to_string();
@@ -806,7 +812,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to update location: {}", e),
     /// }
     /// ```
-    pub fn update_location(&self, location_id: &str, request: UpdateLocationRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_location(&self, location_id: &str, request: UpdateLocationRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/locations/{}", self.base_url, location_id);
 
         println!("Updating location: {}", location_id);
@@ -814,10 +820,11 @@ impl ApiClient {
         let response = self.client
             .put(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -862,17 +869,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to delete location: {}", e),
     /// }
     /// ```
-    pub fn delete_location(&self, location_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_location(&self, location_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/locations/{}", self.base_url, location_id);
 
         println!("Deleting location: {}", location_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -913,18 +921,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to fetch authors: {}", e),
     /// }
     /// ```
-    pub fn get_authors(&self) -> Result<Vec<AuthorWithTitleCount>, Box<dyn Error>> {
+    pub async fn get_authors(&self) -> Result<Vec<AuthorWithTitleCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/authors", self.base_url);
 
         println!("Fetching authors from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let authors: Vec<AuthorWithTitleCount> = response.json()?;
+        let authors: Vec<AuthorWithTitleCount> = response.json().await?;
 
         println!("Successfully fetched {} authors", authors.len());
 
@@ -977,7 +985,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to create author: {}", e),
     /// }
     /// ```
-    pub fn create_author(&self, request: CreateAuthorRequest) -> Result<String, Box<dyn Error>> {
+    pub async fn create_author(&self, request: CreateAuthorRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/authors", self.base_url);
 
         println!("Creating author: {} {}", request.first_name, request.last_name);
@@ -985,14 +993,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
-        let result: serde_json::Value = response.json()?;
+        let result: serde_json::Value = response.json().await?;
         let author_id = result["id"].as_str()
             .ok_or("No ID in response")?
             .to_string();
@@ -1042,7 +1051,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to update author: {}", e),
     /// }
     /// ```
-    pub fn update_author(&self, author_id: &str, request: UpdateAuthorRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_author(&self, author_id: &str, request: UpdateAuthorRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/authors/{}", self.base_url, author_id);
 
         println!("Updating author: {}", author_id);
@@ -1050,10 +1059,11 @@ impl ApiClient {
         let response = self.client
             .put(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -1096,17 +1106,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to delete author: {}", e),
     /// }
     /// ```
-    pub fn delete_author(&self, author_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_author(&self, author_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/authors/{}", self.base_url, author_id);
 
         println!("Deleting author: {}", author_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -1146,18 +1157,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to fetch publishers: {}", e),
     /// }
     /// ```
-    pub fn get_publishers(&self) -> Result<Vec<PublisherWithTitleCount>, Box<dyn Error>> {
+    pub async fn get_publishers(&self) -> Result<Vec<PublisherWithTitleCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/publishers", self.base_url);
 
         println!("Fetching publishers from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let publishers: Vec<PublisherWithTitleCount> = response.json()?;
+        let publishers: Vec<PublisherWithTitleCount> = response.json().await?;
 
         println!("Successfully fetched {} publishers", publishers.len());
 
@@ -1205,7 +1216,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to create publisher: {}", e),
     /// }
     /// ```
-    pub fn create_publisher(&self, request: CreatePublisherRequest) -> Result<String, Box<dyn Error>> {
+    pub async fn create_publisher(&self, request: CreatePublisherRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/publishers", self.base_url);
 
         println!("Creating publisher: {}", request.name);
@@ -1213,14 +1224,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
-        let result: serde_json::Value = response.json()?;
+        let result: serde_json::Value = response.json().await?;
         let publisher_id = result["id"].as_str()
             .ok_or("No ID in response")?
             .to_string();
@@ -1268,7 +1280,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to update publisher: {}", e),
     /// }
     /// ```
-    pub fn update_publisher(&self, publisher_id: &str, request: UpdatePublisherRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_publisher(&self, publisher_id: &str, request: UpdatePublisherRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/publishers/{}", self.base_url, publisher_id);
 
         println!("Updating publisher: {}", publisher_id);
@@ -1276,10 +1288,11 @@ impl ApiClient {
         let response = self.client
             .put(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -1322,17 +1335,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to delete publisher: {}", e),
     /// }
     /// ```
-    pub fn delete_publisher(&self, publisher_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_publisher(&self, publisher_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/publishers/{}", self.base_url, publisher_id);
 
         println!("Deleting publisher: {}", publisher_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -1372,18 +1386,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to fetch genres: {}", e),
     /// }
     /// ```
-    pub fn get_genres(&self) -> Result<Vec<GenreWithTitleCount>, Box<dyn Error>> {
+    pub async fn get_genres(&self) -> Result<Vec<GenreWithTitleCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/genres", self.base_url);
 
         println!("Fetching genres from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let genres: Vec<GenreWithTitleCount> = response.json()?;
+        let genres: Vec<GenreWithTitleCount> = response.json().await?;
 
         println!("Successfully fetched {} genres", genres.len());
 
@@ -1426,7 +1440,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to create genre: {}", e),
     /// }
     /// ```
-    pub fn create_genre(&self, request: CreateGenreRequest) -> Result<String, Box<dyn Error>> {
+    pub async fn create_genre(&self, request: CreateGenreRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/genres", self.base_url);
 
         println!("Creating genre: {}", request.name);
@@ -1434,14 +1448,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
-        let result: serde_json::Value = response.json()?;
+        let result: serde_json::Value = response.json().await?;
         let genre_id = result["id"].as_str()
             .ok_or("No ID in response")?
             .to_string();
@@ -1488,7 +1503,7 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to update genre: {}", e),
     /// }
     /// ```
-    pub fn update_genre(&self, genre_id: &str, request: UpdateGenreRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_genre(&self, genre_id: &str, request: UpdateGenreRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/genres/{}", self.base_url, genre_id);
 
         println!("Updating genre: {}", genre_id);
@@ -1496,10 +1511,11 @@ impl ApiClient {
         let response = self.client
             .put(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -1542,17 +1558,18 @@ impl ApiClient {
     ///     Err(e) => eprintln!("Failed to delete genre: {}", e),
     /// }
     /// ```
-    pub fn delete_genre(&self, genre_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_genre(&self, genre_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/genres/{}", self.base_url, genre_id);
 
         println!("Deleting genre: {}", genre_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -1566,18 +1583,18 @@ impl ApiClient {
     // ========================================================================
 
     /// Fetches all series with their title counts from the backend API.
-    pub fn get_series(&self) -> Result<Vec<SeriesWithTitleCount>, Box<dyn Error>> {
+    pub async fn get_series(&self) -> Result<Vec<SeriesWithTitleCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/series", self.base_url);
 
         println!("Fetching series from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let series: Vec<SeriesWithTitleCount> = response.json()?;
+        let series: Vec<SeriesWithTitleCount> = response.json().await?;
 
         println!("Successfully fetched {} series", series.len());
 
@@ -1585,7 +1602,7 @@ impl ApiClient {
     }
 
     /// Creates a new series in the library database.
-    pub fn create_series(&self, request: CreateSeriesRequest) -> Result<String, Box<dyn Error>> {
+    pub async fn create_series(&self, request: CreateSeriesRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/series", self.base_url);
 
         println!("Creating series: {}", request.name);
@@ -1593,14 +1610,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
-        let result: serde_json::Value = response.json()?;
+        let result: serde_json::Value = response.json().await?;
         let series_id = result["id"].as_str()
             .ok_or("No ID in response")?
             .to_string();
@@ -1611,7 +1629,7 @@ impl ApiClient {
     }
 
     /// Updates an existing series's information.
-    pub fn update_series(&self, series_id: &str, request: UpdateSeriesRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_series(&self, series_id: &str, request: UpdateSeriesRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/series/{}", self.base_url, series_id);
 
         println!("Updating series: {}", series_id);
@@ -1619,10 +1637,11 @@ impl ApiClient {
         let response = self.client
             .put(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -1632,17 +1651,18 @@ impl ApiClient {
     }
 
     /// Deletes a series from the library database.
-    pub fn delete_series(&self, series_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_series(&self, series_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/series/{}", self.base_url, series_id);
 
         println!("Deleting series: {}", series_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("API returned status with error: {}", error_text).into());
         }
 
@@ -1668,18 +1688,18 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<Volume>)` - A vector of volumes for the title on success
     /// * `Err(Box<dyn Error>)` - An error if the request fails
-    pub fn get_volumes_for_title(&self, title_id: &str) -> Result<Vec<Volume>, Box<dyn Error>> {
+    pub async fn get_volumes_for_title(&self, title_id: &str) -> Result<Vec<Volume>, Box<dyn Error>> {
         let url = format!("{}/api/v1/titles/{}/volumes", self.base_url, title_id);
 
         println!("Fetching volumes for title: {}", title_id);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let volumes: Vec<Volume> = response.json()?;
+        let volumes: Vec<Volume> = response.json().await?;
 
         println!("Successfully fetched {} volumes", volumes.len());
 
@@ -1707,7 +1727,7 @@ impl ApiClient {
     ///   - The barcode is invalid or already exists (409 Conflict)
     ///   - The HTTP request fails
     ///   - The title ID is not found
-    pub fn create_volume(&self, request: CreateVolumeRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn create_volume(&self, request: CreateVolumeRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/volumes", self.base_url);
 
         println!("Creating volume with barcode: {}", request.barcode);
@@ -1715,10 +1735,11 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to create volume: {}", error_text).into());
         }
 
@@ -1741,7 +1762,7 @@ impl ApiClient {
     ///
     /// * `Ok(())` - Volume updated successfully
     /// * `Err(Box<dyn Error>)` - An error if the request fails or volume not found
-    pub fn update_volume(&self, volume_id: &str, request: UpdateVolumeRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_volume(&self, volume_id: &str, request: UpdateVolumeRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/volumes/{}", self.base_url, volume_id);
 
         println!("Updating volume: {}", volume_id);
@@ -1749,10 +1770,11 @@ impl ApiClient {
         let response = self.client
             .put(&url)
             .json(&request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to update volume: {}", error_text).into());
         }
 
@@ -1782,17 +1804,18 @@ impl ApiClient {
     ///
     /// A volume cannot be deleted if it is currently loaned or overdue.
     /// The backend will return a 409 Conflict error in this case.
-    pub fn delete_volume(&self, volume_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_volume(&self, volume_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/volumes/{}", self.base_url, volume_id);
 
         println!("Deleting volume: {}", volume_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to delete volume: {}", error_text).into());
         }
 
@@ -1863,7 +1886,7 @@ impl ApiClient {
     /// let image_data = fs::read("cover.jpg").unwrap();
     /// client.upload_cover_image("title-uuid".to_string(), image_data, "cover.jpg".to_string())?;
     /// ```
-    pub fn upload_cover_image(
+    pub async fn upload_cover_image(
         &self,
         title_id: String,
         image_data: Vec<u8>,
@@ -1872,20 +1895,20 @@ impl ApiClient {
         let url = format!("{}/api/v1/uploads/cover", self.base_url);
 
         // Create multipart form
-        let part = reqwest::blocking::multipart::Part::bytes(image_data)
+        let part = reqwest::multipart::Part::bytes(image_data)
             .file_name(filename);
 
-        let form = reqwest::blocking::multipart::Form::new()
+        let form = reqwest::multipart::Form::new()
             .text("title_id", title_id)
             .part("cover", part);
 
         // Send the request
-        let response = self.client.post(&url).multipart(form).send()?;
+        let response = self.client.post(&url).multipart(form).send().await?;
 
         if response.status().is_success() {
             Ok(())
         } else {
-            let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
             Err(format!("Failed to upload image: {}", error_text).into())
         }
     }
@@ -1914,16 +1937,16 @@ impl ApiClient {
     /// let book = client.lookup_isbn("9780134685991".to_string())?;
     /// println!("Found: {}", book.title);
     /// ```
-    pub fn lookup_isbn(&self, isbn: String) -> Result<IsbnLookupResponse, Box<dyn Error>> {
+    pub async fn lookup_isbn(&self, isbn: String) -> Result<IsbnLookupResponse, Box<dyn Error>> {
         let url = format!("{}/api/v1/isbn/{}", self.base_url, isbn);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if response.status().is_success() {
-            let book_data: IsbnLookupResponse = response.json()?;
+            let book_data: IsbnLookupResponse = response.json().await?;
             Ok(book_data)
         } else {
-            let error_text = response.text().unwrap_or_else(|_| "Unknown error".to_string());
+            let error_text = response.text().await.unwrap_or_else(|_| "Unknown error".to_string());
             Err(format!("ISBN lookup failed: {}", error_text).into())
         }
     }
@@ -1936,18 +1959,18 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<BorrowerGroup>)` - A vector of borrower groups on success
     /// * `Err(Box<dyn Error>)` - An error if the request fails
-    pub fn get_borrower_groups(&self) -> Result<Vec<BorrowerGroup>, Box<dyn Error>> {
+    pub async fn get_borrower_groups(&self) -> Result<Vec<BorrowerGroup>, Box<dyn Error>> {
         let url = format!("{}/api/v1/borrower-groups", self.base_url);
 
         println!("Fetching borrower groups from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let groups: Vec<BorrowerGroup> = response.json()?;
+        let groups: Vec<BorrowerGroup> = response.json().await?;
         println!("Successfully fetched {} borrower groups", groups.len());
 
         Ok(groups)
@@ -1963,7 +1986,7 @@ impl ApiClient {
     ///
     /// * `Ok(String)` - The ID of the created group
     /// * `Err(Box<dyn Error>)` - An error if creation fails
-    pub fn create_borrower_group(&self, request: &CreateBorrowerGroupRequest) -> Result<String, Box<dyn Error>> {
+    pub async fn create_borrower_group(&self, request: &CreateBorrowerGroupRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/borrower-groups", self.base_url);
 
         println!("Creating borrower group: {}", request.name);
@@ -1971,14 +1994,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to create borrower group: {}", error_text).into());
         }
 
-        let result: serde_json::Value = response.json()?;
+        let result: serde_json::Value = response.json().await?;
         let id = result["id"].as_str().unwrap_or("").to_string();
 
         println!("Successfully created borrower group: {}", id);
@@ -1996,7 +2020,7 @@ impl ApiClient {
     ///
     /// * `Ok(())` - Update was successful
     /// * `Err(Box<dyn Error>)` - An error if update fails
-    pub fn update_borrower_group(&self, group_id: &str, request: &UpdateBorrowerGroupRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_borrower_group(&self, group_id: &str, request: &UpdateBorrowerGroupRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/borrower-groups/{}", self.base_url, group_id);
 
         println!("Updating borrower group: {}", group_id);
@@ -2004,10 +2028,11 @@ impl ApiClient {
         let response = self.client
             .put(&url)
             .json(request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to update borrower group: {}", error_text).into());
         }
 
@@ -2025,17 +2050,18 @@ impl ApiClient {
     ///
     /// * `Ok(())` - Deletion was successful
     /// * `Err(Box<dyn Error>)` - An error if deletion fails
-    pub fn delete_borrower_group(&self, group_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_borrower_group(&self, group_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/borrower-groups/{}", self.base_url, group_id);
 
         println!("Deleting borrower group: {}", group_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to delete borrower group: {}", error_text).into());
         }
 
@@ -2051,18 +2077,18 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<BorrowerWithGroup>)` - A vector of borrowers with group info on success
     /// * `Err(Box<dyn Error>)` - An error if the request fails
-    pub fn get_borrowers(&self) -> Result<Vec<BorrowerWithGroup>, Box<dyn Error>> {
+    pub async fn get_borrowers(&self) -> Result<Vec<BorrowerWithGroup>, Box<dyn Error>> {
         let url = format!("{}/api/v1/borrowers", self.base_url);
 
         println!("Fetching borrowers from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let borrowers: Vec<BorrowerWithGroup> = response.json()?;
+        let borrowers: Vec<BorrowerWithGroup> = response.json().await?;
         println!("Successfully fetched {} borrowers", borrowers.len());
 
         Ok(borrowers)
@@ -2078,7 +2104,7 @@ impl ApiClient {
     ///
     /// * `Ok(String)` - The ID of the created borrower
     /// * `Err(Box<dyn Error>)` - An error if creation fails
-    pub fn create_borrower(&self, request: &CreateBorrowerRequest) -> Result<String, Box<dyn Error>> {
+    pub async fn create_borrower(&self, request: &CreateBorrowerRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/borrowers", self.base_url);
 
         println!("Creating borrower: {}", request.name);
@@ -2086,14 +2112,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to create borrower: {}", error_text).into());
         }
 
-        let result: serde_json::Value = response.json()?;
+        let result: serde_json::Value = response.json().await?;
         let id = result["id"].as_str().unwrap_or("").to_string();
 
         println!("Successfully created borrower: {}", id);
@@ -2111,7 +2138,7 @@ impl ApiClient {
     ///
     /// * `Ok(())` - Update was successful
     /// * `Err(Box<dyn Error>)` - An error if update fails
-    pub fn update_borrower(&self, borrower_id: &str, request: &UpdateBorrowerRequest) -> Result<(), Box<dyn Error>> {
+    pub async fn update_borrower(&self, borrower_id: &str, request: &UpdateBorrowerRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/borrowers/{}", self.base_url, borrower_id);
 
         println!("Updating borrower: {}", borrower_id);
@@ -2119,10 +2146,11 @@ impl ApiClient {
         let response = self.client
             .put(&url)
             .json(request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to update borrower: {}", error_text).into());
         }
 
@@ -2140,17 +2168,18 @@ impl ApiClient {
     ///
     /// * `Ok(())` - Deletion was successful
     /// * `Err(Box<dyn Error>)` - An error if deletion fails
-    pub fn delete_borrower(&self, borrower_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_borrower(&self, borrower_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/borrowers/{}", self.base_url, borrower_id);
 
         println!("Deleting borrower: {}", borrower_id);
 
         let response = self.client
             .delete(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to delete borrower: {}", error_text).into());
         }
 
@@ -2166,18 +2195,18 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<LoanDetail>)` - A vector of active loans with full details
     /// * `Err(Box<dyn Error>)` - An error if the request fails
-    pub fn get_active_loans(&self) -> Result<Vec<LoanDetail>, Box<dyn Error>> {
+    pub async fn get_active_loans(&self) -> Result<Vec<LoanDetail>, Box<dyn Error>> {
         let url = format!("{}/api/v1/loans", self.base_url);
 
         println!("Fetching active loans from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let loans: Vec<LoanDetail> = response.json()?;
+        let loans: Vec<LoanDetail> = response.json().await?;
         println!("Successfully fetched {} active loans", loans.len());
 
         Ok(loans)
@@ -2189,18 +2218,18 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<LoanDetail>)` - A vector of overdue loans with full details
     /// * `Err(Box<dyn Error>)` - An error if the request fails
-    pub fn get_overdue_loans(&self) -> Result<Vec<LoanDetail>, Box<dyn Error>> {
+    pub async fn get_overdue_loans(&self) -> Result<Vec<LoanDetail>, Box<dyn Error>> {
         let url = format!("{}/api/v1/loans/overdue", self.base_url);
 
         println!("Fetching overdue loans from: {}", url);
 
-        let response = self.client.get(&url).send()?;
+        let response = self.client.get(&url).send().await?;
 
         if !response.status().is_success() {
             return Err(format!("API returned status: {}", response.status()).into());
         }
 
-        let loans: Vec<LoanDetail> = response.json()?;
+        let loans: Vec<LoanDetail> = response.json().await?;
         println!("Successfully fetched {} overdue loans", loans.len());
 
         Ok(loans)
@@ -2227,7 +2256,7 @@ impl ApiClient {
     ///   - Volume is not loanable (damaged)
     ///   - Volume is already loaned
     ///   - Borrower is not found
-    pub fn create_loan_by_barcode(&self, request: &CreateLoanRequest) -> Result<CreateLoanResponse, Box<dyn Error>> {
+    pub async fn create_loan_by_barcode(&self, request: &CreateLoanRequest) -> Result<CreateLoanResponse, Box<dyn Error>> {
         let url = format!("{}/api/v1/loans", self.base_url);
 
         println!("Creating loan for borrower: {}, barcode: {}", request.borrower_id, request.barcode);
@@ -2235,14 +2264,15 @@ impl ApiClient {
         let response = self.client
             .post(&url)
             .json(request)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to create loan: {}", error_text).into());
         }
 
-        let result: CreateLoanResponse = response.json()?;
+        let result: CreateLoanResponse = response.json().await?;
         println!("Successfully created loan: {}", result.id);
 
         Ok(result)
@@ -2264,17 +2294,18 @@ impl ApiClient {
     /// * `Err(Box<dyn Error>)` - An error if:
     ///   - Loan is not found
     ///   - Loan is already returned
-    pub fn return_loan(&self, loan_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn return_loan(&self, loan_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/loans/{}/return", self.base_url, loan_id);
 
         println!("Returning loan: {}", loan_id);
 
         let response = self.client
             .post(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to return loan: {}", error_text).into());
         }
 
@@ -2283,24 +2314,25 @@ impl ApiClient {
     }
 
     /// Extend a loan by adding the same duration as the original loan period
-    pub fn extend_loan(&self, loan_id: &str) -> Result<LoanDetail, Box<dyn Error>> {
+    pub async fn extend_loan(&self, loan_id: &str) -> Result<LoanDetail, Box<dyn Error>> {
         let url = format!("{}/api/v1/loans/{}/extend", self.base_url, loan_id);
 
         println!("Extending loan: {}", loan_id);
 
         let response = self.client
             .post(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to extend loan: {}", error_text).into());
         }
 
         println!("Successfully extended loan: {}", loan_id);
 
         // After extending, fetch the updated loan details
-        self.get_active_loans()?
+        self.get_active_loans().await?
             .into_iter()
             .find(|loan| loan.loan.id == loan_id)
             .ok_or_else(|| "Extended loan not found in active loans".into())
@@ -2321,58 +2353,6 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<DeweySearchResult>)` - List of matching classifications
     /// * `Err` - If the request fails
-    pub fn search_dewey(&self, query: &str, limit: Option<i32>) -> Result<Vec<DeweySearchResult>, Box<dyn Error>> {
-        let limit = limit.unwrap_or(20);
-        let url = format!("{}/api/v1/dewey/search?q={}&limit={}",
-            self.base_url,
-            urlencoding::encode(query),
-            limit
-        );
-
-        println!("Searching Dewey: query='{}', limit={}", query, limit);
-
-        let response = self.client
-            .get(&url)
-            .send()?;
-
-        if !response.status().is_success() {
-            let error_text = response.text()?;
-            return Err(format!("Failed to search Dewey: {}", error_text).into());
-        }
-
-        let results: Vec<DeweySearchResult> = response.json()?;
-        println!("Found {} Dewey classifications", results.len());
-        Ok(results)
-    }
-
-    /// Get Dewey classification by code
-    ///
-    /// # Arguments
-    ///
-    /// * `code` - Dewey code (e.g., "515", "813.5")
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(DeweySearchResult)` - The classification details
-    /// * `Err` - If the request fails or classification not found
-    pub fn get_dewey_by_code(&self, code: &str) -> Result<DeweySearchResult, Box<dyn Error>> {
-        let url = format!("{}/api/v1/dewey/{}", self.base_url, code);
-
-        println!("Getting Dewey classification: {}", code);
-
-        let response = self.client
-            .get(&url)
-            .send()?;
-
-        if !response.status().is_success() {
-            let error_text = response.text()?;
-            return Err(format!("Failed to get Dewey classification: {}", error_text).into());
-        }
-
-        let classification: DeweySearchResult = response.json()?;
-        println!("Found classification: {} - {}", classification.code, classification.name);
-        Ok(classification)
-    }
 
     // ========================================================================
     // Statistics API methods
@@ -2384,21 +2364,22 @@ impl ApiClient {
     ///
     /// * `Ok(LibraryStatistics)` - Library-wide counts
     /// * `Err` - If the request fails
-    pub fn get_library_statistics(&self) -> Result<LibraryStatistics, Box<dyn Error>> {
+    pub async fn get_library_statistics(&self) -> Result<LibraryStatistics, Box<dyn Error>> {
         let url = format!("{}/api/v1/statistics/library", self.base_url);
 
         println!("Fetching library statistics...");
 
         let response = self.client
             .get(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to fetch library statistics: {}", error_text).into());
         }
 
-        let stats: LibraryStatistics = response.json()?;
+        let stats: LibraryStatistics = response.json().await?;
         println!("Library statistics fetched successfully");
         Ok(stats)
     }
@@ -2409,21 +2390,22 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<GenreStatistic>)` - List of genre statistics ordered by volume count
     /// * `Err` - If the request fails
-    pub fn get_genre_statistics(&self) -> Result<Vec<GenreStatistic>, Box<dyn Error>> {
+    pub async fn get_genre_statistics(&self) -> Result<Vec<GenreStatistic>, Box<dyn Error>> {
         let url = format!("{}/api/v1/statistics/genres", self.base_url);
 
         println!("Fetching genre statistics...");
 
         let response = self.client
             .get(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to fetch genre statistics: {}", error_text).into());
         }
 
-        let stats: Vec<GenreStatistic> = response.json()?;
+        let stats: Vec<GenreStatistic> = response.json().await?;
         println!("Found statistics for {} genres", stats.len());
         Ok(stats)
     }
@@ -2434,21 +2416,22 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<LocationStatistic>)` - List of location statistics ordered by volume count
     /// * `Err` - If the request fails
-    pub fn get_location_statistics(&self) -> Result<Vec<LocationStatistic>, Box<dyn Error>> {
+    pub async fn get_location_statistics(&self) -> Result<Vec<LocationStatistic>, Box<dyn Error>> {
         let url = format!("{}/api/v1/statistics/locations", self.base_url);
 
         println!("Fetching location statistics...");
 
         let response = self.client
             .get(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to fetch location statistics: {}", error_text).into());
         }
 
-        let stats: Vec<LocationStatistic> = response.json()?;
+        let stats: Vec<LocationStatistic> = response.json().await?;
         println!("Found statistics for {} locations", stats.len());
         Ok(stats)
     }
@@ -2459,22 +2442,25 @@ impl ApiClient {
     ///
     /// * `Ok(Vec<LoanStatistic>)` - List of loan status counts
     /// * `Err` - If the request fails
-    pub fn get_loan_statistics(&self) -> Result<Vec<LoanStatistic>, Box<dyn Error>> {
+    pub async fn get_loan_statistics(&self) -> Result<Vec<LoanStatistic>, Box<dyn Error>> {
         let url = format!("{}/api/v1/statistics/loans", self.base_url);
 
         println!("Fetching loan statistics...");
 
         let response = self.client
             .get(&url)
-            .send()?;
+            .send()
+            .await?;
 
         if !response.status().is_success() {
-            let error_text = response.text()?;
+            let error_text = response.text().await?;
             return Err(format!("Failed to fetch loan statistics: {}", error_text).into());
         }
 
-        let stats: Vec<LoanStatistic> = response.json()?;
+        let stats: Vec<LoanStatistic> = response.json().await?;
         println!("Found {} loan status types", stats.len());
         Ok(stats)
     }
 }
+
+

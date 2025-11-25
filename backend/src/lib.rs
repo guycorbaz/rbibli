@@ -149,7 +149,16 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
     info!("Configuring HTTP server routes");
     let server = HttpServer::new(move || {
         debug!("Creating new App instance");
+        
+        // Configure CORS
+        let cors = actix_cors::Cors::default()
+            .allow_any_origin() // For development, allow any origin. In production, restrict to frontend URL.
+            .allow_any_method()
+            .allow_any_header()
+            .max_age(3600);
+
         App::new()
+            .wrap(cors)
             .app_data(db_pool.clone())
             .route("/", web::get().to(greet))
             .route("/health", web::get().to(health_check))
@@ -224,10 +233,6 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/loans/overdue", web::get().to(handlers::loans::list_overdue_loans))
             .route("/api/v1/loans/{id}/return", web::post().to(handlers::loans::return_loan))
             .route("/api/v1/loans/{id}/extend", web::post().to(handlers::loans::extend_loan))
-            // API v1 routes - Dewey Classification
-            .route("/api/v1/dewey/search", web::get().to(handlers::dewey::search_dewey))
-            .route("/api/v1/dewey/browse", web::get().to(handlers::dewey::browse_dewey))
-            .route("/api/v1/dewey/{code}", web::get().to(handlers::dewey::get_dewey_by_code))
             // API v1 routes - Statistics
             .route("/api/v1/statistics/library", web::get().to(handlers::statistics::get_library_statistics))
             .route("/api/v1/statistics/genres", web::get().to(handlers::statistics::get_volumes_per_genre))

@@ -26,9 +26,44 @@
 // All text is internationalized using the @tr() macro for multi-language support.
 // ============================================================================
 
-import { Button, VerticalBox, ScrollView, StyleMetrics, ScrollView } from "std-widgets.slint";
-import {SideBar} from "side_bar.slint";
-import {AboutPage, TitlesPage, TitleData, GenreItem, PublisherItem, SeriesItem, VolumeData, AuthorWithRoleData, AuthorItem, LocationsPage, LocationData, AuthorsPage, AuthorData, PublishersPage, PublisherData, GenresPage, GenreData, SeriesPage, SeriesData, LoansPage, LoanData, BorrowerData, BorrowerGroupData, StatisticsPage, GenreStatistic, LocationStatistic, LoanStatistic, LibraryStatistics} from "pages/pages.slint";
+import {
+    Button,
+    VerticalBox,
+    ScrollView,
+    StyleMetrics,
+    ScrollView,
+} from "std-widgets.slint";
+import { SideBar } from "side_bar.slint";
+import {
+    AboutPage,
+    TitlesPage,
+    TitleData,
+    GenreItem,
+    PublisherItem,
+    SeriesItem,
+    VolumeData,
+    AuthorWithRoleData,
+    AuthorItem,
+    LocationsPage,
+    LocationData,
+    AuthorsPage,
+    AuthorData,
+    PublishersPage,
+    PublisherData,
+    GenresPage,
+    GenreData,
+    SeriesPage,
+    SeriesData,
+    LoansPage,
+    LoanData,
+    BorrowerData,
+    BorrowerGroupData,
+    StatisticsPage,
+    GenreStatistic,
+    LocationStatistic,
+    LoanStatistic,
+    LibraryStatistics,
+} from "pages/pages.slint";
 import { Styles } from "styles.slint";
 
 // AppWindow - Main application window component
@@ -155,7 +190,6 @@ export component AppWindow inherits Window {
     in-out property <string> new-pages: "";
     in-out property <string> new-language: "fr";
     in-out property <string> new-dewey-code: "";
-    in-out property <string> new-dewey-category: "";
     in-out property <string> new-summary: "";
 
     in-out property <string> edit-title: "";
@@ -166,7 +200,6 @@ export component AppWindow inherits Window {
     in-out property <string> edit-pages: "";
     in-out property <string> edit-language: "";
     in-out property <string> edit-dewey-code: "";
-    in-out property <string> edit-dewey-category: "";
     in-out property <string> edit-summary: "";
 
     // ========================================================================
@@ -187,16 +220,12 @@ export component AppWindow inherits Window {
     callback clear-duplicates();  // Clears all duplicate detection results
 
     // Creates a new title in the library
-    // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category
-    callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string);
+    // Parameters: title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code
+    callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string);
 
     // Updates an existing title's information
-    // Parameters: id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category
-    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string);
-
-    // Search Dewey classification
-    callback search-dewey(string);
-    callback search-dewey-edit(string);
+    // Parameters: id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code
+    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string);
 
     // Deletes a title from the library
     // Parameter: id (UUID string)
@@ -486,8 +515,8 @@ export component AppWindow inherits Window {
     // Window Configuration
     // ========================================================================
     // Minimum window dimensions to ensure usable interface
-    min-width: Styles.app_horizontal_size;
-    min-height: Styles.app_vertical_size;
+    // min-width: Styles.app_horizontal_size;
+    // min-height: Styles.app_vertical_size;
 
     // Window title (internationalized)
     title: @tr("Personal Library");
@@ -501,6 +530,8 @@ export component AppWindow inherits Window {
     // This allows the entire interface (sidebar + content) to scroll together
     // when forms or content exceed the viewport size.
     ScrollView {
+        preferred-width: Styles.app_horizontal_size;
+        preferred-height: Styles.app_vertical_size;
         // ====================================================================
         // Main Layout - Horizontal split between sidebar and content
         // ====================================================================
@@ -513,7 +544,17 @@ export component AppWindow inherits Window {
                 // Menu items (internationalized):
                 // 0: Titles, 1: Locations, 2: Authors, 3: Publishers,
                 // 4: Genres, 5: Series, 6: Loans, 7: Statistics, 8: About
-                model: [@tr("Menu" => "Titles"), @tr("Menu" => "Locations"), @tr("Menu" => "Authors"), @tr("Menu" => "Publishers"), @tr("Menu" => "Genres"), @tr("Menu" => "Series"), @tr("Menu" => "Loans"), @tr("Menu" => "Statistics"), @tr("Menu" => "About")];
+                model: [
+                    @tr("Menu" => "Titles"),
+                    @tr("Menu" => "Locations"),
+                    @tr("Menu" => "Authors"),
+                    @tr("Menu" => "Publishers"),
+                    @tr("Menu" => "Genres"),
+                    @tr("Menu" => "Series"),
+                    @tr("Menu" => "Loans"),
+                    @tr("Menu" => "Statistics"),
+                    @tr("Menu" => "About")
+                ];
 
                 // Auto-load data when page changes
                 changed current-item => {
@@ -545,273 +586,265 @@ export component AppWindow inherits Window {
             // Pages are shown/hidden based on the sidebar's current-item property.
             // Each page receives data and callbacks from the AppWindow.
             // PAGE 0: Titles Page - Manage books and titles in the library
-            if(side-bar.current-item == 0) : TitlesPage {
-            titles: root.titles;
-            genres: root.genre-items;
-            genre-names: root.genre-names;
-            publishers: root.publisher-items;
-            publisher-names: root.publisher-names;
-            series-list: root.series-items;
-            series-names: root.series-names;
-            locations: root.locations;
-            location-names: root.location-names;
-            volumes <=> root.volumes;
-            expanded-title-id <=> root.expanded-title-id;
+            if(side-bar.current-item == 0): TitlesPage {
+                titles: root.titles;
+                genres: root.genre-items;
+                genre-names: root.genre-names;
+                publishers: root.publisher-items;
+                publisher-names: root.publisher-names;
+                series-list: root.series-items;
+                series-names: root.series-names;
+                locations: root.locations;
+                location-names: root.location-names;
+                volumes <=> root.volumes;
+                expanded-title-id <=> root.expanded-title-id;
             // Bind author-related properties
             title-authors <=> root.title-authors;
-            all-authors <=> root.all-authors;
-            author-names <=> root.author-names;
+                all-authors <=> root.all-authors;
+                author-names <=> root.author-names;
             // Bind duplicate detection properties
             duplicates-detected <=> root.duplicates-detected;
-            duplicate-count <=> root.duplicate-count;
+                duplicate-count <=> root.duplicate-count;
             // Bind form properties for ISBN lookup
             new-title <=> root.new-title;
-            new-subtitle <=> root.new-subtitle;
-            new-isbn <=> root.new-isbn;
-            new-publisher <=> root.new-publisher;
-            new-publication-year <=> root.new-publication-year;
-            new-pages <=> root.new-pages;
-            new-language <=> root.new-language;
-            new-dewey-code <=> root.new-dewey-code;
-            new-dewey-category <=> root.new-dewey-category;
-            new-summary <=> root.new-summary;
-            edit-title <=> root.edit-title;
-            edit-subtitle <=> root.edit-subtitle;
-            edit-isbn <=> root.edit-isbn;
-            edit-publisher <=> root.edit-publisher;
-            edit-publication-year <=> root.edit-publication-year;
-            edit-pages <=> root.edit-pages;
-            edit-language <=> root.edit-language;
-            edit-dewey-code <=> root.edit-dewey-code;
-            edit-dewey-category <=> root.edit-dewey-category;
-            edit-summary <=> root.edit-summary;
-            load-titles => {
-                root.load-titles();
+                new-subtitle <=> root.new-subtitle;
+                new-isbn <=> root.new-isbn;
+                new-publisher <=> root.new-publisher;
+                new-publication-year <=> root.new-publication-year;
+                new-pages <=> root.new-pages;
+                new-language <=> root.new-language;
+                new-dewey-code <=> root.new-dewey-code;
+                new-summary <=> root.new-summary;
+                edit-title <=> root.edit-title;
+                edit-subtitle <=> root.edit-subtitle;
+                edit-isbn <=> root.edit-isbn;
+                edit-publisher <=> root.edit-publisher;
+                edit-publication-year <=> root.edit-publication-year;
+                edit-pages <=> root.edit-pages;
+                edit-language <=> root.edit-language;
+                edit-dewey-code <=> root.edit-dewey-code;
+                edit-summary <=> root.edit-summary;
+                load-titles => {
+                    root.load-titles();
+                }
+                search-titles(search-text, title, subtitle, isbn, series-id, author-id, genre-id, publisher-id, year-from, year-to, language, dewey-code, has-volumes, wishlist-only, available-only, location-id) => {
+                    root.search-titles(search-text, title, subtitle, isbn, series-id, author-id, genre-id, publisher-id, year-from, year-to, language, dewey-code, has-volumes, wishlist-only, available-only, location-id);
+                }
+                find-duplicates => {
+                    root.find-duplicates();
+                }
+                merge-titles(primary-id, secondary-id) => {
+                    root.merge-titles(primary-id, secondary-id);
+                }
+                dismiss-duplicate(title1-id, title2-id) => {
+                    root.dismiss-duplicate(title1-id, title2-id);
+                }
+                clear-duplicates => {
+                    root.clear-duplicates();
+                }
+                create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code) => {
+                    root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code);
+                }
+                update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code) => {
+                    root.update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code);
+                }
+                delete-title(id) => {
+                    root.delete-title(id);
+                }
+                upload-image(title-id) => {
+                    root.upload-image(title-id);
+                }
+                fetch-from-isbn(isbn) => {
+                    root.fetch-from-isbn(isbn);
+                }
+                fetch-from-isbn-edit(isbn) => {
+                    root.fetch-from-isbn-edit(isbn);
+                }
+                find-genre-index(genre-id) => {
+                    return root.find-genre-index(genre-id);
+                }
+                find-publisher-index(publisher-id) => {
+                    return root.find-publisher-index(publisher-id);
+                }
+                find-series-index(series-id) => {
+                    return root.find-series-index(series-id);
+                }
+                find-location-index(location-id) => {
+                    return root.find-location-index(location-id);
+                }
+                load-volumes(title-id) => {
+                    root.load-volumes(title-id);
+                }
+                create-volume(title-id, barcode, condition, location-id, notes) => {
+                    root.create-volume(title-id, barcode, condition, location-id, notes);
+                }
+                update-volume(id, barcode, condition, location-id, notes) => {
+                    root.update-volume(id, barcode, condition, location-id, notes);
+                }
+                delete-volume(id) => {
+                    root.delete-volume(id);
+                }
+                load-title-authors(title-id) => {
+                    root.load-title-authors(title-id);
+                }
+                load-all-authors => {
+                    root.load-all-authors();
+                }
+                add-author-to-title(title-id, author-id, role) => {
+                    root.add-author-to-title(title-id, author-id, role);
+                }
+                remove-author-from-title(title-id, author-id) => {
+                    root.remove-author-from-title(title-id, author-id);
+                }
             }
-            search-titles(search-text, title, subtitle, isbn, series-id, author-id, genre-id, publisher-id, year-from, year-to, language, dewey-code, has-volumes, wishlist-only, available-only, location-id) => {
-                root.search-titles(search-text, title, subtitle, isbn, series-id, author-id, genre-id, publisher-id, year-from, year-to, language, dewey-code, has-volumes, wishlist-only, available-only, location-id);
-            }
-            find-duplicates => {
-                root.find-duplicates();
-            }
-            merge-titles(primary-id, secondary-id) => {
-                root.merge-titles(primary-id, secondary-id);
-            }
-            dismiss-duplicate(title1-id, title2-id) => {
-                root.dismiss-duplicate(title1-id, title2-id);
-            }
-            clear-duplicates => {
-                root.clear-duplicates();
-            }
-            create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, summary, cover-url, dewey-code, dewey-category) => {
-                root.create-title(title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, "", "", summary, cover-url, dewey-code, dewey-category);
-            }
-            update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code, dewey-category) => {
-                root.update-title(id, title, subtitle, isbn, publisher, publisher-id, publication-year, pages, language, genre-id, series-id, series-number, summary, cover-url, dewey-code, dewey-category);
-            }
-            search-dewey(query) => {
-                root.search-dewey(query);
-            }
-            search-dewey-edit(query) => {
-                root.search-dewey-edit(query);
-            }
-            delete-title(id) => {
-                root.delete-title(id);
-            }
-            upload-image(title-id) => {
-                root.upload-image(title-id);
-            }
-            fetch-from-isbn(isbn) => {
-                root.fetch-from-isbn(isbn);
-            }
-            fetch-from-isbn-edit(isbn) => {
-                root.fetch-from-isbn-edit(isbn);
-            }
-            find-genre-index(genre-id) => {
-                return root.find-genre-index(genre-id);
-            }
-            find-publisher-index(publisher-id) => {
-                return root.find-publisher-index(publisher-id);
-            }
-            find-series-index(series-id) => {
-                return root.find-series-index(series-id);
-            }
-            find-location-index(location-id) => {
-                return root.find-location-index(location-id);
-            }
-            load-volumes(title-id) => {
-                root.load-volumes(title-id);
-            }
-            create-volume(title-id, barcode, condition, location-id, notes) => {
-                root.create-volume(title-id, barcode, condition, location-id, notes);
-            }
-            update-volume(id, barcode, condition, location-id, notes) => {
-                root.update-volume(id, barcode, condition, location-id, notes);
-            }
-            delete-volume(id) => {
-                root.delete-volume(id);
-            }
-            load-title-authors(title-id) => {
-                root.load-title-authors(title-id);
-            }
-            load-all-authors => {
-                root.load-all-authors();
-            }
-            add-author-to-title(title-id, author-id, role) => {
-                root.add-author-to-title(title-id, author-id, role);
-            }
-            remove-author-from-title(title-id, author-id) => {
-                root.remove-author-from-title(title-id, author-id);
-            }
-        }
 
-        // PAGE 1: Locations Page - Manage physical storage locations
-        if(side-bar.current-item == 1) : LocationsPage {
-            locations: root.locations;
-            load-locations => {
-                root.load-locations();
+            // PAGE 1: Locations Page - Manage physical storage locations
+        if(side-bar.current-item == 1): LocationsPage {
+                locations: root.locations;
+                load-locations => {
+                    root.load-locations();
+                }
+                create-location(name, description, parent-id) => {
+                    root.create-location(name, description, parent-id);
+                }
+                update-location(id, name, description, parent-id) => {
+                    root.update-location(id, name, description, parent-id);
+                }
+                delete-location(id) => {
+                    root.delete-location(id);
+                }
             }
-            create-location(name, description, parent-id) => {
-                root.create-location(name, description, parent-id);
-            }
-            update-location(id, name, description, parent-id) => {
-                root.update-location(id, name, description, parent-id);
-            }
-            delete-location(id) => {
-                root.delete-location(id);
-            }
-        }
 
-        // PAGE 2: Authors Page - Manage book authors
-        if(side-bar.current-item == 2) : AuthorsPage {
-            authors: root.authors;
-            load-authors => {
-                root.load-authors();
+            // PAGE 2: Authors Page - Manage book authors
+        if(side-bar.current-item == 2): AuthorsPage {
+                authors: root.authors;
+                load-authors => {
+                    root.load-authors();
+                }
+                create-author(first-name, last-name, biography, birth-date, death-date, nationality, website-url) => {
+                    root.create-author(first-name, last-name, biography, birth-date, death-date, nationality, website-url);
+                }
+                update-author(id, first-name, last-name, biography, birth-date, death-date, nationality, website-url) => {
+                    root.update-author(id, first-name, last-name, biography, birth-date, death-date, nationality, website-url);
+                }
+                delete-author(id) => {
+                    root.delete-author(id);
+                }
             }
-            create-author(first-name, last-name, biography, birth-date, death-date, nationality, website-url) => {
-                root.create-author(first-name, last-name, biography, birth-date, death-date, nationality, website-url);
-            }
-            update-author(id, first-name, last-name, biography, birth-date, death-date, nationality, website-url) => {
-                root.update-author(id, first-name, last-name, biography, birth-date, death-date, nationality, website-url);
-            }
-            delete-author(id) => {
-                root.delete-author(id);
-            }
-        }
 
-        // PAGE 3: Publishers Page - Manage publishing companies
-        if(side-bar.current-item == 3) : PublishersPage {
-            publishers: root.publishers;
-            load-publishers => {
-                root.load-publishers();
+            // PAGE 3: Publishers Page - Manage publishing companies
+        if(side-bar.current-item == 3): PublishersPage {
+                publishers: root.publishers;
+                load-publishers => {
+                    root.load-publishers();
+                }
+                create-publisher(name, description, website-url, country, founded-year) => {
+                    root.create-publisher(name, description, website-url, country, founded-year);
+                }
+                update-publisher(id, name, description, website-url, country, founded-year) => {
+                    root.update-publisher(id, name, description, website-url, country, founded-year);
+                }
+                delete-publisher(id) => {
+                    root.delete-publisher(id);
+                }
             }
-            create-publisher(name, description, website-url, country, founded-year) => {
-                root.create-publisher(name, description, website-url, country, founded-year);
-            }
-            update-publisher(id, name, description, website-url, country, founded-year) => {
-                root.update-publisher(id, name, description, website-url, country, founded-year);
-            }
-            delete-publisher(id) => {
-                root.delete-publisher(id);
-            }
-        }
 
-        // PAGE 4: Genres Page - Manage book genres/categories
-        if(side-bar.current-item == 4) : GenresPage {
-            genres: root.genres;
-            load-genres => {
-                root.load-genres();
+            // PAGE 4: Genres Page - Manage book genres/categories
+        if(side-bar.current-item == 4): GenresPage {
+                genres: root.genres;
+                load-genres => {
+                    root.load-genres();
+                }
+                create-genre(name, description) => {
+                    root.create-genre(name, description);
+                }
+                update-genre(id, name, description) => {
+                    root.update-genre(id, name, description);
+                }
+                delete-genre(id) => {
+                    root.delete-genre(id);
+                }
             }
-            create-genre(name, description) => {
-                root.create-genre(name, description);
-            }
-            update-genre(id, name, description) => {
-                root.update-genre(id, name, description);
-            }
-            delete-genre(id) => {
-                root.delete-genre(id);
-            }
-        }
 
-        // PAGE 5: Series Page - Manage book series
-        if(side-bar.current-item == 5) : SeriesPage {
-            series: root.series;
-            load-series => {
-                root.load-series();
+            // PAGE 5: Series Page - Manage book series
+        if(side-bar.current-item == 5): SeriesPage {
+                series: root.series;
+                load-series => {
+                    root.load-series();
+                }
+                create-series(name, description) => {
+                    root.create-series(name, description);
+                }
+                update-series(id, name, description) => {
+                    root.update-series(id, name, description);
+                }
+                delete-series(id) => {
+                    root.delete-series(id);
+                }
             }
-            create-series(name, description) => {
-                root.create-series(name, description);
-            }
-            update-series(id, name, description) => {
-                root.update-series(id, name, description);
-            }
-            delete-series(id) => {
-                root.delete-series(id);
-            }
-        }
 
-        // PAGE 6: Loans Page - Manage book loans, borrowers, and groups
-        if(side-bar.current-item == 6) : LoansPage {
-            active-loans: root.active-loans;
-            borrowers: root.borrowers;
-            borrower-groups: root.borrower-groups;
-            borrower-names: root.borrower-names;
-            group-names: root.group-names;
+            // PAGE 6: Loans Page - Manage book loans, borrowers, and groups
+        if(side-bar.current-item == 6): LoansPage {
+                active-loans: root.active-loans;
+                borrowers: root.borrowers;
+                borrower-groups: root.borrower-groups;
+                borrower-names: root.borrower-names;
+                group-names: root.group-names;
 
-            load-active-loans => {
-                root.load-active-loans();
+                load-active-loans => {
+                    root.load-active-loans();
+                }
+                load-borrowers => {
+                    root.load-borrowers();
+                }
+                load-borrower-groups => {
+                    root.load-borrower-groups();
+                }
+                create-loan(borrower-id, barcode) => {
+                    root.create-loan(borrower-id, barcode);
+                }
+                return-loan(loan-id) => {
+                    root.return-loan(loan-id);
+                }
+                extend-loan(loan-id) => {
+                    root.extend-loan(loan-id);
+                }
+                create-borrower(name, email, phone, address, city, zip, group-id) => {
+                    root.create-borrower(name, email, phone, address, city, zip, group-id);
+                }
+                update-borrower(id, name, email, phone, address, city, zip, group-id) => {
+                    root.update-borrower(id, name, email, phone, address, city, zip, group-id);
+                }
+                delete-borrower(id) => {
+                    root.delete-borrower(id);
+                }
+                create-borrower-group(name, loan-duration-days, description) => {
+                    root.create-borrower-group(name, loan-duration-days, description);
+                }
+                update-borrower-group(id, name, loan-duration-days, description) => {
+                    root.update-borrower-group(id, name, loan-duration-days, description);
+                }
+                delete-borrower-group(id) => {
+                    root.delete-borrower-group(id);
+                }
             }
-            load-borrowers => {
-                root.load-borrowers();
-            }
-            load-borrower-groups => {
-                root.load-borrower-groups();
-            }
-            create-loan(borrower-id, barcode) => {
-                root.create-loan(borrower-id, barcode);
-            }
-            return-loan(loan-id) => {
-                root.return-loan(loan-id);
-            }
-            extend-loan(loan-id) => {
-                root.extend-loan(loan-id);
-            }
-            create-borrower(name, email, phone, address, city, zip, group-id) => {
-                root.create-borrower(name, email, phone, address, city, zip, group-id);
-            }
-            update-borrower(id, name, email, phone, address, city, zip, group-id) => {
-                root.update-borrower(id, name, email, phone, address, city, zip, group-id);
-            }
-            delete-borrower(id) => {
-                root.delete-borrower(id);
-            }
-            create-borrower-group(name, loan-duration-days, description) => {
-                root.create-borrower-group(name, loan-duration-days, description);
-            }
-            update-borrower-group(id, name, loan-duration-days, description) => {
-                root.update-borrower-group(id, name, loan-duration-days, description);
-            }
-            delete-borrower-group(id) => {
-                root.delete-borrower-group(id);
-            }
-        }
 
-        // PAGE 7: Statistics Page - View library statistics
-        if(side-bar.current-item == 7) : StatisticsPage {
-            library-stats: root.library-statistics;
-            genre-stats: root.genre-statistics;
-            location-stats: root.location-statistics;
-            loan-stats: root.loan-statistics;
+            // PAGE 7: Statistics Page - View library statistics
+        if(side-bar.current-item == 7): StatisticsPage {
+                library-stats: root.library-statistics;
+                genre-stats: root.genre-statistics;
+                location-stats: root.location-statistics;
+                loan-stats: root.loan-statistics;
 
-            load-statistics => {
-                root.load-statistics();
+                load-statistics => {
+                    root.load-statistics();
+                }
             }
-        }
 
-        // PAGE 8: About Page - Application information and version
-            if(side-bar.current-item == 8) : AboutPage {
-            app-version: root.app-version;
-        }
+            // PAGE 8: About Page - Application information and version
+            if(side-bar.current-item == 8): AboutPage {
+                app-version: root.app-version;
+            }
         }
     }
 }

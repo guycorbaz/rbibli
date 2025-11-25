@@ -1,6 +1,15 @@
-import { Styles} from "../styles.slint";
+import { Styles } from "../styles.slint";
 import { Page } from "page.slint";
-import { ListView, ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit, ComboBox } from "std-widgets.slint";
+import {
+    ListView,
+    ScrollView,
+    VerticalBox,
+    HorizontalBox,
+    Button,
+    LineEdit,
+    TextEdit,
+    ComboBox,
+} from "std-widgets.slint";
 import { LocationData } from "locations_page.slint";
 
 // Structure to hold title data
@@ -21,7 +30,6 @@ export struct TitleData {
     series-id: string,
     series-number: string,
     dewey-code: string,
-    dewey-category: string,
     summary: string,
     cover-url: string,
     // Duplicate detection fields
@@ -109,8 +117,6 @@ export component TitlesPage inherits Page {
     in-out property <string> new-series-id: "";
     in-out property <string> new-series-number: "";
     in-out property <string> new-dewey-code: "";
-    in-out property <string> new-dewey-category: "";
-    in-out property <string> new-dewey-search-query: "";
     in-out property <string> new-summary: "";
     in-out property <string> new-cover-url: "";
 
@@ -132,8 +138,6 @@ export component TitlesPage inherits Page {
     in-out property <string> edit-series-id: "";
     in-out property <string> edit-series-number: "";
     in-out property <string> edit-dewey-code: "";
-    in-out property <string> edit-dewey-category: "";
-    in-out property <string> edit-dewey-search-query: "";
     in-out property <string> edit-summary: "";
     in-out property <string> edit-cover-url: "";
 
@@ -216,13 +220,11 @@ export component TitlesPage inherits Page {
     callback merge-titles(string, string);  // primary_id, secondary_id - Merges secondary into primary
     callback dismiss-duplicate(string, string);  // title1_id, title2_id - Mark pair as not duplicate
     callback clear-duplicates();  // Clear all duplicate detection results
-    callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code, dewey_category
-    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code, dewey_category
+    callback create-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string); // title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code
+    callback update-title(string, string, string, string, string, string, string, string, string, string, string, string, string, string, string); // id, title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code
     callback delete-title(string); // id
     callback upload-image(string); // title_id
     callback fetch-from-isbn(string); // isbn - fetches and populates create form fields
-    callback search-dewey(string); // search query - opens dialog with search results
-    callback search-dewey-edit(string); // search query for edit dialog
     callback fetch-from-isbn-edit(string); // isbn - fetches and populates edit form fields
     callback find-genre-index(string) -> int; // Find genre index by ID
     callback find-publisher-index(string) -> int; // Find publisher index by ID
@@ -374,8 +376,7 @@ export component TitlesPage inherits Page {
                                 root.filter-has-volumes,
                                 root.filter-wishlist-only,
                                 root.filter-available-only,
-                                (root.filter-location-index > 0 && root.filter-location-index <= root.locations.length) ? root.locations[root.filter-location-index - 1].id : ""
-                            );
+                                (root.filter-location-index > 0 && root.filter-location-index <= root.locations.length) ? root.locations[root.filter-location-index - 1].id : "");
                         }
                     }
                 }
@@ -410,6 +411,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 LineEdit {
                                     text <=> root.filter-search-text;
                                     placeholder-text: @tr("Search title, subtitle, author, ISBN...");
@@ -424,6 +426,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 ComboBox {
                                     model: root.series-names;
                                     current-index <=> root.filter-series-index;
@@ -438,6 +441,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 ComboBox {
                                     model: root.author-names;
                                     current-index <=> root.filter-author-index;
@@ -452,6 +456,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 ComboBox {
                                     model: root.genre-names;
                                     current-index <=> root.filter-genre-index;
@@ -466,6 +471,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 ComboBox {
                                     model: root.publisher-names;
                                     current-index <=> root.filter-publisher-index;
@@ -510,6 +516,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 LineEdit {
                                     text <=> root.filter-title;
                                     placeholder-text: @tr("Partial title match...");
@@ -524,6 +531,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 LineEdit {
                                     text <=> root.filter-subtitle;
                                     placeholder-text: @tr("Partial subtitle match...");
@@ -538,6 +546,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 LineEdit {
                                     text <=> root.filter-isbn;
                                     placeholder-text: @tr("Full or partial ISBN...");
@@ -552,21 +561,25 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 Text {
                                     text: @tr("From");
                                     width: 40px;
                                     vertical-alignment: center;
                                 }
+
                                 LineEdit {
                                     text <=> root.filter-year-from;
                                     placeholder-text: @tr("2000");
                                     width: 100px;
                                 }
+
                                 Text {
                                     text: @tr("To");
                                     width: 30px;
                                     vertical-alignment: center;
                                 }
+
                                 LineEdit {
                                     text <=> root.filter-year-to;
                                     placeholder-text: @tr("2024");
@@ -582,6 +595,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 LineEdit {
                                     text <=> root.filter-language;
                                     placeholder-text: @tr("e.g., en, fr, es");
@@ -596,6 +610,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 LineEdit {
                                     text <=> root.filter-dewey-code;
                                     placeholder-text: @tr("e.g., 800 (Literature)");
@@ -610,6 +625,7 @@ export component TitlesPage inherits Page {
                                     width: 120px;
                                     vertical-alignment: center;
                                 }
+
                                 ComboBox {
                                     model: root.location-names;
                                     current-index <=> root.filter-location-index;
@@ -645,6 +661,7 @@ export component TitlesPage inherits Page {
                                             }
                                         }
                                     }
+
                                     Text {
                                         text: @tr("Owned (has volumes)");
                                         font-size: 13px;
@@ -669,6 +686,7 @@ export component TitlesPage inherits Page {
                                             }
                                         }
                                     }
+
                                     Text {
                                         text: @tr("Wishlist only");
                                         font-size: 13px;
@@ -692,6 +710,7 @@ export component TitlesPage inherits Page {
                                             }
                                         }
                                     }
+
                                     Text {
                                         text: @tr("Available for loan");
                                         font-size: 13px;
@@ -755,6 +774,7 @@ export component TitlesPage inherits Page {
                                             }
                                         }
                                     }
+
                                     Text {
                                         text: @tr("Show only duplicates");
                                         font-size: 13px;
@@ -794,6 +814,7 @@ export component TitlesPage inherits Page {
                                             }
                                         }
                                     }
+
                                     Text {
                                         text: @tr("High");
                                         font-size: 13px;
@@ -817,6 +838,7 @@ export component TitlesPage inherits Page {
                                             }
                                         }
                                     }
+
                                     Text {
                                         text: @tr("Medium");
                                         font-size: 13px;
@@ -840,6 +862,7 @@ export component TitlesPage inherits Page {
                                             }
                                         }
                                     }
+
                                     Text {
                                         text: @tr("Low");
                                         font-size: 13px;
@@ -880,6 +903,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.new-title;
                         placeholder-text: @tr("Title (required)");
@@ -893,6 +917,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.new-subtitle;
                         placeholder-text: @tr("Subtitle (optional)");
@@ -906,10 +931,12 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.new-isbn;
                         placeholder-text: @tr("ISBN-13 or ISBN-10");
                     }
+
                     Button {
                         text: @tr("Fetch from ISBN");
                         enabled: root.new-isbn != "";
@@ -926,6 +953,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.publisher-names;
                         current-index <=> root.new-publisher-index;
@@ -939,6 +967,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.new-publication-year;
                         placeholder-text: @tr("E.g., 2024");
@@ -952,6 +981,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.new-pages;
                         placeholder-text: @tr("Number of pages");
@@ -965,6 +995,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.new-language;
                         placeholder-text: @tr("E.g., fr, en, es");
@@ -978,6 +1009,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.genre-names;
                         current-index <=> root.new-genre-index;
@@ -992,55 +1024,25 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.series-names;
                         current-index <=> root.new-series-index;
                     }
                 }
 
-                // Dewey Classification Search
+                // Dewey Classification
                 HorizontalBox {
                     spacing: 10px;
                     Text {
-                        text: @tr("Dewey Search:");
+                        text: @tr("Dewey Code:");
                         width: 120px;
                         vertical-alignment: center;
                     }
-                    LineEdit {
-                        text <=> root.new-dewey-search-query;
-                        placeholder-text: @tr("Type to search (e.g., 'mathematics', 'poetry')...");
-                    }
-                    Button {
-                        text: @tr("Search");
-                        enabled: root.new-dewey-search-query != "";
-                        clicked => {
-                            root.search-dewey(root.new-dewey-search-query);
-                        }
-                    }
-                }
 
-                // Display selected Dewey classification
-                if root.new-dewey-code != "": HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Selected:");
-                        width: 120px;
-                        vertical-alignment: center;
-                        color: #0088cc;
-                        font-weight: 700;
-                    }
-                    Text {
-                        text: root.new-dewey-code + " - " + root.new-dewey-category;
-                        horizontal-stretch: 1;
-                        color: #0088cc;
-                    }
-                    Button {
-                        text: @tr("Clear");
-                        clicked => {
-                            root.new-dewey-code = "";
-                            root.new-dewey-category = "";
-                            root.new-dewey-search-query = "";
-                        }
+                    LineEdit {
+                        text <=> root.new-dewey-code;
+                        placeholder-text: @tr("E.g., 635.048");
                     }
                 }
 
@@ -1051,6 +1053,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: top;
                     }
+
                     TextEdit {
                         text <=> root.new-summary;
                         height: 100px;
@@ -1064,6 +1067,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.new-cover-url;
                         placeholder-text: @tr("https://example.com/cover.jpg");
@@ -1111,9 +1115,7 @@ export component TitlesPage inherits Page {
                                 "",
                                 root.new-summary,
                                 root.new-cover-url,
-                                root.new-dewey-code,
-                                root.new-dewey-category
-                            );
+                                root.new-dewey-code);
                             root.show-create-dialog = false;
                         }
                     }
@@ -1145,6 +1147,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.edit-title;
                         placeholder-text: @tr("Title (required)");
@@ -1158,6 +1161,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.edit-subtitle;
                         placeholder-text: @tr("Subtitle (optional)");
@@ -1171,10 +1175,12 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.edit-isbn;
                         placeholder-text: @tr("ISBN-13 or ISBN-10");
                     }
+
                     Button {
                         text: @tr("Fetch from ISBN");
                         enabled: root.edit-isbn != "";
@@ -1191,6 +1197,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.publisher-names;
                         current-index <=> root.edit-publisher-index;
@@ -1204,6 +1211,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.edit-publication-year;
                         placeholder-text: @tr("E.g., 2024");
@@ -1217,6 +1225,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.edit-pages;
                         placeholder-text: @tr("Number of pages");
@@ -1230,6 +1239,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.edit-language;
                         placeholder-text: @tr("E.g., fr, en, es");
@@ -1243,6 +1253,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.genre-names;
                         current-index <=> root.edit-genre-index;
@@ -1257,55 +1268,25 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.series-names;
                         current-index <=> root.edit-series-index;
                     }
                 }
 
-                // Dewey Classification Search (Edit)
+                // Dewey Classification (Edit)
                 HorizontalBox {
                     spacing: 10px;
                     Text {
-                        text: @tr("Dewey Search:");
+                        text: @tr("Dewey Code:");
                         width: 120px;
                         vertical-alignment: center;
                     }
-                    LineEdit {
-                        text <=> root.edit-dewey-search-query;
-                        placeholder-text: @tr("Type to search (e.g., 'mathematics', 'poetry')...");
-                    }
-                    Button {
-                        text: @tr("Search");
-                        enabled: root.edit-dewey-search-query != "";
-                        clicked => {
-                            root.search-dewey-edit(root.edit-dewey-search-query);
-                        }
-                    }
-                }
 
-                // Display selected Dewey classification (Edit)
-                if root.edit-dewey-code != "": HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Selected:");
-                        width: 120px;
-                        vertical-alignment: center;
-                        color: #0088cc;
-                        font-weight: 700;
-                    }
-                    Text {
-                        text: root.edit-dewey-code + " - " + root.edit-dewey-category;
-                        horizontal-stretch: 1;
-                        color: #0088cc;
-                    }
-                    Button {
-                        text: @tr("Clear");
-                        clicked => {
-                            root.edit-dewey-code = "";
-                            root.edit-dewey-category = "";
-                            root.edit-dewey-search-query = "";
-                        }
+                    LineEdit {
+                        text <=> root.edit-dewey-code;
+                        placeholder-text: @tr("E.g., 635.048");
                     }
                 }
 
@@ -1316,6 +1297,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: top;
                     }
+
                     TextEdit {
                         text <=> root.edit-summary;
                         height: 100px;
@@ -1329,6 +1311,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.edit-cover-url;
                         placeholder-text: @tr("https://example.com/cover.jpg");
@@ -1375,9 +1358,9 @@ export component TitlesPage inherits Page {
 
                             // Look up genre_id and series_id from indices
                             root.edit-genre-id = (root.edit-genre-index >= 0 && root.edit-genre-index < root.genres.length) ? root.genres[root.edit-genre-index].id : "";
-                            root.edit-series-id = (root.edit-series-index >= 0 && root.edit-series-index < root.series-list.length) ? root.series-list[root.edit-series-index].id : "";
+                                root.edit-series-id = (root.edit-series-index >= 0 && root.edit-series-index < root.series-list.length) ? root.series-list[root.edit-series-index].id : "";
 
-                            root.update-title(
+                                root.update-title(
                                 root.edit-id,
                                 root.edit-title,
                                 root.edit-subtitle,
@@ -1392,12 +1375,10 @@ export component TitlesPage inherits Page {
                                 "",
                                 root.edit-summary,
                                 root.edit-cover-url,
-                                root.edit-dewey-code,
-                                root.edit-dewey-category
-                            );
-                            root.show-edit-dialog = false;
+                                root.edit-dewey-code);
+                                root.show-edit-dialog = false;
+                            }
                         }
-                    }
                     }
                 }
             }
@@ -1483,6 +1464,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.volume-barcode;
                         placeholder-text: @tr("123456");
@@ -1496,6 +1478,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: ["Excellent", "Good", "Fair", "Poor", "Damaged"];
                         current-value <=> root.volume-condition;
@@ -1509,6 +1492,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.location-names;
                         current-index <=> root.volume-location-index;
@@ -1522,6 +1506,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: top;
                     }
+
                     TextEdit {
                         text <=> root.volume-notes;
                         height: 80px;
@@ -1555,8 +1540,7 @@ export component TitlesPage inherits Page {
                                 root.volume-barcode,
                                 root.volume-condition,
                                 root.volume-location-index > 0 ? root.locations[root.volume-location-index - 1].id : "",
-                                root.volume-notes
-                            );
+                                root.volume-notes);
                             root.show-volume-create-dialog = false;
                         }
                     }
@@ -1644,6 +1628,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.edit-volume-barcode;
                         placeholder-text: @tr("123456");
@@ -1657,6 +1642,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: ["Excellent", "Good", "Fair", "Poor", "Damaged"];
                         current-value <=> root.edit-volume-condition;
@@ -1670,6 +1656,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.location-names;
                         current-index <=> root.edit-volume-location-index;
@@ -1683,6 +1670,7 @@ export component TitlesPage inherits Page {
                         width: 120px;
                         vertical-alignment: top;
                     }
+
                     TextEdit {
                         text <=> root.edit-volume-notes;
                         height: 80px;
@@ -1715,8 +1703,7 @@ export component TitlesPage inherits Page {
                                 root.edit-volume-barcode,
                                 root.edit-volume-condition,
                                 root.edit-volume-location-index > 0 ? root.locations[root.edit-volume-location-index - 1].id : "",
-                                root.edit-volume-notes
-                            );
+                                root.edit-volume-notes);
                             root.show-volume-edit-dialog = false;
                         }
                     }
@@ -1783,11 +1770,7 @@ export component TitlesPage inherits Page {
                                 }
 
                                 Text {
-                                    text: author.role == "main_author" ? "Main Author" :
-                                          author.role == "co_author" ? "Co-Author" :
-                                          author.role == "translator" ? "Translator" :
-                                          author.role == "illustrator" ? "Illustrator" :
-                                          author.role == "editor" ? "Editor" : author.role;
+                                    text: author.role == "main_author" ? "Main Author" : author.role == "co_author" ? "Co-Author" : author.role == "translator" ? "Translator" : author.role == "illustrator" ? "Illustrator" : author.role == "editor" ? "Editor" : author.role;
                                     font-size: 12px;
                                     color: #0066cc;
                                     vertical-alignment: center;
@@ -1825,6 +1808,7 @@ export component TitlesPage inherits Page {
                         width: 80px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.author-names;
                         current-index <=> root.add-author-index;
@@ -1838,6 +1822,7 @@ export component TitlesPage inherits Page {
                         width: 80px;
                         vertical-alignment: center;
                     }
+
                     ComboBox {
                         model: root.role-names;
                         current-index <=> root.add-author-role-index;
@@ -1859,11 +1844,7 @@ export component TitlesPage inherits Page {
                             root.add-author-to-title(
                                 root.managing-authors-title-id,
                                 root.all-authors[root.add-author-index].id,
-                                root.add-author-role-index == 0 ? "main_author" :
-                                root.add-author-role-index == 1 ? "co_author" :
-                                root.add-author-role-index == 2 ? "translator" :
-                                root.add-author-role-index == 3 ? "illustrator" : "editor"
-                            );
+                                root.add-author-role-index == 0 ? "main_author" : root.add-author-role-index == 1 ? "co_author" : root.add-author-role-index == 2 ? "translator" : root.add-author-role-index == 3 ? "illustrator" : "editor");
                         }
                     }
                 }
@@ -1899,9 +1880,7 @@ export component TitlesPage inherits Page {
                 Rectangle {
                     height: 80px;
                     border-width: title.is-duplicate ? 3px : 1px;
-                    border-color: title.is-duplicate ?
-                        (title.duplicate-confidence == "High" ? #cc0000 :
-                         title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc) : #ddd;
+                    border-color: title.is-duplicate ? (title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc) : #ddd;
                     border-radius: 4px;
                     background: title.is-duplicate ? #fffaef : (Math.mod(index, 2) == 0 ? #fafafa : white);
 
@@ -1928,12 +1907,10 @@ export component TitlesPage inherits Page {
                                     width: 65px;
                                     height: 20px;
                                     border-radius: 10px;
-                                    background: title.duplicate-confidence == "High" ? #cc0000 :
-                                        title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
+                                    background: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
 
                                     Text {
-                                        text: "⚠ " + (title.duplicate-confidence == "High" ? "HIGH" :
-                                            title.duplicate-confidence == "Medium" ? "MED" : "LOW");
+                                        text: "⚠ " + (title.duplicate-confidence == "High" ? "HIGH" : title.duplicate-confidence == "Medium" ? "MED" : "LOW");
                                         font-size: 10px;
                                         font-weight: 700;
                                         color: white;
@@ -2008,8 +1985,7 @@ export component TitlesPage inherits Page {
                                 if title.is-duplicate: Text {
                                     text: "Similarity: " + Math.round(title.duplicate-similarity) + "%";
                                     font-size: 11px;
-                                    color: title.duplicate-confidence == "High" ? #cc0000 :
-                                        title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
+                                    color: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
                                     font-weight: 700;
                                 }
                             }
@@ -2060,7 +2036,6 @@ export component TitlesPage inherits Page {
                                         // Find the series index for this series_id
                                         root.edit-series-index = root.find-series-index(title.series-id);
                                         root.edit-dewey-code = title.dewey-code;
-                                        root.edit-dewey-category = title.dewey-category;
                                         root.edit-summary = title.summary;
                                         root.show-edit-dialog = true;
                                     }

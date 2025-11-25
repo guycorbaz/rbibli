@@ -65,7 +65,6 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
             t.pages,
             t.language,
             t.dewey_code,
-            t.dewey_category,
             t.genre_old as genre,
             t.genre_id,
             s.name as series_name,
@@ -82,7 +81,7 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
         LEFT JOIN volumes v ON t.id = v.title_id
         LEFT JOIN series s ON t.series_id = s.id
         GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publisher_id, t.publication_year,
-                 t.pages, t.language, t.dewey_code, t.dewey_category, t.genre_old, t.genre_id, s.name,
+                 t.pages, t.language, t.dewey_code, t.genre_old, t.genre_id, s.name,
                  t.series_id, t.series_number, t.summary, t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at
         ORDER BY t.title ASC
     "#;
@@ -125,7 +124,6 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
                             pages: row.get("pages"),
                             language: row.get("language"),
                             dewey_code: row.get("dewey_code"),
-                            dewey_category: row.get("dewey_category"),
                             genre: row.get("genre"),
                             genre_id: row.get("genre_id"),
                             series_name: row.get("series_name"),
@@ -188,7 +186,6 @@ pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
 ///   "pages": 350,
 ///   "language": "en (required)",
 ///   "dewey_code": "000.00",
-///   "dewey_category": "Computer Science",
 ///   "genre_id": "genre-uuid",
 ///   "summary": "Book description",
 ///   "cover_url": "https://example.com/cover.jpg"
@@ -219,15 +216,16 @@ pub async fn create_title(
     req: web::Json<CreateTitleRequest>,
 ) -> impl Responder {
     info!("POST /api/v1/titles - Creating new title: {}", req.title);
+    info!("Dewey code: {:?} (length: {})", req.dewey_code, req.dewey_code.as_ref().map(|s| s.len()).unwrap_or(0));
 
     // Generate new UUID
     let new_id = Uuid::new_v4();
 
     let query = r#"
         INSERT INTO titles (id, title, subtitle, isbn, publisher_old, publisher_id, publication_year, pages,
-                           language, dewey_code, dewey_category, genre_id, series_id, series_number, summary, cover_url,
+                           language, dewey_code, genre_id, series_id, series_number, summary, cover_url,
                            created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     "#;
 
     match sqlx::query(query)
@@ -241,7 +239,6 @@ pub async fn create_title(
         .bind(req.pages)
         .bind(&req.language)
         .bind(&req.dewey_code)
-        .bind(&req.dewey_category)
         .bind(&req.genre_id)
         .bind(&req.series_id)
         .bind(&req.series_number)
@@ -300,7 +297,6 @@ pub async fn create_title(
 ///   "pages": 400,
 ///   "language": "en",
 ///   "dewey_code": "100.00",
-///   "dewey_category": "Philosophy",
 ///   "genre_id": "new-genre-uuid",
 ///   "summary": "Updated description",
 ///   "cover_url": "https://example.com/new-cover.jpg"
@@ -376,10 +372,6 @@ pub async fn update_title(
         update_parts.push("dewey_code = ?");
         has_updates = true;
     }
-    if req.dewey_category.is_some() {
-        update_parts.push("dewey_category = ?");
-        has_updates = true;
-    }
     if req.genre_id.is_some() {
         update_parts.push("genre_id = ?");
         has_updates = true;
@@ -446,9 +438,6 @@ pub async fn update_title(
     }
     if let Some(ref dewey_code) = req.dewey_code {
         query_builder = query_builder.bind(dewey_code);
-    }
-    if let Some(ref dewey_category) = req.dewey_category {
-        query_builder = query_builder.bind(dewey_category);
     }
     if let Some(ref genre_id) = req.genre_id {
         query_builder = query_builder.bind(genre_id);
@@ -973,7 +962,6 @@ pub async fn search_titles(
             t.pages,
             t.language,
             t.dewey_code,
-            t.dewey_category,
             t.genre_old as genre,
             t.genre_id,
             s.name as series_name,
@@ -1091,7 +1079,7 @@ pub async fn search_titles(
     // Build GROUP BY and HAVING clauses
     let group_by = r#"
         GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publisher_id,
-                 t.publication_year, t.pages, t.language, t.dewey_code, t.dewey_category,
+                 t.publication_year, t.pages, t.language, t.dewey_code,
                  t.genre_old, t.genre_id, s.name, t.series_id, t.series_number, t.summary,
                  t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at
     "#;
@@ -1185,7 +1173,6 @@ pub async fn search_titles(
                             pages: row.get("pages"),
                             language: row.get("language"),
                             dewey_code: row.get("dewey_code"),
-                            dewey_category: row.get("dewey_category"),
                             genre: row.get("genre"),
                             genre_id: row.get("genre_id"),
                             series_name: row.get("series_name"),
@@ -1329,7 +1316,7 @@ pub async fn detect_duplicates(
     let query_str = r#"
         SELECT
             t.id, t.title, t.subtitle, t.isbn, t.publisher_old as publisher, t.publisher_id,
-            t.publication_year, t.pages, t.language, t.dewey_code, t.dewey_category,
+            t.publication_year, t.pages, t.language, t.dewey_code,
             t.genre_old as genre, t.genre_id, s.name as series_name, t.series_id, t.series_number,
             t.summary, t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at,
             COUNT(v.id) as volume_count
@@ -1337,7 +1324,7 @@ pub async fn detect_duplicates(
         LEFT JOIN volumes v ON t.id = v.title_id
         LEFT JOIN series s ON t.series_id = s.id
         GROUP BY t.id, t.title, t.subtitle, t.isbn, t.publisher_old, t.publisher_id,
-                 t.publication_year, t.pages, t.language, t.dewey_code, t.dewey_category,
+                 t.publication_year, t.pages, t.language, t.dewey_code,
                  t.genre_old, t.genre_id, s.name, t.series_id, t.series_number,
                  t.summary, t.cover_url, t.image_mime_type, t.image_filename, t.created_at, t.updated_at
         ORDER BY t.title ASC
@@ -1365,7 +1352,7 @@ pub async fn detect_duplicates(
                 publisher: row.get("publisher"), publisher_id: row.get("publisher_id"),
                 publication_year: row.get("publication_year"), pages: row.get("pages"),
                 language: row.get("language"), dewey_code: row.get("dewey_code"),
-                dewey_category: row.get("dewey_category"), genre: row.get("genre"),
+                genre: row.get("genre"),
                 genre_id: row.get("genre_id"), series_name: row.get("series_name"),
                 series_id: row.get("series_id"), series_number: row.get("series_number"),
                 summary: row.get("summary"), cover_url: row.get("cover_url"), image_data: None,

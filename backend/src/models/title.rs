@@ -16,7 +16,6 @@ pub struct Title {
     pub pages: Option<i32>,
     pub language: String,
     pub dewey_code: Option<String>,
-    pub dewey_category: Option<String>,
     pub genre: Option<String>,
     pub genre_id: Option<String>,
     pub series_name: Option<String>,
@@ -88,7 +87,6 @@ pub struct CreateTitleRequest {
     pub pages: Option<i32>,
     pub language: String,
     pub dewey_code: Option<String>,
-    pub dewey_category: Option<String>,
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
     pub series_id: Option<String>,
@@ -109,7 +107,6 @@ pub struct UpdateTitleRequest {
     pub pages: Option<i32>,
     pub language: Option<String>,
     pub dewey_code: Option<String>,
-    pub dewey_category: Option<String>,
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
     pub series_id: Option<String>,

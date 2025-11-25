@@ -821,10 +821,31 @@ export component LoansPage inherits Page {
                         alignment: space-between;
                         spacing: 10px;
 
-                        Text {
-                            text: @tr("Borrower Groups");
-                            font-size: 18px;
-                            font-weight: 700;
+                        HorizontalBox {
+                            spacing: 10px;
+
+                            Text {
+                                text: @tr("Borrower Groups");
+                                font-size: 18px;
+                                font-weight: 700;
+                            }
+
+                            // Debug: Show count
+                            Rectangle {
+                                background: #0066cc;
+                                border-radius: 12px;
+                                width: 60px;
+                                height: 24px;
+
+                                Text {
+                                    text: "(" + root.borrower-groups.length + ")";
+                                    font-size: 14px;
+                                    font-weight: 700;
+                                    color: white;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
+                                }
+                            }
                         }
 
                         HorizontalBox {
@@ -1004,6 +1025,7 @@ export component LoansPage inherits Page {
                     }
 
                     if root.borrower-groups.length > 0: ScrollView {
+                        vertical-stretch: 1;
                         VerticalBox {
                             spacing: 8px;
 

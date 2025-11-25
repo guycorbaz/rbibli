@@ -14,7 +14,6 @@ pub struct Title {
     pub pages: Option<i32>,
     pub language: String,
     pub dewey_code: Option<String>,
-    pub dewey_category: Option<String>,
     pub genre: Option<String>,
     pub genre_id: Option<String>,
     pub series_name: Option<String>,
@@ -48,7 +47,6 @@ pub struct CreateTitleRequest {
     pub pages: Option<i32>,
     pub language: String,
     pub dewey_code: Option<String>,
-    pub dewey_category: Option<String>,
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
     pub series_id: Option<String>,
@@ -69,7 +67,6 @@ pub struct UpdateTitleRequest {
     pub pages: Option<i32>,
     pub language: Option<String>,
     pub dewey_code: Option<String>,
-    pub dewey_category: Option<String>,
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
     pub series_id: Option<String>,
@@ -589,19 +586,6 @@ pub struct CreateLoanResponse {
     pub loan_duration_days: i32,
 }
 
-// ============================================================================
-// Dewey Decimal Classification Models
-// ============================================================================
-
-/// Dewey Classification search result
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DeweySearchResult {
-    pub code: String,
-    pub name: String,
-    pub level: i32,
-    pub description: Option<String>,
-    pub relevance: Option<f32>,
-}
 
 // ============================================================================
 // Statistics Models
