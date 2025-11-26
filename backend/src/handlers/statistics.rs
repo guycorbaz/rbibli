@@ -1,3 +1,9 @@
+//! API handlers for library statistics.
+//!
+//! This module provides HTTP handlers for retrieving various statistics about the
+//! library, such as total counts of titles, volumes, authors, and loans, as well as
+//! breakdowns by genre and location.
+
 use actix_web::{web, HttpResponse, Responder};
 use log::{debug, error};
 use serde::{Deserialize, Serialize};
@@ -44,9 +50,21 @@ pub struct LibraryStatistics {
     pub overdue_loans: i64,
 }
 
-/// Get statistics of volumes per genre
+/// Retrieves statistics of volumes per genre.
+///
+/// **Endpoint**: `GET /api/v1/statistics/volumes-per-genre`
 ///
 /// Returns a list of genres with their volume and title counts, ordered by volume count descending.
+/// Useful for visualizing the collection distribution across genres.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `GenreStatistic` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn get_volumes_per_genre(data: web::Data<AppState>) -> impl Responder {
     debug!("Fetching volumes per genre statistics");
 
@@ -81,9 +99,21 @@ pub async fn get_volumes_per_genre(data: web::Data<AppState>) -> impl Responder 
     }
 }
 
-/// Get statistics of volumes per location
+/// Retrieves statistics of volumes per location.
+///
+/// **Endpoint**: `GET /api/v1/statistics/volumes-per-location`
 ///
 /// Returns a list of locations with their volume counts, ordered by volume count descending.
+/// Includes the full hierarchical path for each location.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `LocationStatistic` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn get_volumes_per_location(data: web::Data<AppState>) -> impl Responder {
     debug!("Fetching volumes per location statistics");
 
@@ -139,9 +169,20 @@ pub async fn get_volumes_per_location(data: web::Data<AppState>) -> impl Respond
     }
 }
 
-/// Get loan status statistics
+/// Retrieves loan status statistics.
+///
+/// **Endpoint**: `GET /api/v1/statistics/loans`
 ///
 /// Returns counts for each loan status (Available, Loaned, Overdue, etc.).
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `LoanStatistic` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn get_loan_statistics(data: web::Data<AppState>) -> impl Responder {
     debug!("Fetching loan status statistics");
 
@@ -172,9 +213,22 @@ pub async fn get_loan_statistics(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// Get overall library statistics
+/// Retrieves overall library statistics.
 ///
-/// Returns general counts for all major entities in the library.
+/// **Endpoint**: `GET /api/v1/statistics/library`
+///
+/// Returns general counts for all major entities in the library, including:
+/// - Total titles, volumes, authors, publishers, genres, locations, borrowers
+/// - Active and overdue loan counts
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with `LibraryStatistics` object on success
+/// * `HttpResponse::InternalServerError` if any database query fails (though individual failures default to 0)
 pub async fn get_library_statistics(data: web::Data<AppState>) -> impl Responder {
     debug!("Fetching library statistics");
 

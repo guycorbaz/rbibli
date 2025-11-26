@@ -1,3 +1,8 @@
+//! API handlers for managing borrowers.
+//!
+//! This module provides HTTP handlers for creating, reading, updating, and deleting
+//! borrower records. It handles borrower details including their group association.
+
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{BorrowerWithGroup, CreateBorrowerRequest, UpdateBorrowerRequest};
 use crate::AppState;
@@ -5,7 +10,21 @@ use log::{info, error};
 use sqlx::Row;
 use uuid::Uuid;
 
-/// GET /api/v1/borrowers - List all borrowers with group info
+/// Lists all borrowers with their group information.
+///
+/// **Endpoint**: `GET /api/v1/borrowers`
+///
+/// Retrieves a list of all borrowers, including their associated group details (name, loan duration)
+/// and a count of their currently active loans.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `BorrowerWithGroup` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn list_borrowers(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/borrowers - Fetching all borrowers");
 
@@ -60,7 +79,33 @@ pub async fn list_borrowers(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// POST /api/v1/borrowers - Create a new borrower
+/// Creates a new borrower.
+///
+/// **Endpoint**: `POST /api/v1/borrowers`
+///
+/// # Arguments
+///
+/// * `request` - JSON request body containing borrower details
+/// * `data` - Application state containing the database connection pool
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "name": "Jane Doe",
+///   "email": "jane@example.com",
+///   "phone": "555-0123",
+///   "address": "123 Library Lane",
+///   "city": "Booktown",
+///   "zip": "12345",
+///   "group_id": "uuid-string"
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Created` (201) with new borrower ID on success
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn create_borrower(
     request: web::Json<CreateBorrowerRequest>,
     data: web::Data<AppState>,
@@ -97,7 +142,24 @@ pub async fn create_borrower(
     }
 }
 
-/// PUT /api/v1/borrowers/{id} - Update a borrower
+/// Updates an existing borrower.
+///
+/// **Endpoint**: `PUT /api/v1/borrowers/{id}`
+///
+/// Updates mutable fields of a borrower. Only provided fields are updated.
+///
+/// # Arguments
+///
+/// * `id` - Path parameter containing the borrower's UUID
+/// * `request` - JSON request body with fields to update
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if borrower does not exist
+/// * `HttpResponse::BadRequest` if no fields provided
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn update_borrower(
     id: web::Path<String>,
     request: web::Json<UpdateBorrowerRequest>,
@@ -161,7 +223,27 @@ pub async fn update_borrower(
     }
 }
 
-/// DELETE /api/v1/borrowers/{id} - Delete a borrower
+/// Deletes a borrower.
+///
+/// **Endpoint**: `DELETE /api/v1/borrowers/{id}`
+///
+/// Removes a borrower record.
+///
+/// # Business Rules
+///
+/// - Cannot delete a borrower who has active loans (must return books first).
+///
+/// # Arguments
+///
+/// * `id` - Path parameter containing the borrower's UUID
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if borrower does not exist
+/// * `HttpResponse::Conflict` if borrower has active loans
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn delete_borrower(
     id: web::Path<String>,
     data: web::Data<AppState>,

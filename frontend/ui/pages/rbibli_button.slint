@@ -1,8 +1,28 @@
-import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+import {
+    ListView,
+    VerticalBox,
+    HorizontalBox,
+    Button,
+    LineEdit,
+    TextEdit,
+} from "std-widgets.slint";
+
+// ============================================================================
+// rbibli_button.slint
+// ============================================================================
+// A reusable small button component.
+//
+// This component provides a standardized small button, primarily used for
+// delete actions or other secondary operations where a full-sized button
+// would take up too much space.
+//
+// Properties:
+//   - Inherits all properties from standard Button
+//   - Fixed dimensions: 80x20px
+//   - Default text: "Delete"
 
 export component smallButton inherits Button {
     width: 80px;
     height: 20px;
     text: "Delete";
-    
 }

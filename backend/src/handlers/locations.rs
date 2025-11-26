@@ -1,3 +1,9 @@
+//! API handlers for managing locations.
+//!
+//! This module provides HTTP handlers for creating, reading, updating, and deleting
+//! physical locations (shelves, rooms, etc.) within the library. It supports
+//! hierarchical location structures.
+
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{Location, LocationWithPath, CreateLocationRequest, UpdateLocationRequest};
 use crate::AppState;
@@ -5,7 +11,21 @@ use log::{info, warn, error, debug};
 use sqlx::Row;
 use uuid::Uuid;
 
-/// GET /api/v1/locations - List all locations with hierarchical paths
+/// Lists all locations with hierarchical paths.
+///
+/// **Endpoint**: `GET /api/v1/locations`
+///
+/// Retrieves a list of all locations, including their full hierarchical path (e.g., "Building A > Floor 2 > Room 101").
+/// Includes counts of child locations and volumes stored at each location.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `LocationWithPath` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn list_locations(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/locations - Fetching all locations");
 
@@ -109,7 +129,21 @@ pub async fn list_locations(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// GET /api/v1/locations/{id} - Get a single location by ID
+/// Retrieves a single location by its ID.
+///
+/// **Endpoint**: `GET /api/v1/locations/{id}`
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameter containing the location's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with `Location` object on success
+/// * `HttpResponse::NotFound` if the location does not exist
+/// * `HttpResponse::BadRequest` if the UUID format is invalid
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn get_location(
     data: web::Data<AppState>,
     path: web::Path<String>,
@@ -186,7 +220,30 @@ pub async fn get_location(
     }
 }
 
-/// POST /api/v1/locations - Create a new location
+/// Creates a new location.
+///
+/// **Endpoint**: `POST /api/v1/locations`
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `req` - JSON request body containing location details
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "name": "Main Library",
+///   "description": "Central building",
+///   "parent_id": "optional-parent-uuid"
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Created` (201) with new location ID on success
+/// * `HttpResponse::BadRequest` if parent UUID format is invalid
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn create_location(
     data: web::Data<AppState>,
     req: web::Json<CreateLocationRequest>,
@@ -249,7 +306,24 @@ pub async fn create_location(
     }
 }
 
-/// PUT /api/v1/locations/{id} - Update a location
+/// Updates an existing location.
+///
+/// **Endpoint**: `PUT /api/v1/locations/{id}`
+///
+/// Updates mutable fields of a location. Only provided fields are updated.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameter containing the location's UUID
+/// * `req` - JSON request body with fields to update
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if location does not exist
+/// * `HttpResponse::BadRequest` if no fields provided or validation fails
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn update_location(
     data: web::Data<AppState>,
     path: web::Path<String>,
@@ -356,7 +430,29 @@ pub async fn update_location(
     }
 }
 
-/// DELETE /api/v1/locations/{id} - Delete a location
+/// Deletes a location.
+///
+/// **Endpoint**: `DELETE /api/v1/locations/{id}`
+///
+/// Removes a location record.
+///
+/// # Business Rules
+///
+/// - Cannot delete a location that has child locations (must delete/move children first).
+/// - Cannot delete a location that has volumes allocated to it (must move volumes first).
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameter containing the location's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if location does not exist
+/// * `HttpResponse::Conflict` if location has children or volumes
+/// * `HttpResponse::BadRequest` if UUID format is invalid
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn delete_location(
     data: web::Data<AppState>,
     path: web::Path<String>,

@@ -1,35 +1,75 @@
+//! Title management models.
+//!
+//! This module defines the data structures for managing book titles (abstract metadata).
+//! It includes the main `Title` entity, search parameters, and duplicate detection models.
+//!
+//! # Key Features
+//!
+//! - **Abstract Metadata**: `Title` represents the book info (ISBN, author, etc.) separate from physical copies.
+//! - **Search & Filtering**: `TitleSearchParams` supports complex queries including fuzzy search.
+//! - **Duplicate Detection**: Models for identifying and merging duplicate entries.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// Title represents the abstract book metadata shared across all physical copies
+/// Title represents the abstract book metadata shared across all physical copies.
+///
+/// A `Title` contains information like the book's name, ISBN, publisher, and summary.
+/// It does *not* represent a specific physical book on a shelf; that is handled by the `Volume` entity.
+///
+/// # Database Structure
+///
+/// Mapped to the `titles` table in the database.
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Title {
+    /// Unique identifier (UUID)
     #[sqlx(try_from = "String")]
     pub id: Uuid,
+    /// Main title of the book
     pub title: String,
+    /// Optional subtitle
     pub subtitle: Option<String>,
+    /// International Standard Book Number (10 or 13 digits)
     pub isbn: Option<String>,
+    /// Name of the publisher
     pub publisher: Option<String>,
+    /// UUID of the publisher entity
     pub publisher_id: Option<String>,
+    /// Year of publication
     pub publication_year: Option<i32>,
+    /// Number of pages
     pub pages: Option<i32>,
+    /// Language code (e.g., "en", "fr")
     pub language: String,
+    /// Dewey Decimal Classification code (e.g., "005.133")
     pub dewey_code: Option<String>,
+    /// Genre name
     pub genre: Option<String>,
+    /// UUID of the genre entity
     pub genre_id: Option<String>,
+    /// Series name
     pub series_name: Option<String>,
+    /// UUID of the series entity
     pub series_id: Option<String>,
+    /// Number within the series (e.g., "1", "Vol. 2")
     pub series_number: Option<String>,
+    /// Plot summary or description
     pub summary: Option<String>,
+    /// URL to the cover image
     pub cover_url: Option<String>,
+    /// Base64 encoded image data (optional, for direct storage)
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(with = "base64_option")]
     pub image_data: Option<Vec<u8>>,
+    /// MIME type of the image data (e.g., "image/jpeg")
     pub image_mime_type: Option<String>,
+    /// Original filename of the uploaded image
     pub image_filename: Option<String>,
+    /// Timestamp of creation
     #[serde(with = "chrono::serde::ts_seconds")]
     pub created_at: DateTime<Utc>,
+    /// Timestamp of last update
     #[serde(with = "chrono::serde::ts_seconds")]
     pub updated_at: DateTime<Utc>,
 }
@@ -67,84 +107,120 @@ mod base64_option {
     }
 }
 
-/// TitleWithCount is returned by the list endpoint, includes volume count
+/// TitleWithCount is returned by the list endpoint and includes the volume count.
+///
+/// This struct flattens the `Title` fields and adds a `volume_count` field,
+/// allowing the frontend to display how many physical copies exist for each title.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TitleWithCount {
+    /// The core title metadata (flattened)
     #[serde(flatten)]
     pub title: Title,
+    /// Number of physical volumes associated with this title
     pub volume_count: i64,
 }
 
-/// CreateTitleRequest for creating a new title
+/// Request payload for creating a new title.
+///
+/// Contains all necessary fields to initialize a `Title` entity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateTitleRequest {
+    /// Main title (required)
     pub title: String,
+    /// Optional subtitle
     pub subtitle: Option<String>,
+    /// ISBN (10 or 13 digits)
     pub isbn: Option<String>,
+    /// Publisher name (legacy/text field)
     pub publisher: Option<String>,
+    /// Publisher entity UUID
     pub publisher_id: Option<String>,
+    /// Publication year
     pub publication_year: Option<i32>,
+    /// Page count
     pub pages: Option<i32>,
+    /// Language code (default: "en")
     pub language: String,
+    /// Dewey Decimal code
     pub dewey_code: Option<String>,
+    /// Genre entity UUID
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
+    /// Series entity UUID
     pub series_id: Option<String>,
+    /// Number within the series
     pub series_number: Option<String>,
+    /// Plot summary
     pub summary: Option<String>,
+    /// Cover image URL
     pub cover_url: Option<String>,
 }
 
-/// UpdateTitleRequest for updating an existing title
+/// Request payload for updating an existing title.
+///
+/// All fields are optional; only provided fields will be updated (partial update).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateTitleRequest {
+    /// New title
     pub title: Option<String>,
+    /// New subtitle
     pub subtitle: Option<String>,
+    /// New ISBN
     pub isbn: Option<String>,
+    /// New publisher name
     pub publisher: Option<String>,
+    /// New publisher UUID
     pub publisher_id: Option<String>,
+    /// New publication year
     pub publication_year: Option<i32>,
+    /// New page count
     pub pages: Option<i32>,
+    /// New language code
     pub language: Option<String>,
+    /// New Dewey code
     pub dewey_code: Option<String>,
+    /// New genre UUID
     #[serde(alias = "genre")]
     pub genre_id: Option<String>,
+    /// New series UUID
     pub series_id: Option<String>,
+    /// New series number
     pub series_number: Option<String>,
+    /// New summary
     pub summary: Option<String>,
+    /// New cover URL
     pub cover_url: Option<String>,
 }
 
-/// TitleSearchParams for advanced search and filtering
+/// Parameters for advanced title search and filtering.
 ///
-/// All fields are optional. When a field is provided, it will be used as a filter criterion.
-/// Multiple fields are combined with AND logic.
+/// All fields are optional. When multiple fields are provided, they are combined with AND logic.
 ///
 /// # Query Parameters
 ///
-/// * `q` - Free text search across title, subtitle, author names, and ISBN
-/// * `title` - Partial match on title (case-insensitive, uses LIKE %value%)
-/// * `subtitle` - Partial match on subtitle
-/// * `isbn` - Partial or exact match on ISBN
-/// * `series_id` - Filter by series UUID
-/// * `author_id` - Filter by author UUID (searches through title_authors junction)
-/// * `genre_id` - Filter by genre UUID
-/// * `publisher_id` - Filter by publisher UUID
-/// * `year_from` - Minimum publication year (inclusive)
-/// * `year_to` - Maximum publication year (inclusive)
-/// * `language` - Exact match on language code (e.g., "en", "fr")
-/// * `dewey_code` - Partial match on Dewey classification code
-/// * `has_volumes` - Filter by ownership status (true = owned, false = wishlist, None = all)
-/// * `available` - Filter by availability (true = at least one available volume)
-/// * `location_id` - Filter by storage location (for titles with volumes)
-/// * `sort_by` - Field to sort by (title, publication_year, created_at)
-/// * `sort_order` - Sort direction (asc, desc)
-/// * `limit` - Maximum number of results (default: 100, max: 500)
-/// * `offset` - Number of results to skip (for pagination)
+/// * `q` - Free text search across title, subtitle, author names, and ISBN.
+/// * `title` - Partial match on title (case-insensitive, uses `LIKE %value%`).
+/// * `subtitle` - Partial match on subtitle.
+/// * `isbn` - Partial or exact match on ISBN.
+/// * `series_id` - Filter by series UUID.
+/// * `author_id` - Filter by author UUID (searches through `title_authors` junction).
+/// * `genre_id` - Filter by genre UUID.
+/// * `publisher_id` - Filter by publisher UUID.
+/// * `year_from` - Minimum publication year (inclusive).
+/// * `year_to` - Maximum publication year (inclusive).
+/// * `language` - Exact match on language code (e.g., "en", "fr").
+/// * `dewey_code` - Partial match on Dewey classification code.
+/// * `has_volumes` - Filter by ownership status (`true` = owned, `false` = wishlist, `None` = all).
+/// * `available` - Filter by availability (`true` = at least one available volume).
+/// * `location_id` - Filter by storage location (for titles with volumes).
+/// * `sort_by` - Field to sort by (`title`, `publication_year`, `created_at`).
+/// * `sort_order` - Sort direction (`asc`, `desc`).
+/// * `limit` - Maximum number of results (default: 100, max: 500).
+/// * `offset` - Number of results to skip (for pagination).
 ///
 /// # Examples
 ///
-/// ```
+/// ```text
 /// // Search for Harry Potter books in English
 /// ?q=harry potter&language=en
 ///
@@ -153,12 +229,6 @@ pub struct UpdateTitleRequest {
 ///
 /// // Find books by author published between 2000-2010
 /// ?author_id=uuid-here&year_from=2000&year_to=2010
-///
-/// // Find wishlist items (books without volumes)
-/// ?has_volumes=false
-///
-/// // Find available books by genre
-/// ?genre_id=uuid-here&available=true
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TitleSearchParams {
@@ -257,30 +327,24 @@ impl TitleSearchParams {
     }
 }
 
-/// Confidence level for duplicate detection matches
+/// Confidence level for duplicate detection matches.
+///
+/// Used to categorize potential duplicates based on their similarity score.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum DuplicateConfidence {
-    /// High confidence (≥90%): Likely the same title
+    /// High confidence (≥90%): Likely the same title.
     High,
-    /// Medium confidence (70-89%): Possibly the same title
+    /// Medium confidence (70-89%): Possibly the same title, needs review.
     Medium,
-    /// Low confidence (50-69%): Might be related
+    /// Low confidence (50-69%): Might be related, but likely different editions or works.
     Low,
 }
 
-/// Represents a potential duplicate title pair
+/// Represents a potential duplicate title pair.
 ///
 /// Contains two titles that may be duplicates, along with a similarity score
 /// and confidence level to help users make merge decisions.
-///
-/// # Fields
-///
-/// * `title1` - First title in the potential duplicate pair
-/// * `title2` - Second title in the potential duplicate pair
-/// * `similarity_score` - Numeric similarity score (0.0-100.0)
-/// * `confidence` - Categorical confidence level (High/Medium/Low)
-/// * `match_reasons` - List of reasons why these titles matched (e.g., "ISBN match", "Title similarity: 95%")
 ///
 /// # Example Response
 ///
@@ -317,16 +381,9 @@ pub struct DuplicatePair {
     pub match_reasons: Vec<String>,
 }
 
-/// Response for duplicate detection endpoint
+/// Response for duplicate detection endpoint.
 ///
 /// Groups potential duplicates by confidence level for easier review.
-///
-/// # Fields
-///
-/// * `high_confidence` - Pairs with high similarity (≥90%)
-/// * `medium_confidence` - Pairs with medium similarity (70-89%)
-/// * `low_confidence` - Pairs with low similarity (50-69%)
-/// * `total_pairs` - Total number of duplicate pairs found
 ///
 /// # Example Response
 ///
@@ -352,14 +409,10 @@ pub struct DuplicateDetectionResponse {
     pub total_pairs: usize,
 }
 
-/// Request to merge a secondary title into a primary title
+/// Request to merge a secondary title into a primary title.
 ///
 /// All volumes from the secondary title will be moved to the primary title,
 /// and the secondary title will be deleted.
-///
-/// # Fields
-///
-/// * `confirm` - Must be true to proceed with merge (safety check)
 ///
 /// # Example Request
 ///
@@ -374,17 +427,9 @@ pub struct MergeTitlesRequest {
     pub confirm: bool,
 }
 
-/// Response from merging two titles
+/// Response from merging two titles.
 ///
 /// Provides information about the merge operation results.
-///
-/// # Fields
-///
-/// * `success` - Whether the merge completed successfully
-/// * `primary_title_id` - ID of the title that was kept
-/// * `volumes_moved` - Number of volumes moved from secondary to primary
-/// * `secondary_title_deleted` - Whether the secondary title was deleted
-/// * `message` - Human-readable success message
 ///
 /// # Example Response
 ///

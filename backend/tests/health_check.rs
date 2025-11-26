@@ -1,3 +1,9 @@
+//! Integration tests for the backend application.
+//!
+//! This module contains integration tests that verify the correctness of the
+//! application's API endpoints. It includes a health check test to ensure the
+//! server is up and running.
+
 /// Integration test for the health check endpoint.
 ///
 /// This test verifies that the `/health_check` endpoint is functioning correctly

@@ -4,11 +4,11 @@
 
 The backend is a REST API built with **actix-web** and **tokio** for async operations. It provides endpoints for managing the library data. The API is consumed by the Slint-based frontend (currently native desktop, WASM compilation planned for later).
 
-## Current Status (Updated: 2024-11-15)
+## Current Status (Updated: 2025-11-26)
 
-**Phase 3: Nearly Complete (~85% Complete)**
+**Phase 3: Nearly Complete (~88% Complete)**
 
-The backend has comprehensive functionality with MariaDB integration and full CRUD operations for all core entities. Volume management, loan system, statistics dashboard, ISBN lookup, Dewey classification, and cover image uploads are all fully implemented.
+The backend has comprehensive functionality with MariaDB integration and full CRUD operations for all core entities. Volume management, loan system, statistics dashboard, ISBN lookup, and cover image uploads are all fully implemented. Dewey classification has been simplified to manual input fields on the Title entity.
 
 ### ✅ Fully Implemented
 - Health check endpoints (/health, /health/db)
@@ -24,7 +24,6 @@ The backend has comprehensive functionality with MariaDB integration and full CR
 - **Loans API** (create by barcode, list active/overdue, return)
 - **Statistics API** (library overview, volumes per genre/location, loan status)
 - **ISBN Lookup API** (Google Books integration)
-- **Dewey Classification API** (search, browse, get by code)
 - **Cover Upload API** (upload, get, delete cover images)
 - Database integration with connection pooling
 - UUID-based entity IDs
@@ -95,7 +94,7 @@ DELETE /api/v1/titles/{id}         - Delete a title (only if no volumes exist)
 - Series association with optional series_number field
 - Partial updates (only changed fields are updated)
 - **Business rule enforcement**: Titles with volumes cannot be deleted
-- ISBN, Dewey classification, cover URL support
+- ISBN, Dewey classification (manual code), cover URL support
 
 **DELETE Business Rules:**
 - **Success (200)**: Title deleted if `volume_count == 0`
@@ -540,35 +539,6 @@ GET /api/v1/isbn/{isbn}             - Lookup book by ISBN
 
 ---
 
-### Dewey Classification ✅
-
-Search and browse Dewey Decimal Classification system.
-
-```
-GET /api/v1/dewey/search            - Search Dewey classifications
-GET /api/v1/dewey/browse            - Browse Dewey hierarchy
-GET /api/v1/dewey/{code}            - Get classification by code
-```
-
-**Search Query Parameters:**
-- `q` - Search query (searches code, name, description)
-
-**Browse Query Parameters:**
-- `parent` - Parent code to browse children (omit for top level)
-
-**Example Classification:**
-```json
-{
-  "code": "005.133",
-  "name": "Specific programming languages",
-  "level": 3,
-  "description": "Programming in specific languages like Rust, Python, etc.",
-  "relevance": 0.95
-}
-```
-
----
-
 ### Cover Image Uploads ✅
 
 Upload and manage book cover images.
@@ -632,7 +602,7 @@ The backend uses **MariaDB** for data persistence:
 - **MariaDB**: Production-grade, MySQL-compatible database
 - **SQLx**: Compile-time checked queries with async support
 - **Connection pooling**: MySqlPoolOptions (max 5 connections)
-- **Migrations**: 13 migrations applied via sqlx-cli
+- **Migrations**: 15 migrations applied via sqlx-cli
 - **UUID-based IDs**: Using CHAR(36) format
 - **Timestamps**: created_at, updated_at on all entities
 

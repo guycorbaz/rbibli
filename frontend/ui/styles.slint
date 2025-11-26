@@ -1,5 +1,14 @@
 
 
+// ============================================================================
+// styles.slint
+// ============================================================================
+// Global style definitions for the application.
+//
+// This file exports a global singleton `Styles` that contains application-wide
+// design tokens such as colors, dimensions, and opacity states. These properties
+// ensure visual consistency across all components.
+
 export global Styles {
      // Minimum application window dimensions to ensure usable interface
     out property <length> app_vertical_size: 700px;
@@ -13,5 +22,4 @@ export global Styles {
 
     out property <length> small_button_width: 80px;
     out property <length> small_button_height: 20px;
-
 }

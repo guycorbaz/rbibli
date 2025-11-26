@@ -1,3 +1,9 @@
+//! Frontend API client module.
+//!
+//! This module provides the `ApiClient` struct, which handles all communication
+//! with the backend REST API. It includes methods for fetching and modifying data
+//! for all application resources.
+
 use crate::models::{
     TitleWithCount, CreateTitleRequest, UpdateTitleRequest, LocationWithPath, CreateLocationRequest,
     UpdateLocationRequest, AuthorWithTitleCount, CreateAuthorRequest, UpdateAuthorRequest,
@@ -1583,6 +1589,34 @@ impl ApiClient {
     // ========================================================================
 
     /// Fetches all series with their title counts from the backend API.
+    ///
+    /// This method makes a GET request to `/api/v1/series` to retrieve a list of
+    /// all book series in the library. Each series includes its metadata along
+    /// with a count of how many titles belong to that series.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(Vec<SeriesWithTitleCount>)` - A vector of series sorted alphabetically by name
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error
+    ///   - The response cannot be parsed
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_series() {
+    ///     Ok(series_list) => {
+    ///         for s in series_list {
+    ///             println!("{} - {} titles", s.series.name, s.title_count);
+    ///         }
+    ///     },
+    ///     Err(e) => eprintln!("Failed to fetch series: {}", e),
+    /// }
+    /// ```
     pub async fn get_series(&self) -> Result<Vec<SeriesWithTitleCount>, Box<dyn Error>> {
         let url = format!("{}/api/v1/series", self.base_url);
 
@@ -1602,6 +1636,40 @@ impl ApiClient {
     }
 
     /// Creates a new series in the library database.
+    ///
+    /// This method makes a POST request to `/api/v1/series` to add a new book series.
+    /// Titles can then be associated with this series.
+    ///
+    /// # Arguments
+    ///
+    /// * `request` - A `CreateSeriesRequest` containing:
+    ///   - `name`: Series name (required, e.g., "Harry Potter")
+    ///   - `description`: Optional description of the series
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` - The UUID of the newly created series
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error (e.g., duplicate name)
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::CreateSeriesRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = CreateSeriesRequest {
+    ///     name: "The Lord of the Rings".to_string(),
+    ///     description: Some("High fantasy novel".to_string()),
+    /// };
+    ///
+    /// match client.create_series(request) {
+    ///     Ok(id) => println!("Created series with ID: {}", id),
+    ///     Err(e) => eprintln!("Failed to create series: {}", e),
+    /// }
+    /// ```
     pub async fn create_series(&self, request: CreateSeriesRequest) -> Result<String, Box<dyn Error>> {
         let url = format!("{}/api/v1/series", self.base_url);
 
@@ -1629,6 +1697,41 @@ impl ApiClient {
     }
 
     /// Updates an existing series's information.
+    ///
+    /// This method makes a PUT request to `/api/v1/series/{id}` to update one or
+    /// more fields of an existing series. Only the fields present in the request
+    /// (non-None) will be updated.
+    ///
+    /// # Arguments
+    ///
+    /// * `series_id` - The UUID of the series to update
+    /// * `request` - An `UpdateSeriesRequest` with the fields to update (all optional)
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Series updated successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The series ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The server returns an error
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::UpdateSeriesRequest;
+    ///
+    /// let client = ApiClient::default();
+    /// let request = UpdateSeriesRequest {
+    ///     name: None,
+    ///     description: Some("Updated description".to_string()),
+    /// };
+    ///
+    /// match client.update_series("123e4567-e89b-12d3-a456-426614174000", request) {
+    ///     Ok(()) => println!("Series updated successfully"),
+    ///     Err(e) => eprintln!("Failed to update series: {}", e),
+    /// }
+    /// ```
     pub async fn update_series(&self, series_id: &str, request: UpdateSeriesRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/series/{}", self.base_url, series_id);
 
@@ -1651,6 +1754,39 @@ impl ApiClient {
     }
 
     /// Deletes a series from the library database.
+    ///
+    /// This method makes a DELETE request to `/api/v1/series/{id}` to permanently
+    /// remove a series from the system.
+    ///
+    /// # Arguments
+    ///
+    /// * `series_id` - The UUID of the series to delete
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - Series deleted successfully
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The series ID is not found (404)
+    ///   - The HTTP request fails
+    ///   - The series cannot be deleted (e.g., has associated titles)
+    ///   - The server returns an error
+    ///
+    /// # Warning
+    ///
+    /// Deleting a series may fail if there are titles associated with it.
+    /// You may need to remove the series association from those titles first.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.delete_series("123e4567-e89b-12d3-a456-426614174000") {
+    ///     Ok(()) => println!("Series deleted successfully"),
+    ///     Err(e) => eprintln!("Failed to delete series: {}", e),
+    /// }
+    /// ```
     pub async fn delete_series(&self, series_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/series/{}", self.base_url, series_id);
 
@@ -1687,7 +1823,29 @@ impl ApiClient {
     /// # Returns
     ///
     /// * `Ok(Vec<Volume>)` - A vector of volumes for the title on success
-    /// * `Err(Box<dyn Error>)` - An error if the request fails
+    /// * `Err(Box<dyn Error>)` - An error if:
+    ///   - The HTTP request fails
+    ///   - The server returns an error
+    ///   - The response cannot be parsed
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// let title_id = "123e4567-e89b-12d3-a456-426614174000";
+    ///
+    /// match client.get_volumes_for_title(title_id) {
+    ///     Ok(volumes) => {
+    ///         for vol in volumes {
+    ///             println!("Volume {} (Barcode: {}) - Condition: {:?}",
+    ///                 vol.copy_number, vol.barcode, vol.condition);
+    ///         }
+    ///     },
+    ///     Err(e) => eprintln!("Failed to fetch volumes: {}", e),
+    /// }
+    /// ```
     pub async fn get_volumes_for_title(&self, title_id: &str) -> Result<Vec<Volume>, Box<dyn Error>> {
         let url = format!("{}/api/v1/titles/{}/volumes", self.base_url, title_id);
 
@@ -1727,6 +1885,27 @@ impl ApiClient {
     ///   - The barcode is invalid or already exists (409 Conflict)
     ///   - The HTTP request fails
     ///   - The title ID is not found
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::{CreateVolumeRequest, VolumeCondition};
+    ///
+    /// let client = ApiClient::default();
+    /// let request = CreateVolumeRequest {
+    ///     title_id: "123e4567-e89b-12d3-a456-426614174000".to_string(),
+    ///     barcode: "VOL-100001".to_string(),
+    ///     condition: VolumeCondition::Good,
+    ///     location_id: None,
+    ///     individual_notes: Some("Signed by author".to_string()),
+    /// };
+    ///
+    /// match client.create_volume(request) {
+    ///     Ok(()) => println!("Volume created successfully"),
+    ///     Err(e) => eprintln!("Failed to create volume: {}", e),
+    /// }
+    /// ```
     pub async fn create_volume(&self, request: CreateVolumeRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/volumes", self.base_url);
 
@@ -1762,6 +1941,25 @@ impl ApiClient {
     ///
     /// * `Ok(())` - Volume updated successfully
     /// * `Err(Box<dyn Error>)` - An error if the request fails or volume not found
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    /// use rbibli_frontend::models::{UpdateVolumeRequest, VolumeCondition};
+    ///
+    /// let client = ApiClient::default();
+    /// let request = UpdateVolumeRequest {
+    ///     condition: Some(VolumeCondition::Poor),
+    ///     individual_notes: Some("Cover damaged".to_string()),
+    ///     ..Default::default()
+    /// };
+    ///
+    /// match client.update_volume("123e4567-e89b-12d3-a456-426614174000", request) {
+    ///     Ok(()) => println!("Volume updated successfully"),
+    ///     Err(e) => eprintln!("Failed to update volume: {}", e),
+    /// }
+    /// ```
     pub async fn update_volume(&self, volume_id: &str, request: UpdateVolumeRequest) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/volumes/{}", self.base_url, volume_id);
 
@@ -1804,6 +2002,18 @@ impl ApiClient {
     ///
     /// A volume cannot be deleted if it is currently loaned or overdue.
     /// The backend will return a 409 Conflict error in this case.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.delete_volume("123e4567-e89b-12d3-a456-426614174000") {
+    ///     Ok(()) => println!("Volume deleted successfully"),
+    ///     Err(e) => eprintln!("Failed to delete volume: {}", e),
+    /// }
+    /// ```
     pub async fn delete_volume(&self, volume_id: &str) -> Result<(), Box<dyn Error>> {
         let url = format!("{}/api/v1/volumes/{}", self.base_url, volume_id);
 
@@ -2347,32 +2557,32 @@ impl ApiClient {
             .ok_or_else(|| "Extended loan not found in active loans".into())
     }
 
-    // ========================================================================
-    // Dewey Classification API Methods
-    // ========================================================================
 
-    /// Search Dewey classifications by keyword
-    ///
-    /// # Arguments
-    ///
-    /// * `query` - Search query string (e.g., "mathematics", "poetry")
-    /// * `limit` - Maximum number of results to return (default: 20)
-    ///
-    /// # Returns
-    ///
-    /// * `Ok(Vec<DeweySearchResult>)` - List of matching classifications
-    /// * `Err` - If the request fails
 
     // ========================================================================
     // Statistics API methods
     // ========================================================================
 
-    /// Get overall library statistics
+    /// Get overall library statistics.
+    ///
+    /// Fetches high-level counts for titles, volumes, authors, publishers, etc.
     ///
     /// # Returns
     ///
     /// * `Ok(LibraryStatistics)` - Library-wide counts
     /// * `Err` - If the request fails
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_library_statistics() {
+    ///     Ok(stats) => println!("Total titles: {}", stats.total_titles),
+    ///     Err(e) => eprintln!("Failed to fetch stats: {}", e),
+    /// }
+    /// ```
     pub async fn get_library_statistics(&self) -> Result<LibraryStatistics, Box<dyn Error>> {
         let url = format!("{}/api/v1/statistics/library", self.base_url);
 
@@ -2393,12 +2603,28 @@ impl ApiClient {
         Ok(stats)
     }
 
-    /// Get volumes per genre statistics
+    /// Get volumes per genre statistics.
     ///
     /// # Returns
     ///
     /// * `Ok(Vec<GenreStatistic>)` - List of genre statistics ordered by volume count
     /// * `Err` - If the request fails
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_genre_statistics() {
+    ///     Ok(stats) => {
+    ///         for stat in stats {
+    ///             println!("{}: {} volumes", stat.genre_name, stat.volume_count);
+    ///         }
+    ///     },
+    ///     Err(e) => eprintln!("Failed to fetch stats: {}", e),
+    /// }
+    /// ```
     pub async fn get_genre_statistics(&self) -> Result<Vec<GenreStatistic>, Box<dyn Error>> {
         let url = format!("{}/api/v1/statistics/genres", self.base_url);
 
@@ -2419,12 +2645,28 @@ impl ApiClient {
         Ok(stats)
     }
 
-    /// Get volumes per location statistics
+    /// Get volumes per location statistics.
     ///
     /// # Returns
     ///
     /// * `Ok(Vec<LocationStatistic>)` - List of location statistics ordered by volume count
     /// * `Err` - If the request fails
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_location_statistics() {
+    ///     Ok(stats) => {
+    ///         for stat in stats {
+    ///             println!("{}: {} volumes", stat.location_name, stat.volume_count);
+    ///         }
+    ///     },
+    ///     Err(e) => eprintln!("Failed to fetch stats: {}", e),
+    /// }
+    /// ```
     pub async fn get_location_statistics(&self) -> Result<Vec<LocationStatistic>, Box<dyn Error>> {
         let url = format!("{}/api/v1/statistics/locations", self.base_url);
 
@@ -2445,12 +2687,28 @@ impl ApiClient {
         Ok(stats)
     }
 
-    /// Get loan status statistics
+    /// Get loan status statistics.
     ///
     /// # Returns
     ///
     /// * `Ok(Vec<LoanStatistic>)` - List of loan status counts
     /// * `Err` - If the request fails
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use rbibli_frontend::api_client::ApiClient;
+    ///
+    /// let client = ApiClient::default();
+    /// match client.get_loan_statistics() {
+    ///     Ok(stats) => {
+    ///         for stat in stats {
+    ///             println!("{}: {}", stat.status, stat.count);
+    ///         }
+    ///     },
+    ///     Err(e) => eprintln!("Failed to fetch stats: {}", e),
+    /// }
+    /// ```
     pub async fn get_loan_statistics(&self) -> Result<Vec<LoanStatistic>, Box<dyn Error>> {
         let url = format!("{}/api/v1/statistics/loans", self.base_url);
 

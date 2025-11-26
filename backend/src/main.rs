@@ -1,3 +1,9 @@
+//! Main entry point for the rbibli backend application.
+//!
+//! This file initializes the application, sets up logging, connects to the database,
+//! and starts the HTTP server. It uses the `backend::run` function to configure
+//! the Actix Web server and its routes.
+
 use backend::run;
 use log::{info, error};
 use sqlx::mysql::MySqlPoolOptions;

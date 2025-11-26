@@ -1,3 +1,8 @@
+//! API handler for ISBN lookup.
+//!
+//! This module provides an HTTP handler for looking up book details by ISBN
+//! using the Google Books API.
+
 use actix_web::{web, HttpResponse, Responder};
 use log::{info, error};
 use serde::{Deserialize, Serialize};
@@ -21,18 +26,35 @@ pub struct IsbnLookupResponse {
     pub cover_image_mime_type: Option<String>,
 }
 
-/// Lookup book information by ISBN from Google Books API
+/// Looks up book information by ISBN using the Google Books API.
 ///
-/// # Parameters
-/// - isbn: The ISBN-10 or ISBN-13 number (path parameter)
+/// **Endpoint**: `GET /api/v1/isbn/{isbn}`
 ///
-/// # Response
-/// - 200 OK with JSON containing book data and base64-encoded cover image
-/// - 404 Not Found if ISBN is not found
-/// - 500 Internal Server Error if lookup fails
+/// Retrieves book metadata (title, author, publisher, etc.) and a base64-encoded cover image
+/// for the given ISBN. This is used to auto-populate book details when adding a new title.
 ///
-/// # Example
-/// GET /api/v1/isbn/9780134685991
+/// # Arguments
+///
+/// * `isbn` - The ISBN-10 or ISBN-13 number (path parameter)
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with `IsbnLookupResponse` containing book data and cover image
+/// * `HttpResponse::NotFound` if the ISBN is not found in the external API
+/// * `HttpResponse::InternalServerError` if the external API request fails
+///
+/// # Example Response
+///
+/// ```json
+/// {
+///   "title": "The Rust Programming Language",
+///   "authors": ["Steve Klabnik", "Carol Nichols"],
+///   "isbn": "9781593278281",
+///   "publication_year": 2018,
+///   "cover_image_data": "base64-string...",
+///   "cover_image_mime_type": "image/jpeg"
+/// }
+/// ```
 pub async fn lookup_isbn(isbn: web::Path<String>) -> impl Responder {
     info!("POST /api/v1/isbn/{} - Looking up ISBN", isbn);
 

@@ -1,3 +1,9 @@
+//! Main entry point for the Slint UI application.
+//!
+//! This file initializes the Slint UI, sets up the API client, and defines the
+//! event handling logic for the user interface. It connects UI callbacks to
+//! backend API calls.
+
 // Prevent console window in addition to Slint window in Windows release builds when, e.g., starting the app via file manager. Ignored on other platforms.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -111,6 +117,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     let api_client = Rc::new(ApiClient::default());
 
     // Function to load titles and populate the UI
+    //
+    // This closure creates an async task to fetch all titles from the backend API.
+    // It transforms the backend data into the format expected by the Slint UI
+    // and updates the `titles` model in the UI.
     let load_titles = {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -174,6 +184,11 @@ async fn run() -> Result<(), Box<dyn Error>> {
     };
 
     // Function to load locations and populate the UI
+    //
+    // This closure fetches the hierarchical location data from the backend.
+    // It updates two UI models:
+    // 1. `locations`: The full list of location objects for the management view
+    // 2. `location_names`: A simple list of names for dropdown selection
     let load_locations = {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -231,6 +246,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     };
 
     // Function to load authors and populate the UI
+    //
+    // This closure fetches the list of authors from the backend.
+    // It updates the `authors` model in the UI with the retrieved data.
     let load_authors = {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -278,6 +296,12 @@ async fn run() -> Result<(), Box<dyn Error>> {
     };
 
     // Function to load publishers and populate the UI
+    //
+    // This closure fetches the list of publishers from the backend.
+    // It updates three UI models:
+    // 1. `publishers`: The full list of publisher objects for the management view
+    // 2. `publisher_items`: A simplified list for dropdowns
+    // 3. `publisher_names`: A list of names for ComboBox selection
     let load_publishers = {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -345,6 +369,12 @@ async fn run() -> Result<(), Box<dyn Error>> {
     };
 
     // Function to load genres and populate the UI
+    //
+    // This closure fetches the list of genres from the backend.
+    // It updates three UI models:
+    // 1. `genres`: The full list of genre objects for the management view
+    // 2. `genre_items`: A simplified list for dropdowns
+    // 3. `genre_names`: A list of names for ComboBox selection
     let load_genres = {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -414,6 +444,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the search-titles callback
+    //
+    // This callback handles the advanced search functionality. It takes various
+    // filter parameters from the UI, constructs a search request to the backend,
+    // and updates the titles list with the search results.
     {
         let api_client = api_client.clone();
         let ui_weak = ui.as_weak();
@@ -526,6 +560,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the find-duplicates callback
+    //
+    // This callback triggers the duplicate detection process. It calls the backend
+    // to identify potential duplicates and then updates the UI to highlight these
+    // items. It also populates the duplicate count and status indicators.
     {
         let api_client = api_client.clone();
         let ui_weak = ui.as_weak();
@@ -610,6 +648,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the merge-titles callback
+    //
+    // This callback handles the merging of two titles. It sends a request to the
+    // backend to merge a secondary title into a primary one, moving all volumes
+    // and deleting the secondary title. On success, it reloads the titles list.
     {
         let api_client = api_client.clone();
         let load_titles = load_titles.clone();
@@ -644,6 +686,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the dismiss-duplicate callback
+    //
+    // This callback handles the user's decision to dismiss a potential duplicate pair.
+    // It removes the duplicate flags from the involved titles in the UI model,
+    // effectively marking them as "not duplicates" for the current session.
     {
         let ui_weak = ui.as_weak();
         ui.on_dismiss_duplicate(move |title1_id, title2_id| {
@@ -686,6 +732,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the clear-duplicates callback
+    //
+    // This callback clears all duplicate detection results from the UI.
+    // It iterates through all titles and resets their duplicate status flags,
+    // returning the view to its normal state.
     {
         let ui_weak = ui.as_weak();
         ui.on_clear_duplicates(move || {
@@ -726,6 +776,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the create-location callback
+    //
+    // This callback handles the creation of a new storage location. It collects
+    // the name, description, and optional parent ID from the UI, sends a creation
+    // request to the backend, and reloads the location list on success.
     {
         let load_locations = load_locations.clone();
         let api_client = api_client.clone();
@@ -767,6 +821,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the update-location callback
+    //
+    // This callback handles updates to an existing storage location. It sends
+    // the modified fields to the backend and reloads the location list on success.
     {
         let load_locations = load_locations.clone();
         let api_client = api_client.clone();
@@ -813,6 +870,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the delete-location callback
+    //
+    // This callback handles the deletion of a storage location. It sends a delete
+    // request to the backend and reloads the location list on success.
     {
         let load_locations = load_locations.clone();
         let api_client = api_client.clone();
@@ -846,6 +906,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the create-author callback
+    //
+    // This callback handles the creation of a new author. It collects biographical
+    // information from the UI, constructs a request object, sends it to the backend,
+    // and reloads the author list on success.
     {
         let load_authors = load_authors.clone();
         let api_client = api_client.clone();
@@ -907,6 +971,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the update-author callback
+    //
+    // This callback handles updates to an existing author's information. It sends
+    // the modified fields to the backend and reloads the author list on success.
     {
         let load_authors = load_authors.clone();
         let api_client = api_client.clone();
@@ -977,6 +1044,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the delete-author callback
+    //
+    // This callback handles the deletion of an author. It sends a delete request
+    // to the backend and reloads the author list on success.
     {
         let load_authors = load_authors.clone();
         let api_client = api_client.clone();
@@ -1010,6 +1080,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the create-publisher callback
+    //
+    // This callback handles the creation of a new publisher. It collects company
+    // information from the UI, sends a creation request to the backend, and
+    // reloads the publisher list on success.
     {
         let load_publishers = load_publishers.clone();
         let api_client = api_client.clone();
@@ -1063,6 +1137,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the update-publisher callback
+    //
+    // This callback handles updates to an existing publisher's information. It sends
+    // the modified fields to the backend and reloads the publisher list on success.
     {
         let load_publishers = load_publishers.clone();
         let api_client = api_client.clone();
@@ -1121,6 +1198,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the delete-publisher callback
+    //
+    // This callback handles the deletion of a publisher. It sends a delete request
+    // to the backend and reloads the publisher list on success.
     {
         let load_publishers = load_publishers.clone();
         let api_client = api_client.clone();
@@ -1154,6 +1234,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the create-genre callback
+    //
+    // This callback handles the creation of a new genre. It collects the name and
+    // description from the UI, sends a creation request to the backend, and
+    // reloads the genre list on success.
     {
         let load_genres = load_genres.clone();
         let api_client = api_client.clone();
@@ -1189,6 +1273,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the update-genre callback
+    //
+    // This callback handles updates to an existing genre's information. It sends
+    // the modified fields to the backend and reloads the genre list on success.
     {
         let load_genres = load_genres.clone();
         let api_client = api_client.clone();
@@ -1229,6 +1316,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the delete-genre callback
+    //
+    // This callback handles the deletion of a genre. It sends a delete request
+    // to the backend and reloads the genre list on success.
     {
         let load_genres = load_genres.clone();
         let api_client = api_client.clone();
@@ -1254,6 +1344,12 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Function to load series and populate the UI
+    //
+    // This closure fetches the list of book series from the backend.
+    // It updates three UI models:
+    // 1. `series`: The full list of series objects for the management view
+    // 2. `series_items`: A simplified list for dropdowns
+    // 3. `series_names`: A list of names for ComboBox selection
     let load_series = {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -1324,6 +1420,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the create-series callback
+    //
+    // This callback handles the creation of a new book series. It collects the name
+    // and description from the UI, sends a creation request to the backend, and
+    // reloads the series list on success.
     {
         let load_series = load_series.clone();
         let api_client = api_client.clone();
@@ -1359,6 +1459,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the update-series callback
+    //
+    // This callback handles updates to an existing series's information. It sends
+    // the modified fields to the backend and reloads the series list on success.
     {
         let load_series = load_series.clone();
         let api_client = api_client.clone();
@@ -1399,6 +1502,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the delete-series callback
+    //
+    // This callback handles the deletion of a series. It sends a delete request
+    // to the backend and reloads the series list on success.
     {
         let load_series = load_series.clone();
         let api_client = api_client.clone();
@@ -1489,6 +1595,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the create-title callback
+    //
+    // This callback handles the creation of a new book title. It collects all
+    // metadata fields from the UI form, constructs a comprehensive request object,
+    // sends it to the backend, and reloads the titles list on success.
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
@@ -1592,6 +1702,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the update-title callback
+    //
+    // This callback handles updates to an existing title's metadata. It collects
+    // all fields from the UI form, constructs an update request, sends it to the
+    // backend, and reloads the titles list on success.
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
@@ -1706,6 +1820,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
 
 
     // Handle delete title callback
+    //
+    // This callback handles the deletion of a book title. It sends a delete request
+    // to the backend and reloads the titles list on success.
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
@@ -1735,6 +1852,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     // ==================================================================
 
     // Handle load volumes callback
+    //
+    // This callback fetches all physical volumes associated with a specific title.
+    // It also retrieves location information to display user-friendly location names
+    // instead of raw IDs. It updates the `volumes` model in the UI.
     {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -1802,6 +1923,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Handle create volume callback
+    //
+    // This callback handles the creation of a new physical volume. It collects
+    // details like barcode, condition, and location from the UI, sends a creation
+    // request to the backend, and reloads the volume list for the current title.
     {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -1851,6 +1976,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Handle update volume callback
+    //
+    // This callback handles updates to an existing volume's details. It sends
+    // the modified fields to the backend and reloads the volume list on success.
     {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -1907,6 +2035,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Handle delete volume callback
+    //
+    // This callback handles the deletion of a physical volume. It sends a delete
+    // request to the backend and reloads the volume list on success.
     {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -1938,10 +2069,14 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect author management callbacks
+    //
+    // This block contains callbacks for managing the relationship between titles
+    // and authors (e.g., assigning authors to books).
     {
         let api_client = api_client.clone();
         let ui_weak = ui.as_weak();
 
+        // Callback to load authors assigned to a specific title
         ui.on_load_title_authors(move |title_id| {
             let api_client = api_client.clone();
             let ui_weak = ui_weak.clone();
@@ -1990,6 +2125,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
         let api_client = api_client.clone();
         let ui_weak = ui.as_weak();
 
+        // Callback to load all available authors for the selection dropdown
         ui.on_load_all_authors(move || {
             let api_client = api_client.clone();
             let ui_weak = ui_weak.clone();
@@ -2035,6 +2171,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
         let api_client = api_client.clone();
         let ui_weak = ui.as_weak();
 
+        // Callback to assign an author to a title with a specific role
         ui.on_add_author_to_title(move |title_id, author_id, role| {
             let api_client = api_client.clone();
             let ui_weak = ui_weak.clone();
@@ -2080,6 +2217,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
         let api_client = api_client.clone();
         let ui_weak = ui.as_weak();
 
+        // Callback to remove an author assignment from a title
         ui.on_remove_author_from_title(move |title_id, author_id| {
             let api_client = api_client.clone();
             let ui_weak = ui_weak.clone();
@@ -2106,6 +2244,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the upload-image callback
+    //
+    // This callback handles the cover image upload process. It opens a native file
+    // dialog for the user to select an image, reads the file data, and uploads it
+    // to the backend for the specified title.
     {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
@@ -2146,6 +2288,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the fetch-from-isbn callback (for create dialog)
+    //
+    // This callback performs an ISBN lookup using the Google Books API (via backend).
+    // It populates the "New Title" form fields with the retrieved metadata.
     {
         let api_client = api_client.clone();
         let ui_weak = ui.as_weak();
@@ -2203,6 +2348,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Connect the fetch-from-isbn-edit callback (for edit dialog)
+    //
+    // This callback performs an ISBN lookup using the Google Books API (via backend).
+    // It populates the "Edit Title" form fields with the retrieved metadata.
     {
         let api_client = api_client.clone();
         let ui_weak = ui.as_weak();
@@ -2279,6 +2427,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     // ========================================================================
 
     // Function to load borrower groups and populate the UI
+    //
+    // This closure fetches the list of borrower groups from the backend.
+    // It updates the `borrower_groups` model in the UI for the management view.
     let load_borrower_groups = {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -2442,6 +2593,11 @@ async fn run() -> Result<(), Box<dyn Error>> {
     // ========================================================================
 
     // Function to load borrowers and populate the UI
+    //
+    // This closure fetches the list of borrowers from the backend.
+    // It updates two UI models:
+    // 1. `borrowers`: The full list of borrower objects for the management view
+    // 2. `borrower_names`: A list of names for ComboBox selection (e.g., for creating loans)
     let load_borrowers = {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -2512,6 +2668,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Handle create borrower callback
+    //
+    // This callback handles the creation of a new borrower. It collects personal
+    // information and group assignment from the UI, sends a creation request to
+    // the backend, and reloads the borrower list on success.
     {
         let load_borrowers = load_borrowers.clone();
         let api_client = api_client.clone();
@@ -2553,6 +2713,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Handle update borrower callback
+    //
+    // This callback handles updates to an existing borrower's information. It sends
+    // the modified fields to the backend and reloads the borrower list on success.
     {
         let load_borrowers = load_borrowers.clone();
         let api_client = api_client.clone();
@@ -2595,6 +2758,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Handle delete borrower callback
+    //
+    // This callback handles the deletion of a borrower. It sends a delete request
+    // to the backend and reloads the borrower list on success.
     {
         let load_borrowers = load_borrowers.clone();
         let api_client = api_client.clone();
@@ -2624,6 +2790,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     // ========================================================================
 
     // Function to load active loans and populate the UI
+    //
+    // This closure fetches the list of currently active (not returned) loans from
+    // the backend. It updates the `active_loans` model in the UI, which displays
+    // loan details including due dates and overdue status.
     let load_active_loans = {
         let ui_weak = ui.as_weak();
         let api_client = api_client.clone();
@@ -2679,6 +2849,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Handle create loan callback
+    //
+    // This callback handles the creation of a new loan (checkout). It takes a
+    // borrower ID and a volume barcode, sends a loan creation request to the
+    // backend, and reloads the active loans list on success.
     {
         let load_active_loans = load_active_loans.clone();
         let api_client = api_client.clone();
@@ -2715,6 +2889,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Handle return loan callback
+    //
+    // This callback handles the return of a loaned item (checkin). It sends a
+    // return request to the backend for a specific loan ID and reloads the
+    // active loans list on success.
     {
         let load_active_loans = load_active_loans.clone();
         let api_client = api_client.clone();
@@ -2740,6 +2918,10 @@ async fn run() -> Result<(), Box<dyn Error>> {
     }
 
     // Handle extend loan callback
+    //
+    // This callback handles the extension (renewal) of an existing loan. It sends
+    // an extension request to the backend, which calculates the new due date based
+    // on the borrower's group rules. It reloads the active loans list on success.
     {
         let load_active_loans = load_active_loans.clone();
         let api_client = api_client.clone();
@@ -2770,6 +2952,13 @@ async fn run() -> Result<(), Box<dyn Error>> {
     // ========================================================================
 
     // Create load_statistics closure
+    //
+    // This closure fetches various statistics from the backend to populate the
+    // dashboard view. It retrieves:
+    // 1. Overall library statistics (counts of titles, volumes, etc.)
+    // 2. Genre statistics (volumes per genre)
+    // 3. Location statistics (volumes per location)
+    // 4. Loan statistics (active vs overdue vs returned)
     let load_statistics = {
         let ui_handle = ui.as_weak();
         let api_client = api_client.clone();

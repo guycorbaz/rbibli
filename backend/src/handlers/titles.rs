@@ -1,3 +1,8 @@
+//! API handlers for managing titles.
+//!
+//! This module provides HTTP handlers for creating, reading, updating, and deleting
+//! book titles. It includes functionality for searching, duplicate detection, and merging.
+
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{TitleWithCount, CreateTitleRequest, UpdateTitleRequest, AddAuthorToTitleRequest, Author, AuthorRole, TitleSearchParams, DuplicatePair, DuplicateDetectionResponse, DuplicateConfidence, MergeTitlesRequest, MergeTitlesResponse};
 use crate::AppState;
@@ -796,7 +801,23 @@ pub async fn add_author_to_title(
     }
 }
 
-/// DELETE /api/v1/titles/{title_id}/authors/{author_id} - Remove an author from a title
+/// Removes an author from a title.
+///
+/// **Endpoint**: `DELETE /api/v1/titles/{title_id}/authors/{author_id}`
+///
+/// This handler removes the association between a specific author and a title.
+/// It does not delete the author or the title, only the relationship record in `title_authors`.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameters containing `(title_id, author_id)`
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` (200) if the relationship was successfully removed
+/// * `HttpResponse::NotFound` (404) if the relationship did not exist
+/// * `HttpResponse::InternalServerError` (500) if the database operation fails
 pub async fn remove_author_from_title(
     data: web::Data<AppState>,
     path: web::Path<(String, String)>,
@@ -1295,9 +1316,28 @@ fn calculate_similarity(title1: &TitleWithCount, title2: &TitleWithCount) -> (f6
     (score, reasons)
 }
 
-/// Detects potential duplicate titles in the library
+/// Detects potential duplicate titles in the library.
 ///
 /// **Endpoint**: `GET /api/v1/titles/duplicates`
+///
+/// This handler analyzes all titles in the database to find potential duplicates based on
+/// similarity metrics. It compares ISBNs, titles, authors, and publication years.
+///
+/// # Query Parameters
+///
+/// * `min_score` - Minimum similarity score (0-100) to consider a pair as duplicates (default: 50.0)
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with `DuplicateDetectionResponse` containing categorized duplicate pairs
+/// * `HttpResponse::InternalServerError` if the database query fails
+///
+/// # Algorithm
+///
+/// 1. Fetches all titles from the database
+/// 2. Compares every pair of titles (O(n^2) complexity - resource intensive for large libraries)
+/// 3. Calculates a similarity score for each pair
+/// 4. Categorizes matches into High, Medium, and Low confidence buckets
 pub async fn detect_duplicates(
     data: web::Data<AppState>,
     query: web::Query<std::collections::HashMap<String, String>>,
@@ -1410,9 +1450,38 @@ pub async fn detect_duplicates(
     })
 }
 
-/// Merges a secondary title into a primary title
+/// Merges a secondary title into a primary title.
 ///
 /// **Endpoint**: `POST /api/v1/titles/{primary_id}/merge/{secondary_id}`
+///
+/// This handler merges two title records. All volumes associated with the secondary title
+/// are moved to the primary title, and then the secondary title is deleted.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameters containing `(primary_id, secondary_id)`
+/// * `request` - JSON body containing confirmation flag
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "confirm": true
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with `MergeTitlesResponse` on success
+/// * `HttpResponse::BadRequest` if confirmation is missing or IDs are identical
+/// * `HttpResponse::NotFound` if either title does not exist
+/// * `HttpResponse::InternalServerError` if the transaction fails
+///
+/// # Transaction Safety
+///
+/// This operation is performed within a database transaction to ensure atomicity.
+/// If any step (moving volumes, deleting title) fails, the entire operation is rolled back.
 pub async fn merge_titles(
     data: web::Data<AppState>,
     path: web::Path<(String, String)>,

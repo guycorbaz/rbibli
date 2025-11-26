@@ -1,3 +1,9 @@
+//! Utility script to verify the database schema for the `titles` table.
+//!
+//! This script connects to the database and retrieves the column details for
+//! `dewey_code` from the `INFORMATION_SCHEMA`. It prints the column name, data type,
+//! and maximum character length to the console for verification purposes.
+
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 

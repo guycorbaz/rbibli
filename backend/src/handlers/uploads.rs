@@ -1,29 +1,40 @@
+//! API handlers for file uploads.
+//!
+//! This module provides HTTP handlers for uploading files, such as book cover images.
+//! It handles multipart form data and saves files to the configured upload directory.
+
 use actix_multipart::Multipart;
 use actix_web::{web, HttpResponse, Responder};
 use futures_util::StreamExt;
 use log::{error, info};
 use crate::AppState;
 
-/// Upload a cover image for a title
+/// Uploads a cover image for a title.
 ///
-/// Accepts multipart/form-data with fields:
-/// - "title_id": The UUID of the title to attach the image to
-/// - "cover": The image file
+/// **Endpoint**: `POST /api/v1/uploads/cover`
 ///
-/// Saves the image directly to the database as a BLOB
+/// Accepts multipart/form-data payload containing the title ID and the image file.
+/// The image is stored directly in the database as a BLOB.
 ///
-/// # Request
-/// - Content-Type: multipart/form-data
-/// - Field "title_id": UUID string
-/// - Field "cover": Image file
-/// - Allowed extensions: jpg, jpeg, png, gif, webp
-/// - Max file size: 5MB
+/// # Request Format
 ///
-/// # Response
-/// - 200 OK with JSON: { "message": "Image uploaded successfully", "title_id": "..." }
-/// - 400 Bad Request if file is invalid or title_id missing
-/// - 404 Not Found if title doesn't exist
-/// - 500 Internal Server Error if upload fails
+/// Content-Type: `multipart/form-data`
+///
+/// Fields:
+/// - `title_id`: UUID of the title (text field)
+/// - `cover`: Image file (file field)
+///
+/// # Constraints
+///
+/// - **Allowed Extensions**: jpg, jpeg, png, gif, webp
+/// - **Max File Size**: 5MB
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::BadRequest` if file is invalid, too large, or missing fields
+/// * `HttpResponse::NotFound` if title does not exist
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn upload_cover(
     mut payload: Multipart,
     data: web::Data<AppState>,
@@ -218,15 +229,22 @@ pub async fn upload_cover(
     }
 }
 
-/// Get a cover image for a title
+/// Retrieves a cover image for a title.
 ///
-/// # Parameters
-/// - title_id: The UUID of the title to retrieve the image for
+/// **Endpoint**: `GET /api/v1/uploads/cover/{title_id}`
 ///
-/// # Response
-/// - 200 OK with image binary data and appropriate Content-Type header
-/// - 404 Not Found if title doesn't exist or has no image
-/// - 500 Internal Server Error if retrieval fails
+/// Serves the binary image data with the appropriate `Content-Type` header.
+///
+/// # Arguments
+///
+/// * `title_id` - UUID of the title (path parameter)
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with image binary data
+/// * `HttpResponse::NotFound` if title doesn't exist or has no image
+/// * `HttpResponse::InternalServerError` if database query fails
 pub async fn get_cover(
     title_id: web::Path<String>,
     data: web::Data<AppState>,
@@ -282,15 +300,22 @@ pub async fn get_cover(
     }
 }
 
-/// Delete a cover image from a title
+/// Deletes a cover image from a title.
 ///
-/// # Parameters
-/// - title_id: The UUID of the title to remove the image from
+/// **Endpoint**: `DELETE /api/v1/uploads/cover/{title_id}`
 ///
-/// # Response
-/// - 200 OK if deleted successfully
-/// - 404 Not Found if title doesn't exist
-/// - 500 Internal Server Error if deletion fails
+/// Removes the image data from the title record (sets fields to NULL).
+///
+/// # Arguments
+///
+/// * `title_id` - UUID of the title (path parameter)
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if title doesn't exist
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn delete_cover(
     title_id: web::Path<String>,
     data: web::Data<AppState>,

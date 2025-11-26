@@ -1,3 +1,9 @@
+//! Core library for the rbibli backend.
+//!
+//! This library defines the application's startup logic, including the `run` function
+//! which configures the Actix Web server, database connection pool, and API routes.
+//! It also exports the `handlers` and `models` modules.
+
 use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use actix_web::dev::Server;
 use log::{info, error, debug};

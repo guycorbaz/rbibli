@@ -4,7 +4,7 @@ A modern, full-featured personal library management system built entirely in Rus
 
 ## ✨ Features
 
-### Currently Implemented (Phase 3 - ~75% Complete)
+### Currently Implemented (Phase 3 - ~88% Complete)
 
 - **📚 Title Management** - Full CRUD operations with ISBN lookup via Google Books API
 - **📖 Volume Management** - Track multiple physical copies per title with unique barcodes
@@ -21,7 +21,7 @@ A modern, full-featured personal library management system built entirely in Rus
   - Volumes per genre with bar charts
   - Volumes per location
   - Loan status breakdown
-- **🔍 Dewey Decimal Classification** - Search and browse DDC system
+- **🔍 Dewey Decimal Classification** - Manual code entry and categorization
 - **🌐 Multi-language Support** - Internationalization infrastructure ready
 
 ### Architecture Highlights
@@ -60,6 +60,27 @@ A modern, full-featured personal library management system built entirely in Rus
   ```bash
   cargo install sqlx-cli --no-default-features --features mysql
   ```
+
+### Docker
+
+You can also run rbibli using Docker. Official images are available on Docker Hub:
+[https://hub.docker.com/r/gcorbaz/rbibli](https://hub.docker.com/r/gcorbaz/rbibli)
+
+Example `docker-compose.yml`:
+```yaml
+services:
+  backend:
+    image: gcorbaz/rbibli:backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=mysql://user:password@db:3306/rbibli
+  
+  frontend:
+    image: gcorbaz/rbibli:frontend
+    ports:
+      - "80:80"
+```
 
 ### Installation
 
@@ -167,7 +188,7 @@ Comprehensive documentation is available in the [`documentation/`](documentation
 
 ## 🎯 Development Status
 
-**Current Phase: Late Phase 3 (75% Complete)**
+**Current Phase: Late Phase 3 (88% Complete)**
 
 ### ✅ Completed
 - Database integration with 15 migrations
@@ -176,18 +197,19 @@ Comprehensive documentation is available in the [`documentation/`](documentation
 - Complete loan management system
 - Statistics dashboard with visualizations
 - ISBN lookup integration
-- Dewey Decimal Classification search
+- **Dewey Decimal Classification** (Manual input)
 - Series management with title associations
+- Cover image upload API
 
 ### 🔄 In Progress
 - Title-Author relationship management
+- WASM compilation support (Async UI refactoring complete)
 
 ### ⏳ Planned (Phase 4)
 - Barcode generation (Code 128)
 - Import/export functionality (CSV, JSON)
 - Duplicate detection algorithms
-- Cover image upload and display
-- WASM build target for web deployment
+- Cover image upload UI
 - Progressive Web App (PWA) features
 
 ## 🔑 Key Concepts

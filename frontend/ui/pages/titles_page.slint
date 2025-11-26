@@ -1,3 +1,34 @@
+// ============================================================================
+// titles_page.slint
+// ============================================================================
+// Titles management page for the rbibli personal library application.
+//
+// This page is the central hub for managing the library's book collection.
+// It provides a comprehensive interface for:
+// - Viewing a list of all book titles
+// - Searching and filtering titles by various criteria (author, genre, etc.)
+// - Creating new titles manually or by fetching metadata via ISBN
+// - Editing existing title details
+// - Managing volumes (copies) associated with each title
+// - Managing authors associated with each title
+// - Detecting and merging duplicate titles
+//
+// The page features a complex layout with:
+// - A top bar for global actions (Refresh, New Title, Find Duplicates)
+// - A collapsible search/filter panel with basic and advanced options
+// - A main list view displaying title cards
+// - Expandable title cards showing detailed information and volumes
+// - Modal dialogs for creating/editing titles, volumes, and authors
+//
+// Key Features:
+// - ISBN Lookup: Fetches book data from Google Books API
+// - Duplicate Detection: Identifies potential duplicates based on similarity
+// - Volume Management: Tracks individual copies, barcodes, and locations
+// - Author Management: Handles multiple authors with specific roles
+//
+// All text is internationalized using @tr() for multi-language support.
+// ============================================================================
+
 import { Styles } from "../styles.slint";
 import { Page } from "page.slint";
 import {

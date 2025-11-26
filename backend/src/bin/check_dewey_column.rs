@@ -1,3 +1,9 @@
+//! Utility script to check the column type of `dewey_code` in the `titles` table.
+//!
+//! This script connects to the database and queries the `INFORMATION_SCHEMA` to verify
+//! the data type of the `dewey_code` column. It is used to ensure that the column
+//! has been correctly migrated to a `VARCHAR` type.
+
 use sqlx::mysql::MySqlPoolOptions;
 use std::env;
 use dotenv::dotenv;

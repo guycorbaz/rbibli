@@ -1,10 +1,29 @@
+//! API handlers for managing borrower groups.
+//!
+//! This module provides HTTP handlers for creating, reading, updating, and deleting
+//! borrower groups. Borrower groups are used to categorize borrowers (e.g., Students, Staff).
+
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{BorrowerGroup, CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest};
 use crate::AppState;
 use log::{info, error};
 use uuid::Uuid;
 
-/// GET /api/v1/borrower-groups - List all borrower groups
+/// Lists all borrower groups.
+///
+/// **Endpoint**: `GET /api/v1/borrower-groups`
+///
+/// Retrieves a list of all borrower groups (e.g., "Students", "Staff", "Public"),
+/// ordered alphabetically by name.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `BorrowerGroup` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn list_borrower_groups(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/borrower-groups - Fetching all borrower groups");
 
@@ -25,7 +44,29 @@ pub async fn list_borrower_groups(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// POST /api/v1/borrower-groups - Create a new borrower group
+/// Creates a new borrower group.
+///
+/// **Endpoint**: `POST /api/v1/borrower-groups`
+///
+/// # Arguments
+///
+/// * `request` - JSON request body containing group details
+/// * `data` - Application state containing the database connection pool
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "name": "Students",
+///   "loan_duration_days": 14,
+///   "description": "Standard student loan period"
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Created` (201) with new group ID on success
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn create_borrower_group(
     request: web::Json<CreateBorrowerGroupRequest>,
     data: web::Data<AppState>,
@@ -58,7 +99,24 @@ pub async fn create_borrower_group(
     }
 }
 
-/// PUT /api/v1/borrower-groups/{id} - Update a borrower group
+/// Updates an existing borrower group.
+///
+/// **Endpoint**: `PUT /api/v1/borrower-groups/{id}`
+///
+/// Updates mutable fields of a borrower group. Only provided fields are updated.
+///
+/// # Arguments
+///
+/// * `id` - Path parameter containing the group's UUID
+/// * `request` - JSON request body with fields to update
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if group does not exist
+/// * `HttpResponse::BadRequest` if no fields provided
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn update_borrower_group(
     id: web::Path<String>,
     request: web::Json<UpdateBorrowerGroupRequest>,
@@ -110,7 +168,23 @@ pub async fn update_borrower_group(
     }
 }
 
-/// DELETE /api/v1/borrower-groups/{id} - Delete a borrower group
+/// Deletes a borrower group.
+///
+/// **Endpoint**: `DELETE /api/v1/borrower-groups/{id}`
+///
+/// Removes a borrower group. Note that this may fail if borrowers are assigned to this group
+/// (depending on foreign key constraints, usually RESTRICT).
+///
+/// # Arguments
+///
+/// * `id` - Path parameter containing the group's UUID
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if group does not exist
+/// * `HttpResponse::InternalServerError` if database operation fails (e.g., constraint violation)
 pub async fn delete_borrower_group(
     id: web::Path<String>,
     data: web::Data<AppState>,

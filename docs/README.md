@@ -2,7 +2,7 @@
 
 ### Personal Library Management System
 
-A modern, elegant solution for managing your personal book collection. Built entirely in Rust with a beautiful native interface.
+A modern, elegant solution for managing your personal book collection. Built entirely in Rust with a beautiful native interface using Slint.
 
 **Perfect for book lovers who want to organize their home library with ease.**
 
@@ -43,28 +43,12 @@ A modern, elegant solution for managing your personal book collection. Built ent
 
 ---
 
-## 🖼️ Screenshots
-
-### Library Overview
-![Statistics Dashboard](screenshots/statistics-dashboard.png)
-*View your entire collection with beautiful visual analytics*
-
-### Book Management
-![Title Management](screenshots/title-management.png)
-*Easily add and organize your books with rich metadata*
-
-### Loan Tracking
-![Loan Management](screenshots/loan-management.png)
-*Track who borrowed what and when it's due*
-
----
-
 ## 🚀 Key Features
 
 ### 📚 Complete Library Management
 - Full book metadata (title, subtitle, ISBN, pages, language, summary)
 - Author and publisher information
-- Genre categorization
+- Genre and Series categorization
 - Dewey Decimal Classification
 - Cover image storage
 
@@ -95,7 +79,6 @@ A modern, elegant solution for managing your personal book collection. Built ent
 ### 🔍 Advanced Organization
 - ISBN metadata lookup via Google Books API
 - Complete Dewey Decimal Classification system
-- Search and filter capabilities (coming soon)
 
 ---
 
@@ -106,68 +89,63 @@ Built with modern, reliable technology:
 - **[Rust](https://www.rust-lang.org/)** - Memory-safe, blazingly fast
 - **[Slint](https://slint.dev/)** - Beautiful native UI framework
 - **[MariaDB](https://mariadb.org/)** - Reliable data storage
-- **REST API** - Clean architecture with actix-web
-
----
-
-## 💡 Use Cases
-
-### Home Library
-Perfect for managing your personal book collection at home. Track exactly where each book is located and who borrowed it.
-
-### Small Library/Bookshop
-Organize inventory, manage loans, and keep track of your collection with professional-grade tools.
-
-### Book Collectors
-Maintain detailed records of your collection, including condition, acquisition details, and multiple editions.
-
-### Lending Libraries
-Share your collection with friends and family while keeping track of who has what and when it's due back.
-
----
-
-## 🌟 What Makes rbibli Special?
-
-### Title vs Volume Architecture
-
-Unlike simple cataloging apps, rbibli understands that **one book title can have multiple physical copies**:
-
-- **Titles** = The abstract book (metadata, authors, genre)
-- **Volumes** = Individual physical copies with barcodes
-
-This means you can:
-- ✅ Track multiple copies of your favorite books
-- ✅ Maintain a wishlist (titles with no volumes yet)
-- ✅ Loan out specific copies while keeping others available
-- ✅ Track condition per physical copy
-
-### Trust-Based System
-
-Designed for personal use with friends and family:
-- No complex permissions or restrictions
-- Simple, straightforward loan management
-- Focus on tracking, not enforcement
+- **[Actix-web](https://actix.rs/)** - High-performance web framework
 
 ---
 
 ## 📥 Get Started
 
+### Prerequisites
+
+- **Rust** (latest stable)
+- **MariaDB/MySQL**
+- **SQLx CLI** (`cargo install sqlx-cli`)
+
+### Docker
+
+You can also run rbibli using Docker. Official images are available on Docker Hub:
+[https://hub.docker.com/r/gcorbaz/rbibli](https://hub.docker.com/r/gcorbaz/rbibli)
+
+Example `docker-compose.yml`:
+```yaml
+services:
+  backend:
+    image: gcorbaz/rbibli:backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=mysql://user:password@db:3306/rbibli
+  
+  frontend:
+    image: gcorbaz/rbibli:frontend
+    ports:
+      - "80:80"
+```
+
 ### Installation
 
-1. **Download** the latest release for your platform (Windows, macOS, Linux)
-2. **Install MariaDB** (or MySQL)
-3. **Run the application** - It will guide you through initial setup
-4. **Start cataloging** your books!
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/guycorbaz/rbibli.git
+   cd rbibli
+   ```
 
-[View Installation Guide →](https://github.com/guycorbaz/rbibli#installation)
+2. **Set up the database**
+   Create a `.env` file in `backend/`:
+   ```env
+   DATABASE_URL=mysql://username:password@localhost:3306/rbibli
+   ```
 
-### Quick Start
+3. **Run migrations**
+   ```bash
+   cd backend
+   sqlx database create
+   sqlx migrate run
+   ```
 
-Once installed:
-1. Add your first books by ISBN or manually
-2. Create storage locations for your shelves
-3. Add physical volumes with barcodes
-4. Optionally add borrowers for loan tracking
+4. **Run the application**
+   Start backend: `cargo run --release` (in `backend/`)
+   Start frontend: `cargo run --release` (in `frontend/`)
 
 [View Full Documentation →](https://github.com/guycorbaz/rbibli/tree/main/documentation)
 
@@ -175,7 +153,7 @@ Once installed:
 
 ## 🗺️ Roadmap
 
-**Current Status: 85% Complete** - Fully functional for daily use!
+**Current Status: Phase 3 (88% Complete)**
 
 ### ✅ Available Now
 - Complete library cataloging
@@ -183,19 +161,14 @@ Once installed:
 - Loan management system
 - Statistics dashboard
 - ISBN lookup
-- Dewey classification
-
-### 🔄 Coming Soon
+- Dewey classification (Manual)
 - Series management
+
+### 🔄 In Progress / Coming Soon
+- Web-based access (WASM)
 - Advanced search and filters
 - Import/export (CSV, JSON)
-- Web-based access (WASM)
-
-### 💭 Future Ideas
-- Mobile app
 - Barcode scanner integration
-- Community features
-- Library sharing
 
 [View Detailed Roadmap →](https://github.com/guycorbaz/rbibli/blob/main/documentation/planning.md)
 
@@ -225,20 +198,12 @@ rbibli is free and open-source software licensed under the MIT License.
 
 ---
 
-## 🎉 Start Organizing Today
-
-Ready to bring order to your book collection?
-
-[**Download rbibli**](https://github.com/guycorbaz/rbibli/releases) | [**View on GitHub**](https://github.com/guycorbaz/rbibli) | [**Read Documentation**](https://github.com/guycorbaz/rbibli/tree/main/documentation)
-
----
-
 <div style="text-align: center;">
 
 **Built for book lovers**
 
 Made with [Rust](https://www.rust-lang.org/) and [Slint](https://slint.dev/)
 
-[⭐ Star on GitHub](https://github.com/guycorbaz/rbibli) • [🐦 Share on Twitter](https://twitter.com/intent/tweet?text=Check%20out%20rbibli%20-%20A%20beautiful%20personal%20library%20management%20system!)
+[⭐ Star on GitHub](https://github.com/guycorbaz/rbibli)
 
 </div>

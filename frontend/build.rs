@@ -1,6 +1,6 @@
-/// Build script for compiling Slint UI files.
-///
-/// This build script is executed during the Cargo build process before the main
+//! Build script for compiling Slint UI files.
+//!
+//! This build script is executed during the Cargo build process before the main
 /// application is compiled. It uses the `slint_build` crate to compile the Slint
 /// UI definition files (`.slint`) into Rust code that can be included in the
 /// main application.

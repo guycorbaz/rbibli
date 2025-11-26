@@ -1,6 +1,6 @@
 # Development Planning & Status - rbibli
 
-**Last Updated**: 2024-11-15
+**Last Updated**: 2025-11-26
 
 ## Project Overview
 
@@ -9,7 +9,7 @@
 ### Architecture
 
 **Client-Server Architecture**:
-- **Frontend**: Slint UI framework (native desktop, WASM later)
+- **Frontend**: Slint UI framework (native desktop, WASM support in progress)
 - **Backend**: REST API using actix-web + tokio
 - **Database**: MariaDB via SQLx
 
@@ -24,7 +24,7 @@
 
 ## Current Implementation Status
 
-**Overall Progress: ~85% Complete** 🟢
+**Overall Progress: ~88% Complete** 🟢
 
 ### ✅ Fully Implemented Features
 
@@ -47,11 +47,12 @@
 - ✅ HTTP API client (api_client.rs) with reqwest
 - ✅ Full integration with backend API via callbacks
 - ✅ Internationalization infrastructure (`@tr()` macro)
+- ✅ **WASM Support**: Async UI refactoring completed for WASM compatibility
 
 #### Backend (actix-web + MariaDB)
 - ✅ Complete actix-web server structure with routing
 - ✅ Tokio async runtime configured
-- ✅ **MariaDB integration** with SQLx (13 migrations applied)
+- ✅ **MariaDB integration** with SQLx (15 migrations applied)
 - ✅ **Connection pooling** (MySqlPoolOptions, max 5 connections)
 - ✅ **Health check endpoints** (/health, /health/db)
 - ✅ **Full CRUD APIs for 11 Entity Types:**
@@ -66,14 +67,14 @@
   - ✅ Loans API (create by barcode, list active/overdue, return)
   - ✅ Statistics API (library overview, genres, locations, loans)
   - ✅ ISBN Lookup API (Google Books integration)
-  - ✅ Dewey Classification API (search, browse, get by code)
   - ✅ Cover Upload API (upload, get, delete)
+- ✅ **Dewey Classification**: Simplified manual input (code + category)
 - ✅ UUID-based entity IDs (CHAR(36))
 - ✅ Timestamp management (created_at, updated_at)
 - ✅ Repository pattern for all entities
 
 #### Database Schema (MariaDB)
-- ✅ **13 Migrations Applied** - Complete schema:
+- ✅ **15 Migrations Applied** - Complete schema:
   - ✅ titles (with publisher_id, genre_id FKs)
   - ✅ volumes (with barcode, condition, loan_status, location_id FK)
   - ✅ authors
@@ -84,7 +85,6 @@
   - ✅ borrowers
   - ✅ borrower_groups (with loan_duration_days policy)
   - ✅ loans (with title_id, volume_id, borrower_id FKs)
-  - ✅ dewey_classifications (hierarchical DDC system)
 - ✅ Foreign key relationships with proper CASCADE/RESTRICT/SET NULL
 - ✅ Enum types (condition, loan_status, author_role)
 - ✅ Unique constraints (barcodes, etc.)
@@ -104,7 +104,6 @@
 - ⏳ **Import/Export** (CSV, JSON formats)
 - ⏳ **Duplicate Detection** (fuzzy matching algorithms)
 - ⏳ **Loan Extension** (extend loan due dates)
-- ⏳ **WASM Compilation** (web deployment target)
 
 ---
 
@@ -120,7 +119,7 @@
 - ✅ Genre dropdown integration
 - ✅ Publisher foreign key relationship
 - ✅ ISBN field support
-- ✅ Dewey classification fields
+- ✅ Dewey classification fields (manual input)
 - ✅ Cover URL field
 - ✅ Timestamps (created_at, updated_at)
 
@@ -234,18 +233,17 @@
 - ✅ Lookup by ISBN (10 or 13 digit)
 - ✅ Returns title, authors, publisher, description, cover URL, etc.
 
-### 10. Dewey Classification (✅ 100% Complete)
+### 10. Dewey Classification (✅ 100% Complete - Simplified)
 
 **What's Working:**
-- ✅ Complete Dewey Decimal Classification database (3 levels)
-- ✅ Search Dewey codes by keyword
-- ✅ Browse Dewey hierarchy
-- ✅ Get classification by code
-- ✅ Relevance scoring for search results
+- ✅ Manual entry of Dewey Code and Category in Title forms
+- ✅ Database fields in `titles` table
+- ✅ Display in title lists
 
-**Missing:**
-- ⏳ Dewey code selector UI in title forms
-- ⏳ Browse by classification in frontend
+**Removed/Simplified:**
+- ❌ Complex Dewey Classification database table (removed)
+- ❌ Search/Browse Dewey API (removed)
+- ❌ Auto-suggestion (removed)
 
 ### 11. Cover Images (✅ 100% Complete - Backend)
 
@@ -267,7 +265,7 @@
 **Status**: 100% Complete
 
 - [x] Database setup (MariaDB + SQLx)
-- [x] Complete schema with 13 migrations
+- [x] Complete schema with 15 migrations
 - [x] Backend API structure (actix-web + tokio)
 - [x] Frontend structure (Slint native)
 - [x] API client and communication layer
@@ -296,19 +294,20 @@
 - [x] Loan management (create by barcode, list, return)
 - [x] Statistics dashboard (4 endpoint types)
 - [x] ISBN lookup integration
-- [x] Dewey classification system
+- [x] Dewey classification system (Simplified)
 - [x] Cover image upload API
 - [x] Overdue loan detection and highlighting
 
-### Phase 4: Polish & Integration 🔄 **IN PROGRESS (~50%)**
+### Phase 4: Polish & Integration 🔄 **IN PROGRESS (~60%)**
 
-**Status**: 50% Complete
+**Status**: 60% Complete
 
 **Completed**:
 - [x] Statistics page with visual charts
 - [x] Confirmation dialogs for destructive actions
 - [x] Modal dialogs with Save/Cancel buttons
 - [x] Borrower/Group edit functionality
+- [x] WASM Async UI refactoring
 
 **Remaining**:
 - [ ] Title-Author relationship UI
@@ -317,7 +316,6 @@
 - [ ] Error handling and user feedback improvements
 - [ ] Loading indicators during API calls
 - [ ] Cover image upload UI
-- [ ] Dewey code selector UI
 
 ### Phase 5: Advanced Features ⏳ **NOT STARTED**
 
@@ -416,14 +414,15 @@ sqlx migrate info      # Show migration status
 
 ## Critical Path to MVP
 
-**Current Status: ~85% Complete** 🟢
+**Current Status: ~88% Complete** 🟢
 
 ### Completed Critical Features ✅
 1. ✅ **Core Data Management** - All entity CRUD operations working
 2. ✅ **Volume Management** - Physical book tracking fully implemented
 3. ✅ **Loan Management** - Complete loan workflow with borrowers and groups
 4. ✅ **Statistics Dashboard** - Analytics and visualizations
-5. ✅ **Database Integration** - All 13 migrations applied, full schema
+5. ✅ **Database Integration** - All 15 migrations applied, full schema
+6. ✅ **Dewey Simplification** - Manual entry implemented, complex system removed
 
 ### Remaining Critical Features
 
@@ -466,7 +465,6 @@ sqlx migrate info      # Show migration status
 - Series management (database ready)
 - Loan extension functionality
 - Cover image upload UI
-- Dewey code selector in title forms
 - Advanced error handling
 
 ### Medium-term (1-2 months)
@@ -559,7 +557,8 @@ sqlx migrate info      # Show migration status
 - ✅ Statistics dashboard with 4 visualization types
 - ✅ Volume management full CRUD
 - ✅ ISBN lookup via Google Books API
-- ✅ Dewey Decimal Classification system
+- ✅ **Dewey Decimal Classification Simplification** (Manual input only)
+- ✅ **WASM Async UI Refactoring**
 - ✅ Cover image upload API
 - ✅ Edit dialogs with Save/Cancel pattern
 - ✅ Overdue loan detection and highlighting
@@ -569,13 +568,13 @@ sqlx migrate info      # Show migration status
 ## Project Statistics
 
 **Codebase Size**:
-- Frontend: ~2,000 lines of Rust + ~2,500 lines of Slint UI
+- Frontend: ~2,500 lines of Rust + ~3,000 lines of Slint UI
 - Backend: ~3,500 lines of Rust
-- Database: 13 SQL migrations
+- Database: 15 SQL migrations
 
 **API Endpoints**: 60+ REST endpoints across 11 entity types
 
-**Database Tables**: 11 tables with comprehensive relationships
+**Database Tables**: 10 tables with comprehensive relationships (Dewey table removed)
 
 **Features**: 8 major feature areas implemented
 
@@ -593,12 +592,11 @@ sqlx migrate info      # Show migration status
 ### Next Week
 4. Add loading indicators
 5. Implement cover image upload UI
-6. Add Dewey code selector in title forms
 
 ### This Month
-7. Series management implementation
-8. Loan extension functionality
-9. Advanced search and filtering
-10. Begin WASM compilation setup
+6. Series management implementation
+7. Loan extension functionality
+8. Advanced search and filtering
+9. Finalize WASM compilation setup
 
 **Focus**: Complete Phase 4 (Polish & Integration) to achieve feature-complete status.

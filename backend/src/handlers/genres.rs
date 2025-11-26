@@ -1,3 +1,9 @@
+//! API handlers for managing genres.
+//!
+//! This module provides HTTP handlers for creating, reading, updating, and deleting
+//! literary genres. It also includes functionality to list genres with their associated
+//! title counts.
+
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{GenreWithTitleCount, CreateGenreRequest, UpdateGenreRequest};
 use crate::AppState;
@@ -5,7 +11,21 @@ use log::{info, warn, error, debug};
 use sqlx::Row;
 use uuid::Uuid;
 
-/// GET /api/v1/genres - List all genres with title counts
+/// Lists all genres with their title counts.
+///
+/// **Endpoint**: `GET /api/v1/genres`
+///
+/// Retrieves a list of all genres, ordered alphabetically by name.
+/// Includes a count of titles associated with each genre.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `GenreWithTitleCount` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn list_genres(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/genres - Fetching all genres with title counts");
 
@@ -77,7 +97,20 @@ pub async fn list_genres(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// GET /api/v1/genres/{id} - Get a single genre by ID
+/// Retrieves a single genre by its ID.
+///
+/// **Endpoint**: `GET /api/v1/genres/{id}`
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `id` - Path parameter containing the genre's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with `Genre` object on success
+/// * `HttpResponse::NotFound` if the genre does not exist
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn get_genre(
     data: web::Data<AppState>,
     id: web::Path<String>,
@@ -148,7 +181,28 @@ pub async fn get_genre(
     }
 }
 
-/// POST /api/v1/genres - Create a new genre
+/// Creates a new genre.
+///
+/// **Endpoint**: `POST /api/v1/genres`
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `req` - JSON request body containing genre details
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "name": "Science Fiction",
+///   "description": "Speculative fiction dealing with imaginative concepts"
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Created` (201) with new genre ID on success
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn create_genre(
     data: web::Data<AppState>,
     req: web::Json<CreateGenreRequest>,
@@ -191,7 +245,24 @@ pub async fn create_genre(
     }
 }
 
-/// PUT /api/v1/genres/{id} - Update a genre
+/// Updates an existing genre.
+///
+/// **Endpoint**: `PUT /api/v1/genres/{id}`
+///
+/// Updates mutable fields of a genre. Only provided fields are updated.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `id` - Path parameter containing the genre's UUID
+/// * `req` - JSON request body with fields to update
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if genre does not exist
+/// * `HttpResponse::BadRequest` if no fields provided or validation fails
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn update_genre(
     data: web::Data<AppState>,
     id: web::Path<String>,
@@ -270,7 +341,23 @@ pub async fn update_genre(
     }
 }
 
-/// DELETE /api/v1/genres/{id} - Delete a genre
+/// Deletes a genre.
+///
+/// **Endpoint**: `DELETE /api/v1/genres/{id}`
+///
+/// Removes a genre record. Note that this may fail or cascade depending on foreign key constraints
+/// with `titles` (though usually handled by ON DELETE SET NULL or similar logic if configured).
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `id` - Path parameter containing the genre's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if genre does not exist
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn delete_genre(
     data: web::Data<AppState>,
     id: web::Path<String>,

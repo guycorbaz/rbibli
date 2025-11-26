@@ -1,3 +1,8 @@
+//! API handlers for managing volumes.
+//!
+//! This module provides HTTP handlers for creating, reading, updating, and deleting
+//! physical volumes (copies) of a title. It tracks volume condition, status, and location.
+
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{Volume, VolumeCondition, VolumeLoanStatus, CreateVolumeRequest, UpdateVolumeRequest};
 use crate::AppState;
@@ -5,7 +10,22 @@ use log::{info, warn, error, debug};
 use sqlx::Row;
 use uuid::Uuid;
 
-/// GET /api/v1/titles/{title_id}/volumes - List all volumes for a specific title
+/// Lists all volumes for a specific title.
+///
+/// **Endpoint**: `GET /api/v1/titles/{title_id}/volumes`
+///
+/// This handler retrieves all physical copies (volumes) associated with a given title.
+/// It returns details like condition, location, loan status, and individual notes.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `title_id` - Path parameter containing the title's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `Volume` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn list_volumes_by_title(
     data: web::Data<AppState>,
     title_id: web::Path<String>,
@@ -125,7 +145,20 @@ pub async fn list_volumes_by_title(
     }
 }
 
-/// GET /api/v1/volumes/{id} - Get a single volume by ID
+/// Retrieves a single volume by its ID.
+///
+/// **Endpoint**: `GET /api/v1/volumes/{id}`
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `id` - Path parameter containing the volume's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with `Volume` object on success
+/// * `HttpResponse::NotFound` if the volume does not exist
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn get_volume(
     data: web::Data<AppState>,
     id: web::Path<String>,
@@ -249,7 +282,36 @@ pub async fn get_volume(
     }
 }
 
-/// POST /api/v1/volumes - Create a new volume
+/// Creates a new volume (copy) for a title.
+///
+/// **Endpoint**: `POST /api/v1/volumes`
+///
+/// This handler adds a new physical copy to the library inventory.
+/// It automatically calculates the next available copy number for the title.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `req` - JSON request body containing volume details
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "title_id": "uuid-string",
+///   "barcode": "123456789",
+///   "condition": "good",
+///   "location_id": "uuid-string",
+///   "individual_notes": "Optional notes"
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Created` (201) with new volume ID and copy number on success
+/// * `HttpResponse::BadRequest` if barcode format is invalid
+/// * `HttpResponse::Conflict` if barcode already exists
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn create_volume(
     data: web::Data<AppState>,
     req: web::Json<CreateVolumeRequest>,
@@ -371,7 +433,37 @@ pub async fn create_volume(
     }
 }
 
-/// PUT /api/v1/volumes/{id} - Update a volume
+/// Updates an existing volume.
+///
+/// **Endpoint**: `PUT /api/v1/volumes/{id}`
+///
+/// Updates mutable fields of a volume. Only provided fields are updated.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `id` - Path parameter containing the volume's UUID
+/// * `req` - JSON request body with fields to update
+///
+/// # Request Body
+///
+/// All fields are optional:
+/// ```json
+/// {
+///   "barcode": "new-barcode",
+///   "condition": "excellent",
+///   "location_id": "new-location-uuid",
+///   "loan_status": "available",
+///   "individual_notes": "Updated notes"
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if volume does not exist
+/// * `HttpResponse::BadRequest` if no fields provided or validation fails
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn update_volume(
     data: web::Data<AppState>,
     id: web::Path<String>,
@@ -495,8 +587,28 @@ pub async fn update_volume(
     }
 }
 
-/// DELETE /api/v1/volumes/{id} - Delete a volume
-/// Business rule: Cannot delete if volume has active or overdue loans
+/// Deletes a volume from the library.
+///
+/// **Endpoint**: `DELETE /api/v1/volumes/{id}`
+///
+/// Removes a physical copy from inventory.
+///
+/// # Business Rules
+///
+/// - Cannot delete a volume that has active or overdue loans.
+/// - Automatically deletes associated loan history (returned loans) before deleting the volume.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `id` - Path parameter containing the volume's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if volume does not exist
+/// * `HttpResponse::Conflict` if volume has active loans
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn delete_volume(
     data: web::Data<AppState>,
     id: web::Path<String>,

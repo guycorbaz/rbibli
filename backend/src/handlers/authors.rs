@@ -1,3 +1,9 @@
+//! API handlers for managing authors.
+//!
+//! This module provides HTTP handlers for creating, reading, updating, and deleting
+//! author records. It also includes functionality to list authors with their associated
+//! title counts.
+
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{Author, AuthorWithTitleCount, CreateAuthorRequest, UpdateAuthorRequest};
 use crate::AppState;
@@ -6,7 +12,21 @@ use sqlx::Row;
 use uuid::Uuid;
 use chrono::NaiveDate;
 
-/// GET /api/v1/authors - List all authors with title counts
+/// Lists all authors with their title counts.
+///
+/// **Endpoint**: `GET /api/v1/authors`
+///
+/// Retrieves a list of all authors, ordered alphabetically by last name then first name.
+/// Includes a count of titles associated with each author.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `AuthorWithTitleCount` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn list_authors(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/authors - Fetching all authors");
 
@@ -90,7 +110,21 @@ pub async fn list_authors(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// GET /api/v1/authors/{id} - Get a single author by ID
+/// Retrieves a single author by their ID.
+///
+/// **Endpoint**: `GET /api/v1/authors/{id}`
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameter containing the author's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with `Author` object on success
+/// * `HttpResponse::NotFound` if the author does not exist
+/// * `HttpResponse::BadRequest` if the UUID format is invalid
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn get_author(
     data: web::Data<AppState>,
     path: web::Path<String>,
@@ -170,7 +204,31 @@ pub async fn get_author(
     }
 }
 
-/// POST /api/v1/authors - Create a new author
+/// Creates a new author.
+///
+/// **Endpoint**: `POST /api/v1/authors`
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `req` - JSON request body containing author details
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "first_name": "John",
+///   "last_name": "Doe",
+///   "biography": "Optional biography",
+///   "birth_date": "1980-01-01",
+///   "nationality": "USA"
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Created` (201) with new author ID on success
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn create_author(
     data: web::Data<AppState>,
     req: web::Json<CreateAuthorRequest>,
@@ -224,7 +282,24 @@ pub async fn create_author(
     }
 }
 
-/// PUT /api/v1/authors/{id} - Update an author
+/// Updates an existing author.
+///
+/// **Endpoint**: `PUT /api/v1/authors/{id}`
+///
+/// Updates mutable fields of an author. Only provided fields are updated.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameter containing the author's UUID
+/// * `req` - JSON request body with fields to update
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if author does not exist
+/// * `HttpResponse::BadRequest` if no fields provided or validation fails
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn update_author(
     data: web::Data<AppState>,
     path: web::Path<String>,
@@ -343,7 +418,24 @@ pub async fn update_author(
     }
 }
 
-/// DELETE /api/v1/authors/{id} - Delete an author
+/// Deletes an author.
+///
+/// **Endpoint**: `DELETE /api/v1/authors/{id}`
+///
+/// Removes an author record. Note that this may fail or cascade depending on foreign key constraints
+/// with `title_authors` (though usually handled by ON DELETE CASCADE or similar logic if configured).
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameter containing the author's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if author does not exist
+/// * `HttpResponse::BadRequest` if UUID format is invalid
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn delete_author(
     data: web::Data<AppState>,
     path: web::Path<String>,

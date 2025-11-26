@@ -88,7 +88,7 @@ These files have some documentation but could be enhanced:
 - ⚠️ **`backend/src/handlers/volumes.rs`** - Needs barcode handling docs
 - ⚠️ **`backend/src/handlers/borrowers.rs`** - Needs trust system explanation
 - ⚠️ **`backend/src/handlers/borrower_groups.rs`** - Needs policy docs
-- ⚠️ **`backend/src/handlers/dewey.rs`** - Needs DDC system explanation
+
 - ⚠️ **`backend/src/handlers/statistics.rs`** - Needs metrics explanation
 - ⚠️ **`backend/src/handlers/isbn_lookup.rs`** - Needs Google Books API docs
 - ⚠️ **`backend/src/handlers/uploads.rs`** - Needs file handling docs

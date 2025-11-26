@@ -360,38 +360,28 @@ The backend provides a REST API for all data operations. The API endpoints liste
 - **Recovery tools**: restore from backup files with conflict resolution
 - **Portable data**: easy migration between installations
 
-## 13. Dewey Classification
+## 13. Dewey Classification (Simplified)
 
 ### 13.1 Classification System
-- **Standard codes**: 000–999.999 according to Dewey Decimal Classification
-- **Hierarchy**: class (hundreds), division (tens), section (units), decimal extensions
-- **Multilingual labels**: translation of categories in all supported languages
-- **Mixed classification**: Dewey + custom genres + local categories
-- **Sub-classification**: up to 3 decimal places for precision
-- **Validation**: verify codes against official DDC database
-- **Auto-suggestion**: propose codes based on title/subject analysis
+- **Manual Entry**: Users can manually enter Dewey codes and category names
+- **Standard codes**: Supports standard DDC format (e.g., 000–999.999)
+- **Flexibility**: No strict validation against a database, allowing for custom or modified codes
+- **Integration**: Fields available on Title entity
 
 ### 13.2 Title-Level Classification
 - **Classification applies to titles**: all volumes of a title share the same Dewey code
 - **Inheritance**: new volumes automatically inherit title's classification
 - **Consistency**: ensures all copies are shelved together
-- **Override capability**: allow different location for specific volumes if needed
 
 ### 13.3 Features
-- **Automatic assignment**: suggestion based on genre/subject at title creation
 - **Manual assignment**: direct code entry during title creation or editing
-- **Validation**: check code validity against DDC standards
-- **Classification search**: filter titles by Dewey codes
-- **Optimized shelving**: logical order for physical organization
-- **Bulk classification**: apply codes to multiple titles simultaneously
+- **Google Books Integration**: Automatic population if API returns classification data
+- **Display**: Shown in title lists and details
 
 ### 13.4 Advantages
-- **Universal organization**: recognized international standard
-- **Physical shelving**: logical shelf order for all volumes
-- **Easier search**: by domain of knowledge across entire collection
-- **Compatibility**: with other library systems
-- **Scalability**: extendable, precise system
-- **Consistency**: all copies of a title classified identically
+- **Simplicity**: Easy to implement and maintain
+- **Flexibility**: Users can use any classification scheme they prefer
+- **Zero Overhead**: No large reference database required
 
 ## 14. Data Validation and Error Handling
 

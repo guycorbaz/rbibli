@@ -1,41 +1,70 @@
+//! Frontend data models module.
+//!
+//! This module defines the data structures used in the frontend application,
+//! mirroring the backend models and providing types for UI state management.
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-/// Title represents the abstract book metadata
+/// Represents the abstract metadata of a book title.
+///
+/// A `Title` corresponds to a specific book (e.g., "The Hobbit") but not a physical copy.
+/// Physical copies are represented by `Volume`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Title {
+    /// Unique UUID
     pub id: String,
+    /// Main title text
     pub title: String,
+    /// Optional subtitle
     pub subtitle: Option<String>,
+    /// ISBN-10 or ISBN-13
     pub isbn: Option<String>,
+    /// Publisher name (denormalized for display)
     pub publisher: Option<String>,
+    /// Publisher UUID
     pub publisher_id: Option<String>,
+    /// Year of publication
     pub publication_year: Option<i32>,
+    /// Number of pages
     pub pages: Option<i32>,
+    /// Language code (e.g., "en", "fr")
     pub language: String,
+    /// Dewey Decimal Classification code
     pub dewey_code: Option<String>,
+    /// Genre name (denormalized)
     pub genre: Option<String>,
+    /// Genre UUID
     pub genre_id: Option<String>,
+    /// Series name (denormalized)
     pub series_name: Option<String>,
+    /// Series UUID
     pub series_id: Option<String>,
+    /// Position in the series (e.g., "1", "Vol. 2")
     pub series_number: Option<String>,
+    /// Plot summary or description
     pub summary: Option<String>,
+    /// URL to cover image (base64 data URI or external URL)
     pub cover_url: Option<String>,
+    /// Creation timestamp
     #[serde(with = "chrono::serde::ts_seconds")]
     pub created_at: DateTime<Utc>,
+    /// Last update timestamp
     #[serde(with = "chrono::serde::ts_seconds")]
     pub updated_at: DateTime<Utc>,
 }
 
-/// TitleWithCount includes the volume count
+/// Extends `Title` with the count of physical volumes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TitleWithCount {
+    /// The base title data
     #[serde(flatten)]
     pub title: Title,
+    /// Number of physical copies (volumes) associated with this title
     pub volume_count: i64,
 }
 
-/// CreateTitleRequest for creating a new title
+/// Payload for creating a new title.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateTitleRequest {
     pub title: String,
@@ -55,7 +84,7 @@ pub struct CreateTitleRequest {
     pub cover_url: Option<String>,
 }
 
-/// UpdateTitleRequest for updating an existing title
+/// Payload for updating an existing title. All fields are optional.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UpdateTitleRequest {
     pub title: Option<String>,
@@ -75,7 +104,7 @@ pub struct UpdateTitleRequest {
     pub cover_url: Option<String>,
 }
 
-/// Series represents a collection of related titles
+/// Represents a collection of related titles (e.g., "Harry Potter").
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Series {
     pub id: String,
@@ -109,7 +138,7 @@ pub struct UpdateSeriesRequest {
     pub description: Option<String>,
 }
 
-/// Location represents a physical location where volumes can be stored
+/// Represents a physical location where volumes can be stored (e.g., "Shelf A", "Room 1").
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Location {
     pub id: String,
@@ -149,7 +178,7 @@ pub struct UpdateLocationRequest {
     pub parent_id: Option<String>,
 }
 
-/// Author represents a book author
+/// Represents a book author.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Author {
     pub id: String,
@@ -226,7 +255,7 @@ pub struct AddAuthorToTitleRequest {
     pub display_order: Option<i32>,
 }
 
-/// Publisher represents a book publisher
+/// Represents a book publisher.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Publisher {
     pub id: String,
@@ -269,7 +298,7 @@ pub struct UpdatePublisherRequest {
     pub founded_year: Option<i32>,
 }
 
-/// Genre represents a book genre/category
+/// Represents a book genre or category.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Genre {
     pub id: String,
@@ -357,7 +386,7 @@ impl std::fmt::Display for LoanStatus {
     }
 }
 
-/// Volume represents a physical copy of a title
+/// Represents a physical copy of a title.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Volume {
     pub id: String,
@@ -441,7 +470,7 @@ pub struct UpdateBorrowerGroupRequest {
     pub description: Option<String>,
 }
 
-/// Borrower represents a person who can borrow volumes
+/// Represents a person who can borrow volumes.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Borrower {
     pub id: String,
@@ -513,7 +542,7 @@ impl std::fmt::Display for LoanRecordStatus {
     }
 }
 
-/// Loan represents a loan record
+/// Represents a loan transaction.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Loan {
     pub id: String,

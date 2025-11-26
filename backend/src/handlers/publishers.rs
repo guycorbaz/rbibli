@@ -1,3 +1,9 @@
+//! API handlers for managing publishers.
+//!
+//! This module provides HTTP handlers for creating, reading, updating, and deleting
+//! publisher records. It also includes functionality to list publishers with their
+//! associated title counts.
+
 use actix_web::{web, HttpResponse, Responder};
 use crate::models::{Publisher, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest};
 use crate::AppState;
@@ -5,7 +11,21 @@ use log::{info, warn, error, debug};
 use sqlx::Row;
 use uuid::Uuid;
 
-/// GET /api/v1/publishers - List all publishers with title counts
+/// Lists all publishers with their title counts.
+///
+/// **Endpoint**: `GET /api/v1/publishers`
+///
+/// Retrieves a list of all publishers, ordered alphabetically by name.
+/// Includes a count of titles associated with each publisher.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with JSON array of `PublisherWithTitleCount` objects on success
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn list_publishers(data: web::Data<AppState>) -> impl Responder {
     info!("GET /api/v1/publishers - Fetching all publishers");
 
@@ -83,7 +103,21 @@ pub async fn list_publishers(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-/// GET /api/v1/publishers/{id} - Get a single publisher by ID
+/// Retrieves a single publisher by their ID.
+///
+/// **Endpoint**: `GET /api/v1/publishers/{id}`
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameter containing the publisher's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` with `Publisher` object on success
+/// * `HttpResponse::NotFound` if the publisher does not exist
+/// * `HttpResponse::BadRequest` if the UUID format is invalid
+/// * `HttpResponse::InternalServerError` if the database query fails
 pub async fn get_publisher(
     data: web::Data<AppState>,
     path: web::Path<String>,
@@ -158,7 +192,31 @@ pub async fn get_publisher(
     }
 }
 
-/// POST /api/v1/publishers - Create a new publisher
+/// Creates a new publisher.
+///
+/// **Endpoint**: `POST /api/v1/publishers`
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `req` - JSON request body containing publisher details
+///
+/// # Request Body
+///
+/// ```json
+/// {
+///   "name": "Penguin Books",
+///   "description": "Major international publisher",
+///   "website_url": "https://www.penguin.com",
+///   "country": "UK",
+///   "founded_year": 1935
+/// }
+/// ```
+///
+/// # Returns
+///
+/// * `HttpResponse::Created` (201) with new publisher ID on success
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn create_publisher(
     data: web::Data<AppState>,
     req: web::Json<CreatePublisherRequest>,
@@ -205,7 +263,24 @@ pub async fn create_publisher(
     }
 }
 
-/// PUT /api/v1/publishers/{id} - Update a publisher
+/// Updates an existing publisher.
+///
+/// **Endpoint**: `PUT /api/v1/publishers/{id}`
+///
+/// Updates mutable fields of a publisher. Only provided fields are updated.
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameter containing the publisher's UUID
+/// * `req` - JSON request body with fields to update
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if publisher does not exist
+/// * `HttpResponse::BadRequest` if no fields provided or validation fails
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn update_publisher(
     data: web::Data<AppState>,
     path: web::Path<String>,
@@ -310,7 +385,24 @@ pub async fn update_publisher(
     }
 }
 
-/// DELETE /api/v1/publishers/{id} - Delete a publisher
+/// Deletes a publisher.
+///
+/// **Endpoint**: `DELETE /api/v1/publishers/{id}`
+///
+/// Removes a publisher record. Note that this may fail or cascade depending on foreign key constraints
+/// with `titles` (though usually handled by ON DELETE SET NULL or similar logic if configured).
+///
+/// # Arguments
+///
+/// * `data` - Application state containing the database connection pool
+/// * `path` - Path parameter containing the publisher's UUID
+///
+/// # Returns
+///
+/// * `HttpResponse::Ok` on success
+/// * `HttpResponse::NotFound` if publisher does not exist
+/// * `HttpResponse::BadRequest` if UUID format is invalid
+/// * `HttpResponse::InternalServerError` if database operation fails
 pub async fn delete_publisher(
     data: web::Data<AppState>,
     path: web::Path<String>,

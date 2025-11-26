@@ -1,6 +1,14 @@
 // Copyright © SixtyFPS GmbH <info@slint.dev>
 // SPDX-License-Identifier: MIT
 
+// ============================================================================
+// gallery_settings.slint
+// ============================================================================
+// Global settings for UI gallery/widget behavior.
+//
+// This global singleton controls the interactive state of widgets throughout
+// the application, primarily used for testing or specific UI modes.
+
 export global GallerySettings {
     in property <bool> widgets-enabled: true;
     in property <bool> widgets-read-only: false;
