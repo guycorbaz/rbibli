@@ -245,6 +245,8 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/statistics/locations", web::get().to(handlers::statistics::get_volumes_per_location))
             .route("/api/v1/statistics/loans", web::get().to(handlers::statistics::get_loan_statistics))
             .route("/{name}", web::get().to(greet))
+            // Serve static files for the frontend
+            .service(actix_files::Files::new("/", "./static").index_file("index.html"))
     })
     .listen(listener)?
     .run();
