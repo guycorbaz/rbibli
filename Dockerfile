@@ -50,5 +50,5 @@ ENV HOST=0.0.0.0
 ENV PORT=8080
 ENV RUST_LOG=info
 
-# Run application
+# Run rbibli application
 CMD ["backend"]
