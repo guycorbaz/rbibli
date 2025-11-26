@@ -29,3 +29,6 @@ Thumbs.db
 # Build artifacts
 pkg/
 dist/
+
+#docker
+docker-compose.yml
