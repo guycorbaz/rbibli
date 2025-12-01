@@ -54,6 +54,12 @@ pub fn get_configuration(config_path: Option<String>) -> Result<Settings, config
         }
     }
 
+    // Add support for environment variables (e.g. APP_APPLICATION__PORT=5001)
+    builder = builder.add_source(
+        config::Environment::with_prefix("APP")
+            .separator("__")
+    );
+
     let settings = builder.build()?;
 
     settings.try_deserialize::<Settings>()

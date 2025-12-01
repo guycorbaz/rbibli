@@ -21,8 +21,8 @@ WORKDIR /usr/local/bin
 EXPOSE 8080
 
 # Set environment variables
-ENV HOST=0.0.0.0
-ENV PORT=8080
+ENV APP_APPLICATION__HOST=0.0.0.0
+ENV APP_APPLICATION__PORT=8080
 
 # Run the application
 CMD ["backend"]

@@ -25,6 +25,17 @@
 
 <body>
     <canvas id="canvas" data-slint-auto-resize-to-canvas="true"></canvas>
+    <script>
+        const canvas = document.getElementById("canvas");
+        if (canvas) {
+            const observer = new ResizeObserver(() => {
+                // Update canvas buffer size to match its display size
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+            });
+            observer.observe(canvas);
+        }
+    </script>
 </body>
 
 </html>
