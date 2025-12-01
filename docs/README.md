@@ -115,12 +115,17 @@ services:
       - "8080:8080"
     environment:
       - DATABASE_URL=mysql://user:password@db:3306/rbibli
+    volumes:
+      - ./config:/config
+    command: ["backend", "--config", "/config/configuration.toml"]
   
   frontend:
     image: gcorbaz/rbibli:frontend
     ports:
       - "80:80"
 ```
+
+**Configuration**: Create a `config` directory in the same folder as `docker-compose.yml` and place your `configuration.toml` file inside it. The backend will read the configuration from `/config/configuration.toml`.
 
 ### Installation
 
