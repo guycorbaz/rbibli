@@ -19,7 +19,7 @@
 //! - Series are ordered alphabetically by name
 
 use actix_web::{web, HttpResponse, Responder};
-use sqlx::MySqlPool;
+
 use uuid::Uuid;
 
 use crate::models::{CreateSeriesRequest, Series, SeriesWithTitleCount, UpdateSeriesRequest};

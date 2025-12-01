@@ -9,10 +9,9 @@ use std::env;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Load .env file
-    dotenv::dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    // Load configuration
+    let configuration = backend::configuration::get_configuration().expect("Failed to read configuration.");
+    let database_url = configuration.database.connection_string();
     
     println!("Connecting to database...");
     let pool = MySqlPoolOptions::new()

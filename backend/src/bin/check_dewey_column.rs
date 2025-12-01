@@ -5,13 +5,12 @@
 //! has been correctly migrated to a `VARCHAR` type.
 
 use sqlx::mysql::MySqlPoolOptions;
-use std::env;
-use dotenv::dotenv;
+
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let configuration = backend::configuration::get_configuration().expect("Failed to read configuration.");
+    let database_url = configuration.database.connection_string();
 
     let pool = MySqlPoolOptions::new()
         .connect(&database_url)

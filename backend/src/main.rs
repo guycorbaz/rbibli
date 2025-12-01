@@ -75,14 +75,15 @@ async fn main() -> Result<(), std::io::Error> {
 
     info!("Starting rbibli backend application");
 
-    // Load environment variables from .env file
-    dotenv::dotenv().ok();
+
+
+    // Load configuration
+    let configuration = backend::configuration::get_configuration().expect("Failed to read configuration.");
 
     // Get configuration from environment
-    let database_url = std::env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set in .env file");
-    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = std::env::var("PORT").unwrap_or_else(|_| "8000".to_string());
+    let database_url = configuration.database.connection_string();
+    let host = configuration.application.host;
+    let port = configuration.application.port;
     let address = format!("{}:{}", host, port);
 
     info!("Configuration loaded: host={}, port={}", host, port);
