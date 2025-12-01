@@ -9,7 +9,7 @@ use sqlx::mysql::MySqlPoolOptions;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let configuration = backend::configuration::get_configuration().expect("Failed to read configuration.");
+    let configuration = backend::configuration::get_configuration(None).expect("Failed to read configuration.");
     let database_url = configuration.database.connection_string();
 
     let pool = MySqlPoolOptions::new()

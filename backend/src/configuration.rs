@@ -37,19 +37,21 @@ impl DatabaseSettings {
     }
 }
 
-pub fn get_configuration() -> Result<Settings, config::ConfigError> {
+pub fn get_configuration(config_path: Option<String>) -> Result<Settings, config::ConfigError> {
     let mut builder = config::Config::builder();
     
-    if std::path::Path::new("configuration.toml").exists() {
-        builder = builder.add_source(config::File::with_name("configuration"));
-    } else if std::path::Path::new("backend/configuration.toml").exists() {
-        builder = builder.add_source(config::File::with_name("backend/configuration"));
+    if let Some(path) = config_path {
+        builder = builder.add_source(config::File::with_name(&path));
     } else {
-        // If neither exists, we still try "configuration" so the error message is standard
-        // or we could panic with a helpful message, but let's stick to the builder pattern.
-        // Actually, if we don't add a source, build() might succeed with empty config if defaults were set,
-        // but here we have no defaults.
-        builder = builder.add_source(config::File::with_name("configuration"));
+        // Check for configuration file in current directory or backend/ directory
+        // This allows running from both the workspace root and the backend directory
+        if std::path::Path::new("configuration.toml").exists() {
+            builder = builder.add_source(config::File::with_name("configuration"));
+        } else if std::path::Path::new("backend/configuration.toml").exists() {
+            builder = builder.add_source(config::File::with_name("backend/configuration"));
+        } else {
+            builder = builder.add_source(config::File::with_name("configuration"));
+        }
     }
 
     let settings = builder.build()?;
@@ -63,7 +65,7 @@ mod tests {
 
     #[test]
     fn test_get_configuration() {
-        let config = get_configuration();
+        let config = get_configuration(None);
         assert!(config.is_ok());
         let settings = config.unwrap();
         assert_eq!(settings.application.port, 8000);

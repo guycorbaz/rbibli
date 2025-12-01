@@ -10,7 +10,7 @@ use std::env;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Load configuration
-    let configuration = backend::configuration::get_configuration().expect("Failed to read configuration.");
+    let configuration = backend::configuration::get_configuration(None).expect("Failed to read configuration.");
     let database_url = configuration.database.connection_string();
     
     println!("Connecting to database...");
