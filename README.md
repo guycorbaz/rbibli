@@ -92,12 +92,27 @@ services:
 
 2. **Set up the database**
 
-   Create a `.env` file in the `backend/` directory:
-   ```env
-   DATABASE_URL=mysql://username:password@localhost:3306/rbibli
-   HOST=127.0.0.1
-   PORT=8000
+   **a. Runtime Configuration**
+   Create a `configuration.toml` file in the `backend/` directory:
+   ```toml
+   [application]
+   port = 8000
+   host = "127.0.0.1"
+
+   [database]
+   username = "rbibli"
+   password = "your_password"
+   port = 3306
+   host = "127.0.0.1"
+   database_name = "rbibli"
    ```
+
+   **b. Compile-time Configuration (for SQLx)**
+   Create a `.env` file in the `backend/` directory (required for `cargo check` / `cargo build`):
+   ```env
+   DATABASE_URL=mysql://rbibli:your_password@127.0.0.1:3306/rbibli
+   ```
+   *Note: The .env file is NOT used by the running application, only for compiling SQL queries.*
 
 3. **Run database migrations**
    ```bash
@@ -109,6 +124,10 @@ services:
 4. **Start the backend**
    ```bash
    cargo run --release
+   ```
+   You can also specify a custom configuration file:
+   ```bash
+   cargo run --release -- --config my_config.toml
    ```
    The API will be available at `http://127.0.0.1:8000`
 

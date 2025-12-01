@@ -335,7 +335,19 @@ sqlx migrate run
 # 6. Verify
 sqlx migrate info
 
-# 7. Test backend
+# 7. Create runtime configuration (required for running the app)
+echo '[application]
+port = 8000
+host = "127.0.0.1"
+
+[database]
+username = "rbibli_user"
+password = "your_password"
+port = 3306
+host = "127.0.0.1"
+database_name = "rbibli"' > configuration.toml
+
+# 8. Test backend
 cargo run
 ```
 

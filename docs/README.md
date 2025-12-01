@@ -131,9 +131,25 @@ services:
    ```
 
 2. **Set up the database**
-   Create a `.env` file in `backend/`:
+   **a. Runtime Configuration**
+   Create a `configuration.toml` file in `backend/`:
+   ```toml
+   [application]
+   port = 8000
+   host = "127.0.0.1"
+
+   [database]
+   username = "rbibli"
+   password = "your_password"
+   port = 3306
+   host = "127.0.0.1"
+   database_name = "rbibli"
+   ```
+
+   **b. Compile-time Configuration**
+   Create a `.env` file in `backend/` (for SQLx):
    ```env
-   DATABASE_URL=mysql://username:password@localhost:3306/rbibli
+   DATABASE_URL=mysql://rbibli:your_password@127.0.0.1:3306/rbibli
    ```
 
 3. **Run migrations**

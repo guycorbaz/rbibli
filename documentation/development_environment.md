@@ -288,8 +288,31 @@ cargo install sqlx-cli --no-default-features --features mysql
 Set database URL environment variable:
 
 ```bash
-# Add to your .env file or export
+```bash
+# Add to your .env file or export (REQUIRED for sqlx compilation)
 export DATABASE_URL="mysql://rbibli_user:your_secure_password@localhost/rbibli"
+```
+
+### Application Configuration
+
+The application uses a TOML file for runtime configuration. Create `backend/configuration.toml`:
+
+```toml
+[application]
+port = 8000
+host = "127.0.0.1"
+
+[database]
+username = "rbibli_user"
+password = "your_secure_password"
+port = 3306
+host = "127.0.0.1"
+database_name = "rbibli"
+```
+
+You can also specify a custom configuration file at runtime:
+```bash
+cargo run -- --config my_config.toml
 ```
 
 ### Running Migrations
