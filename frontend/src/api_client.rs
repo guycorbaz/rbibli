@@ -2532,7 +2532,7 @@ impl ApiClient {
         // After extending, fetch the updated loan details
         self.get_active_loans().await?
             .into_iter()
-            .find(|loan| loan.loan.id == loan_id)
+            .find(|loan| loan.loan.id.to_string() == loan_id)
             .ok_or_else(|| "Extended loan not found in active loans".into())
     }
 

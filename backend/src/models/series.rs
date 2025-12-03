@@ -44,48 +44,8 @@ use uuid::Uuid;
 /// Series with associated titles cannot be deleted. The API will return
 /// a 409 Conflict error if deletion is attempted while titles reference
 /// the series.
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
-pub struct Series {
-    /// Unique series identifier
-    #[sqlx(try_from = "String")]
-    pub id: Uuid,
-    /// Series name (e.g., "Asterix")
-    pub name: String,
-    /// Optional description providing additional context
-    pub description: Option<String>,
-    /// Record creation timestamp
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub created_at: DateTime<Utc>,
-    /// Last update timestamp
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub updated_at: DateTime<Utc>,
-}
-
-/// Extended series information including title count.
-///
-/// This structure is used when listing series to provide both the
-/// series details and the number of titles associated with it.
-/// The title count is useful for:
-/// - Displaying collection size in the UI
-/// - Implementing delete protection logic
-/// - Sorting series by popularity
-///
-/// # Fields
-///
-/// * `series` - The core series record (flattened into this struct)
-/// * `title_count` - Number of titles belonging to this series
-///
-/// # Usage
-///
-/// Returned by the list series endpoint (GET /api/v1/series).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SeriesWithTitleCount {
-    /// Core series record (fields are flattened into this struct)
-    #[serde(flatten)]
-    pub series: Series,
-    /// Number of titles in this series
-    pub title_count: i64,
-}
+pub use shared::models::series::Series;
+pub use shared::models::series::SeriesWithTitleCount;
 
 pub use shared::dtos::series::CreateSeriesRequest;
 

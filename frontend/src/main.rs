@@ -137,7 +137,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let slint_titles: Vec<TitleData> = titles_data
                             .iter()
                             .map(|t| TitleData {
-                                id: t.title.id.clone().into(),
+                                id: t.title.id.to_string().into(),
                                 title: t.title.title.clone().into(),
                                 subtitle: t.title.subtitle.clone().unwrap_or_default().into(),
                                 isbn: t.title.isbn.clone().unwrap_or_default().into(),
@@ -205,7 +205,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let slint_locations: Vec<LocationData> = locations_data
                             .iter()
                             .map(|l| LocationData {
-                                id: l.location.id.clone().into(),
+                                id: l.location.id.to_string().into(),
                                 name: l.location.name.clone().into(),
                                 description: l.location.description.clone().unwrap_or_default().into(),
                                 parent_id: l.location.parent_id.clone().unwrap_or_default().into(),
@@ -265,12 +265,12 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let slint_authors: Vec<AuthorData> = authors_data
                             .iter()
                             .map(|a| AuthorData {
-                                id: a.author.id.clone().into(),
+                                id: a.author.id.to_string().into(),
                                 first_name: a.author.first_name.clone().into(),
                                 last_name: a.author.last_name.clone().into(),
                                 biography: a.author.biography.clone().unwrap_or_default().into(),
-                                birth_date: a.author.birth_date.clone().unwrap_or_default().into(),
-                                death_date: a.author.death_date.clone().unwrap_or_default().into(),
+                                birth_date: a.author.birth_date.map(|d| d.format("%Y-%m-%d").to_string()).unwrap_or_default().into(),
+                                death_date: a.author.death_date.map(|d| d.format("%Y-%m-%d").to_string()).unwrap_or_default().into(),
                                 nationality: a.author.nationality.clone().unwrap_or_default().into(),
                                 website_url: a.author.website_url.clone().unwrap_or_default().into(),
                                 title_count: a.title_count as i32,
@@ -318,7 +318,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let slint_publishers: Vec<PublisherData> = publishers_data
                             .iter()
                             .map(|p| PublisherData {
-                                id: p.publisher.id.clone().into(),
+                                id: p.publisher.id.to_string().into(),
                                 name: p.publisher.name.clone().into(),
                                 description: p.publisher.description.clone().unwrap_or_default().into(),
                                 website_url: p.publisher.website_url.clone().unwrap_or_default().into(),
@@ -332,7 +332,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let publisher_items: Vec<PublisherItem> = publishers_data
                             .iter()
                             .map(|p| PublisherItem {
-                                id: p.publisher.id.clone().into(),
+                                id: p.publisher.id.to_string().into(),
                                 name: p.publisher.name.clone().into(),
                             })
                             .collect();
@@ -391,7 +391,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let slint_genres: Vec<GenreData> = genres_data
                             .iter()
                             .map(|g| GenreData {
-                                id: g.genre.id.clone().into(),
+                                id: g.genre.id.to_string().into(),
                                 name: g.genre.name.clone().into(),
                                 description: g.genre.description.clone().unwrap_or_default().into(),
                                 title_count: g.title_count as i32,
@@ -402,7 +402,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let genre_items: Vec<GenreItem> = genres_data
                             .iter()
                             .map(|g| GenreItem {
-                                id: g.genre.id.clone().into(),
+                                id: g.genre.id.to_string().into(),
                                 name: g.genre.name.clone().into(),
                             })
                             .collect();
@@ -599,8 +599,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
                                 all_pairs.extend(result.low_confidence.iter().map(|p| (p, "Low")));
 
                                 for (pair, confidence) in all_pairs {
-                                    let title1_id = &pair.title1.title.id;
-                                    let title2_id = &pair.title2.title.id;
+                                    let title1_id = pair.title1.title.id.to_string();
+                                    let title2_id = pair.title2.title.id.to_string();
 
                                     // Mark both titles as duplicates
                                     for title in titles_vec.iter_mut() {
@@ -1367,7 +1367,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let slint_series: Vec<SeriesData> = series_data
                             .iter()
                             .map(|s| SeriesData {
-                                id: s.series.id.clone().into(),
+                                id: s.series.id.to_string().into(),
                                 name: s.series.name.clone().into(),
                                 description: s.series.description.clone().unwrap_or_default().into(),
                                 title_count: s.title_count as i32,
@@ -1378,7 +1378,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let series_items: Vec<SeriesItem> = series_data
                             .iter()
                             .map(|s| SeriesItem {
-                                id: s.series.id.clone().into(),
+                                id: s.series.id.to_string().into(),
                                 name: s.series.name.clone().into(),
                             })
                             .collect();
@@ -1886,7 +1886,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                                 let location_name = if let Some(ref loc_id) = v.location_id {
                                     locations
                                         .iter()
-                                        .find(|loc| &loc.location.id == loc_id)
+                                        .find(|loc| loc.location.id.to_string() == *loc_id)
                                         .map(|loc| loc.full_path.clone())
                                         .unwrap_or_default()
                                 } else {
@@ -1894,8 +1894,8 @@ async fn run() -> Result<(), Box<dyn Error>> {
                                 };
 
                                 VolumeData {
-                                    id: v.id.into(),
-                                    title_id: v.title_id.into(),
+                                    id: v.id.to_string().into(),
+                                    title_id: v.title_id.to_string().into(),
                                     copy_number: v.copy_number,
                                     barcode: v.barcode.into(),
                                     condition: v.condition.to_string().into(),
@@ -2092,7 +2092,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                             let slint_authors: Vec<AuthorWithRoleData> = authors
                                 .iter()
                                 .map(|a| AuthorWithRoleData {
-                                    author_id: a.author.id.clone().into(),
+                                    author_id: a.author.id.to_string().into(),
                                     first_name: a.author.first_name.clone().into(),
                                     last_name: a.author.last_name.clone().into(),
                                     role: match a.role {
@@ -2141,7 +2141,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                             let author_items: Vec<AuthorItem> = authors
                                 .iter()
                                 .map(|a| AuthorItem {
-                                    id: a.author.id.clone().into(),
+                                    id: a.author.id.to_string().into(),
                                     name: format!("{} {}", a.author.first_name, a.author.last_name).into(),
                                 })
                                 .collect();
@@ -2450,7 +2450,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let slint_groups: Vec<BorrowerGroupData> = groups_data
                             .iter()
                             .map(|g| BorrowerGroupData {
-                                id: g.id.clone().into(),
+                                id: g.id.to_string().into(),
                                 name: g.name.clone().into(),
                                 loan_duration_days: g.loan_duration_days,
                                 description: g.description.clone().unwrap_or_default().into(),
@@ -2615,14 +2615,14 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         let slint_borrowers: Vec<BorrowerData> = borrowers_data
                             .iter()
                             .map(|b| BorrowerData {
-                                id: b.borrower.id.clone().into(),
+                                id: b.borrower.id.to_string().into(),
                                 name: b.borrower.name.clone().into(),
                                 email: b.borrower.email.clone().unwrap_or_default().into(),
                                 phone: b.borrower.phone.clone().unwrap_or_default().into(),
                                 address: b.borrower.address.clone().unwrap_or_default().into(),
                                 city: b.borrower.city.clone().unwrap_or_default().into(),
                                 zip: b.borrower.zip.clone().unwrap_or_default().into(),
-                                group_id: b.borrower.group_id.clone().unwrap_or_default().into(),
+                                group_id: b.borrower.group_id.as_ref().map(|id| id.to_string()).unwrap_or_default().into(),
                                 group_name: b.group_name.clone().unwrap_or_default().into(),
                                 loan_duration_days: b.loan_duration_days.unwrap_or(21),
                                 active_loan_count: b.active_loan_count,

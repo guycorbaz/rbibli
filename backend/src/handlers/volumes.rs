@@ -79,9 +79,7 @@ pub async fn list_volumes_by_title(
                         }
                     };
 
-                    let location_id = location_id_str.and_then(|s| {
-                        Uuid::parse_str(&s).ok()
-                    });
+                    let location_id = location_id_str;
 
                     let condition_str: String = row.get("condition");
                     let condition = match condition_str.as_str() {
@@ -217,7 +215,7 @@ pub async fn get_volume(
                 }
             };
 
-            let location_id = location_id_str.and_then(|s| Uuid::parse_str(&s).ok());
+            let location_id = location_id_str;
 
             let condition_str: String = row.get("condition");
             let condition = match condition_str.as_str() {

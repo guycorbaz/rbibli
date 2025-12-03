@@ -2,7 +2,7 @@
 //!
 //! This module defines the data structures for managing book authors.
 //! It supports a many-to-many relationship with titles, allowing books to have multiple authors
-//! with different roles (e.g., main author, translator, illustrator).
+//! with different roles (e.g., main author, illustrator).
 //!
 //! # Key Features
 //!
@@ -19,69 +19,12 @@ use uuid::Uuid;
 /// # Database Structure
 ///
 /// Mapped to the `authors` table in the database.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Author {
-    /// Unique identifier (UUID)
-    pub id: Uuid,
-    /// First name (optional in some contexts, but usually present)
-    pub first_name: String,
-    /// Last name (required)
-    pub last_name: String,
-    /// Short biography or description
-    pub biography: Option<String>,
-    /// Date of birth (YYYY-MM-DD)
-    pub birth_date: Option<NaiveDate>,
-    /// Date of death (YYYY-MM-DD), if applicable
-    pub death_date: Option<NaiveDate>,
-    /// Nationality or country of origin
-    pub nationality: Option<String>,
-    /// Personal website or profile URL
-    pub website_url: Option<String>,
-    /// Timestamp of creation
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub created_at: DateTime<Utc>,
-    /// Timestamp of last update
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub updated_at: DateTime<Utc>,
-}
-
-/// AuthorWithTitleCount includes the number of titles associated with this author.
-///
-/// Returned by list endpoints to show how many books by this author are in the library.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AuthorWithTitleCount {
-    /// The core author data (flattened)
-    #[serde(flatten)]
-    pub author: Author,
-    /// Number of titles associated with this author
-    pub title_count: i64,
-}
-
-pub use shared::dtos::authors::CreateAuthorRequest;
-
-pub use shared::dtos::authors::UpdateAuthorRequest;
-
-/// Represents the relationship between a title and an author.
-///
-/// This is the junction table entity that links `titles` and `authors`,
-/// including the specific role the author played for that title.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TitleAuthor {
-    /// Unique identifier for this relationship
-    pub id: Uuid,
-    /// UUID of the title
-    pub title_id: Uuid,
-    /// UUID of the author
-    pub author_id: Uuid,
-    /// Role of the author (e.g., MainAuthor, Translator)
-    pub role: AuthorRole,
-    /// Display order for listing authors (1, 2, 3...)
-    pub display_order: i32,
-    /// Timestamp of creation
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub created_at: DateTime<Utc>,
-}
+pub use shared::models::authors::Author;
+pub use shared::models::authors::AuthorWithTitleCount;
+pub use shared::models::authors::TitleAuthor;
 
 use shared::models::enums::AuthorRole;
 
 pub use shared::dtos::authors::AddAuthorToTitleRequest;
+pub use shared::dtos::authors::CreateAuthorRequest;
+pub use shared::dtos::authors::UpdateAuthorRequest;

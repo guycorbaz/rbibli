@@ -369,11 +369,11 @@ pub async fn update_author(
     if let Some(ref biography) = req.biography {
         sql_query = sql_query.bind(biography);
     }
-    if let Some(ref birth_date_str) = req.birth_date {
+    if let Some(birth_date_str) = &req.birth_date {
         let birth_date = NaiveDate::parse_from_str(birth_date_str, "%Y-%m-%d").ok();
         sql_query = sql_query.bind(birth_date);
     }
-    if let Some(ref death_date_str) = req.death_date {
+    if let Some(death_date_str) = &req.death_date {
         let death_date = NaiveDate::parse_from_str(death_date_str, "%Y-%m-%d").ok();
         sql_query = sql_query.bind(death_date);
     }

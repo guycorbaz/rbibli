@@ -88,7 +88,7 @@ pub async fn list_locations(data: web::Data<AppState>) -> impl Responder {
                     };
 
                     let parent_id_str: Option<String> = row.get("parent_id");
-                    let parent_id = parent_id_str.and_then(|s| Uuid::parse_str(&s).ok());
+                    let parent_id = parent_id_str;
 
                     let created_at: chrono::NaiveDateTime = row.get("created_at");
                     let updated_at: chrono::NaiveDateTime = row.get("updated_at");
@@ -179,7 +179,7 @@ pub async fn get_location(
         Ok(Some(row)) => {
             let _id_str: String = row.get("id");
             let parent_id_str: Option<String> = row.get("parent_id");
-            let parent_id = parent_id_str.and_then(|s| Uuid::parse_str(&s).ok());
+            let parent_id = parent_id_str;
 
             let created_at: chrono::NaiveDateTime = row.get("created_at");
             let updated_at: chrono::NaiveDateTime = row.get("updated_at");

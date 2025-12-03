@@ -20,41 +20,8 @@ use uuid::Uuid;
 /// # Database Structure
 ///
 /// Mapped to the `locations` table in the database.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Location {
-    /// Unique identifier (UUID)
-    pub id: Uuid,
-    /// Name of the location (e.g., "Living Room")
-    pub name: String,
-    /// Optional description
-    pub description: Option<String>,
-    /// UUID of the parent location (None for top-level locations)
-    pub parent_id: Option<Uuid>,
-    /// Timestamp of creation
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub created_at: DateTime<Utc>,
-    /// Timestamp of last update
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub updated_at: DateTime<Utc>,
-}
-
-/// LocationWithPath includes the full hierarchical path and statistics.
-///
-/// Returned by list endpoints to provide context and usage data.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LocationWithPath {
-    /// The core location data (flattened)
-    #[serde(flatten)]
-    pub location: Location,
-    /// Full hierarchical path string (e.g., "House > Living Room > Bookshelf")
-    pub full_path: String,
-    /// Depth level in the hierarchy (0 = root)
-    pub level: i32,
-    /// Number of direct sub-locations
-    pub child_count: i32,
-    /// Number of volumes stored directly in this location
-    pub volume_count: i32,
-}
+pub use shared::models::locations::Location;
+pub use shared::models::locations::LocationWithPath;
 
 pub use shared::dtos::locations::CreateLocationRequest;
 

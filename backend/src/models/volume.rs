@@ -23,31 +23,7 @@ use shared::models::enums::{VolumeCondition, LoanStatus};
 /// # Database Structure
 ///
 /// Mapped to the `volumes` table in the database.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Volume {
-    /// Unique identifier (UUID)
-    pub id: Uuid,
-    /// Foreign key to the parent Title
-    pub title_id: Uuid,
-    /// Sequential number of this copy for the title (1, 2, 3...)
-    pub copy_number: i32,
-    /// Unique barcode string (e.g., "VOL-000001")
-    pub barcode: String,
-    /// Physical condition of the book
-    pub condition: VolumeCondition,
-    /// Foreign key to the storage Location (optional)
-    pub location_id: Option<Uuid>,
-    /// Current availability status
-    pub loan_status: LoanStatus,
-    /// Notes specific to this physical copy (e.g., "Signed by author", "Missing page 42")
-    pub individual_notes: Option<String>,
-    /// Timestamp of creation
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub created_at: DateTime<Utc>,
-    /// Timestamp of last update
-    #[serde(with = "chrono::serde::ts_seconds")]
-    pub updated_at: DateTime<Utc>,
-}
+pub use shared::models::volumes::Volume;
 
 pub use shared::dtos::volumes::CreateVolumeRequest;
 

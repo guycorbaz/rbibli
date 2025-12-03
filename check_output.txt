@@ -1,0 +1,176 @@
+warning: /home/gcorbaz/synology/devel/rbibli/frontend/Cargo.toml: file `/home/gcorbaz/synology/devel/rbibli/frontend/src/main.rs` found to be present in multiple build targets:
+  * `lib` target `frontend_lib`
+  * `bin` target `frontend`
+    Checking frontend v0.2.0 (/home/gcorbaz/synology/devel/rbibli/frontend)
+warning: unused imports: `DateTime` and `Utc`
+ --> frontend/src/models.rs:6:14
+  |
+6 | use chrono::{DateTime, Utc};
+  |              ^^^^^^^^  ^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `shared::models::titles::Title`
+  --> frontend/src/models.rs:13:9
+   |
+13 | pub use shared::models::titles::Title;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `shared::models::series::Series`
+  --> frontend/src/models.rs:23:9
+   |
+23 | pub use shared::models::series::Series;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `shared::models::locations::Location`
+  --> frontend/src/models.rs:30:9
+   |
+30 | pub use shared::models::locations::Location;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `shared::models::publishers::Publisher`
+  --> frontend/src/models.rs:57:9
+   |
+57 | pub use shared::models::publishers::Publisher;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `shared::models::genres::Genre`
+  --> frontend/src/models.rs:64:9
+   |
+64 | pub use shared::models::genres::Genre;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `shared::models::enums::LoanStatus`
+  --> frontend/src/models.rs:73:9
+   |
+73 | pub use shared::models::enums::LoanStatus;
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `shared::models::borrowers::Borrower`
+   --> frontend/src/models.rs:117:9
+    |
+117 | pub use shared::models::borrowers::Borrower;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `shared::models::enums::LoanRecordStatus`
+   --> frontend/src/models.rs:124:9
+    |
+124 | pub use shared::models::enums::LoanRecordStatus;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `shared::models::loans::Loan`
+   --> frontend/src/models.rs:126:9
+    |
+126 | pub use shared::models::loans::Loan;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `slint::Model`
+    --> frontend/src/main.rs:3010:33
+     |
+3010 | ...                   use slint::Model;
+     |                           ^^^^^^^^^^^^
+
+error[E0277]: can't compare `uuid::Uuid` with `&str`
+    --> frontend/src/api_client.rs:2535:39
+     |
+2535 |             .find(|loan| loan.loan.id == loan_id)
+     |                                       ^^ no implementation for `uuid::Uuid == &str`
+     |
+     = help: the trait `PartialEq<&str>` is not implemented for `uuid::Uuid`
+     = help: the following other types implement trait `PartialEq<Rhs>`:
+               `uuid::Uuid` implements `PartialEq<uuid::non_nil::NonNilUuid>`
+               `uuid::Uuid` implements `PartialEq`
+
+error[E0277]: the trait bound `slint::SharedString: From<NaiveDate>` is not satisfied
+   --> frontend/src/main.rs:272:93
+    |
+272 | ...                   birth_date: a.author.birth_date.clone().unwrap_or_default().into(),
+    |                                                                                   ^^^^ the trait `From<NaiveDate>` is not implemented for `slint::SharedString`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `slint::SharedString` implements `From<&std::string::String>`
+              `slint::SharedString` implements `From<&str>`
+              `slint::SharedString` implements `From<Key>`
+              `slint::SharedString` implements `From<char>`
+              `slint::SharedString` implements `From<std::string::String>`
+    = note: required for `NaiveDate` to implement `Into<slint::SharedString>`
+help: consider removing this method call, as the receiver has type `std::option::Option<NaiveDate>` and `std::option::Option<NaiveDate>: From<NaiveDate>` trivially holds
+    |
+272 -                                 birth_date: a.author.birth_date.clone().unwrap_or_default().into(),
+272 +                                 birth_date: a.author.birth_date.clone().into(),
+    |
+
+error[E0277]: the trait bound `slint::SharedString: From<NaiveDate>` is not satisfied
+   --> frontend/src/main.rs:273:93
+    |
+273 | ...                   death_date: a.author.death_date.clone().unwrap_or_default().into(),
+    |                                                                                   ^^^^ the trait `From<NaiveDate>` is not implemented for `slint::SharedString`
+    |
+    = help: the following other types implement trait `From<T>`:
+              `slint::SharedString` implements `From<&std::string::String>`
+              `slint::SharedString` implements `From<&str>`
+              `slint::SharedString` implements `From<Key>`
+              `slint::SharedString` implements `From<char>`
+              `slint::SharedString` implements `From<std::string::String>`
+    = note: required for `NaiveDate` to implement `Into<slint::SharedString>`
+help: consider removing this method call, as the receiver has type `std::option::Option<NaiveDate>` and `std::option::Option<NaiveDate>: From<NaiveDate>` trivially holds
+    |
+273 -                                 death_date: a.author.death_date.clone().unwrap_or_default().into(),
+273 +                                 death_date: a.author.death_date.clone().into(),
+    |
+
+error[E0277]: can't compare `uuid::Uuid` with `std::string::String`
+    --> frontend/src/main.rs:1889:70
+     |
+1889 | ...                   .find(|loc| &loc.location.id == loc_id)
+     |                                                    ^^ no implementation for `uuid::Uuid == std::string::String`
+     |
+     = help: the trait `PartialEq<std::string::String>` is not implemented for `uuid::Uuid`
+     = help: the following other types implement trait `PartialEq<Rhs>`:
+               `uuid::Uuid` implements `PartialEq<uuid::non_nil::NonNilUuid>`
+               `uuid::Uuid` implements `PartialEq`
+     = note: required for `&uuid::Uuid` to implement `PartialEq<&std::string::String>`
+
+error[E0277]: the trait bound `slint::SharedString: From<uuid::Uuid>` is not satisfied
+    --> frontend/src/main.rs:1897:46
+     |
+1897 | ...                   id: v.id.into(),
+     |                                ^^^^ the trait `From<uuid::Uuid>` is not implemented for `slint::SharedString`
+     |
+     = help: the following other types implement trait `From<T>`:
+               `slint::SharedString` implements `From<&std::string::String>`
+               `slint::SharedString` implements `From<&str>`
+               `slint::SharedString` implements `From<Key>`
+               `slint::SharedString` implements `From<char>`
+               `slint::SharedString` implements `From<std::string::String>`
+     = note: required for `uuid::Uuid` to implement `Into<slint::SharedString>`
+
+error[E0277]: the trait bound `slint::SharedString: From<uuid::Uuid>` is not satisfied
+    --> frontend/src/main.rs:1898:58
+     |
+1898 | ...                   title_id: v.title_id.into(),
+     |                                            ^^^^ the trait `From<uuid::Uuid>` is not implemented for `slint::SharedString`
+     |
+     = help: the following other types implement trait `From<T>`:
+               `slint::SharedString` implements `From<&std::string::String>`
+               `slint::SharedString` implements `From<&str>`
+               `slint::SharedString` implements `From<Key>`
+               `slint::SharedString` implements `From<char>`
+               `slint::SharedString` implements `From<std::string::String>`
+     = note: required for `uuid::Uuid` to implement `Into<slint::SharedString>`
+
+warning: unused import: `slint::Model`
+    --> frontend/src/main.rs:2088:29
+     |
+2088 |                         use slint::Model;
+     |                             ^^^^^^^^^^^^
+
+warning: unused import: `slint::Model`
+    --> frontend/src/main.rs:2136:29
+     |
+2136 |                         use slint::Model;
+     |                             ^^^^^^^^^^^^
+
+For more information about this error, try `rustc --explain E0277`.
+warning: `frontend` (lib) generated 13 warnings
+error: could not compile `frontend` (lib) due to 6 previous errors; 13 warnings emitted
