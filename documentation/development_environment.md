@@ -324,25 +324,13 @@ export DATABASE_URL="mysql://rbibli_user:your_secure_password@localhost/rbibli"
 ```
 
 ### Application Configuration
+The application is configured using environment variables or a `.env` file in the project root.
 
-The application uses a TOML file for runtime configuration. Create `backend/configuration.toml`:
-
-```toml
-[application]
-port = 8000
-host = "127.0.0.1"
-
-[database]
-username = "rbibli_user"
-password = "your_secure_password"
-port = 3306
-host = "127.0.0.1"
-database_name = "rbibli"
-```
-
-You can also specify a custom configuration file at runtime:
-```bash
-cargo run -- --config my_config.toml
+Create a `.env` file:
+```env
+DATABASE_URL=mysql://rbibli_user:your_secure_password@localhost/rbibli
+HOST=127.0.0.1
+PORT=8000
 ```
 
 ### Running Migrations

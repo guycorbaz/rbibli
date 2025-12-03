@@ -56,11 +56,9 @@
 - **Reactivity**: Fine-grained signals system
 
 ### 1.3 Infrastructure
-- **Containerization**: Docker + Docker Compose
-- **Reverse Proxy**: Nginx
-- **Database**: PostgreSQL 15+, MySQL 8.0+ or MariaDB 10.11+
-- **Cache**: Redis (sessions, API cache)
-- **File storage**: Local filesystem or S3-compatible
+- **Containerization**: Single Docker container (Frontend + Backend)
+- **Database**: MariaDB 10.11+
+- **File storage**: Local filesystem (for covers)
 
 ## 2. General Architecture
 
@@ -71,42 +69,22 @@ library-manager/
 │   ├── src/
 │   │   ├── main.rs
 │   │   ├── lib.rs
-│   │   ├── config/
+│   │   ├── configuration.rs
 │   │   ├── models/
 │   │   ├── handlers/
-│   │   ├── services/
-│   │   ├── repositories/
-│   │   ├── middleware/
-│   │   ├── utils/
 │   │   └── migrations/
-│   ├── Cargo.toml
-│   └── Dockerfile
+│   └── Cargo.toml
 ├── frontend/
 │   ├── src/
 │   │   ├── main.rs
-│   │   ├── lib.rs
-│   │   ├── app.rs
-│   │   ├── components/
-│   │   │   ├── mod.rs
-│   │   │   ├── volume/
-│   │   │   ├── author/
-│   │   │   ├── loan/
-│   │   │   └── common/
-│   │   ├── pages/
-│   │   │   ├── mod.rs
-│   │   │   ├── dashboard.rs
-│   │   │   ├── volumes.rs
-│   │   │   └── loans.rs
-│   │   ├── services/
-│   │   │   ├── mod.rs
-│   │   │   ├── api_client.rs
-│   │   │   └── state.rs
-│   │   ├── utils/
-│   │   └── i18n/
+│   │   ├── models.rs
+│   │   └── api_client.rs
+│   ├── ui/
+│   │   ├── app-window.slint
+│   │   └── ...
 │   ├── Cargo.toml
-│   ├── Trunk.toml
-│   ├── index.html
-│   └── Dockerfile
+│   └── index.html
+├── Dockerfile          # Unified build for both frontend and backend
 ├── docker-compose.yml
 └── documentation/
 ```
@@ -114,17 +92,16 @@ library-manager/
 ### 2.2 Layered architecture
 ```
 ┌─────────────────────────────────────┐
-│      Frontend Rust (WASM)           │
+│      Frontend (Slint WASM)          │
+│   (Served by Backend Static Files)  │
 ├─────────────────────────────────────┤
-│              Nginx                  │
+│          REST API (Actix)           │
 ├─────────────────────────────────────┤
-│          REST API (Axum)            │
-├─────────────────────────────────────┤
-│        Business Services            │
+│         Business Services           │
 ├─────────────────────────────────────┤
 │         Repositories                │
 ├─────────────────────────────────────┤
-│      PostgreSQL/MySQL + Redis       │
+│             MariaDB                 │
 └─────────────────────────────────────┘
 ```
 

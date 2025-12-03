@@ -103,29 +103,23 @@ Built with modern, reliable technology:
 
 ### Docker
 
-You can also run rbibli using Docker. Official images are available on Docker Hub:
+You can run rbibli using Docker. Official images are available on Docker Hub:
 [https://hub.docker.com/r/gcorbaz/rbibli](https://hub.docker.com/r/gcorbaz/rbibli)
 
 Example `docker-compose.yml`:
 ```yaml
 services:
-  backend:
-    image: gcorbaz/rbibli:backend
+  rbibli:
+    image: gcorbaz/rbibli:latest
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=mysql://user:password@db:3306/rbibli
-    volumes:
-      - ./config:/config
-    command: ["backend", "--config", "/config/configuration.toml"]
-  
-  frontend:
-    image: gcorbaz/rbibli:frontend
-    ports:
-      - "80:80"
+      # Database Connection
+      # Note: Use APP__ prefix (double underscore) for configuration
+      - APP__DATABASE__URL=mysql://user:password@db:3306/rbibli
 ```
 
-**Configuration**: Create a `config` directory in the same folder as `docker-compose.yml` and place your `configuration.toml` file inside it. The backend will read the configuration from `/config/configuration.toml`.
+**Configuration**: The application is configured entirely via environment variables.
 
 ### Installation
 
@@ -136,25 +130,12 @@ services:
    ```
 
 2. **Set up the database**
-   **a. Runtime Configuration**
-   Create a `configuration.toml` file in `backend/`:
-   ```toml
-   [application]
-   port = 8000
-   host = "127.0.0.1"
-
-   [database]
-   username = "rbibli"
-   password = "your_password"
-   port = 3306
-   host = "127.0.0.1"
-   database_name = "rbibli"
-   ```
-
-   **b. Compile-time Configuration**
-   Create a `.env` file in `backend/` (for SQLx):
+   **a. Configuration**
+   Create a `.env` file in the project root:
    ```env
    DATABASE_URL=mysql://rbibli:your_password@127.0.0.1:3306/rbibli
+   HOST=127.0.0.1
+   PORT=8000
    ```
 
 3. **Run migrations**
@@ -165,8 +146,15 @@ services:
    ```
 
 4. **Run the application**
+   
+   **Option A: Docker**
+   ```bash
+   docker compose up --build
+   ```
+
+   **Option B: Manual**
    Start backend: `cargo run --release` (in `backend/`)
-   Start frontend: `cargo run --release` (in `frontend/`)
+   Start frontend: `trunk serve --release` (in `frontend/`)
 
 [View Full Documentation →](https://github.com/guycorbaz/rbibli/tree/main/documentation)
 

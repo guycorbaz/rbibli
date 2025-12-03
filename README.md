@@ -64,29 +64,27 @@ A modern, full-featured personal library management system built entirely in Rus
 
 ### Docker
 
-You can also run rbibli using Docker. Official images are available on Docker Hub:
+You can run rbibli using Docker. Official images are available on Docker Hub:
 [https://hub.docker.com/r/gcorbaz/rbibli](https://hub.docker.com/r/gcorbaz/rbibli)
 
 Example `docker-compose.yml`:
 ```yaml
 services:
-  backend:
-    image: gcorbaz/rbibli:backend
+  rbibli:
+    image: gcorbaz/rbibli:latest
     ports:
       - "8080:8080"
     environment:
-      - DATABASE_URL=mysql://user:password@db:3306/rbibli
-    volumes:
-      - ./config:/config
-    command: ["backend", "--config", "/config/configuration.toml"]
-  
-  frontend:
-    image: gcorbaz/rbibli:frontend
-    ports:
-      - "80:80"
+      # Database Connection
+      # Note: Use APP__ prefix (double underscore) for configuration
+      - APP__DATABASE__URL=mysql://user:password@db:3306/rbibli
+      # Optional: Individual fields can also be used
+      # - APP__DATABASE__HOST=db
+      # - APP__DATABASE__USERNAME=user
+      # - APP__DATABASE__PASSWORD=password
 ```
 
-**Configuration**: Create a `config` directory in the same folder as `docker-compose.yml` and place your `configuration.toml` file inside it. The backend will read the configuration from `/config/configuration.toml`.
+**Configuration**: The application is configured entirely via environment variables.
 
 ### Installation
 
@@ -98,27 +96,13 @@ services:
 
 2. **Set up the database**
 
-   **a. Runtime Configuration**
-   Create a `configuration.toml` file in the `backend/` directory:
-   ```toml
-   [application]
-   port = 8000
-   host = "127.0.0.1"
-
-   [database]
-   username = "rbibli"
-   password = "your_password"
-   port = 3306
-   host = "127.0.0.1"
-   database_name = "rbibli"
-   ```
-
-   **b. Compile-time Configuration (for SQLx)**
-   Create a `.env` file in the `backend/` directory (required for `cargo check` / `cargo build`):
+   **a. Configuration**
+   Create a `.env` file in the project root:
    ```env
    DATABASE_URL=mysql://rbibli:your_password@127.0.0.1:3306/rbibli
+   HOST=127.0.0.1
+   PORT=8000
    ```
-   *Note: The .env file is NOT used by the running application, only for compiling SQL queries.*
 
 3. **Run database migrations**
    ```bash
@@ -127,17 +111,22 @@ services:
    sqlx migrate run
    ```
 
-4. **Start the backend**
+4. **Start the application**
+   
+   **Option A: Docker (Recommended)**
    ```bash
+   docker compose up --build
+   ```
+   The application will be available at `http://localhost:8080`.
+
+   **Option B: Manual (Development)**
+   Start the backend:
+   ```bash
+   cd backend
    cargo run --release
    ```
-   You can also specify a custom configuration file:
-   ```bash
-   cargo run --release -- --config my_config.toml
-   ```
-   The API will be available at `http://127.0.0.1:8000`
-
-5. **Start the frontend** (in a new terminal)
+   
+   Start the frontend (in a new terminal):
    ```bash
    cd frontend
    trunk serve --release
