@@ -13,47 +13,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// Represents the physical condition of a volume.
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
-#[sqlx(type_name = "VARCHAR", rename_all = "lowercase")]
-pub enum VolumeCondition {
-    /// Like new, no visible wear.
-    #[sqlx(rename = "excellent")]
-    Excellent,
-    /// Minor wear, but structurally sound.
-    #[sqlx(rename = "good")]
-    Good,
-    /// Noticeable wear, but readable.
-    #[sqlx(rename = "fair")]
-    Fair,
-    /// Significant wear, loose pages, or markings.
-    #[sqlx(rename = "poor")]
-    Poor,
-    /// Severe damage, may be unusable.
-    #[sqlx(rename = "damaged")]
-    Damaged,
-}
-
-/// Represents the current loan status of a volume.
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type, PartialEq, Eq)]
-#[sqlx(type_name = "VARCHAR", rename_all = "lowercase")]
-pub enum LoanStatus {
-    /// Available for borrowing.
-    #[sqlx(rename = "available")]
-    Available,
-    /// Currently checked out by a borrower.
-    #[sqlx(rename = "loaned")]
-    Loaned,
-    /// Checked out and past the due date.
-    #[sqlx(rename = "overdue")]
-    Overdue,
-    /// Reported lost or missing.
-    #[sqlx(rename = "lost")]
-    Lost,
-    /// Removed from circulation for repair or review.
-    #[sqlx(rename = "maintenance")]
-    Maintenance,
-}
+use shared::models::enums::{VolumeCondition, LoanStatus};
 
 /// Volume represents a specific physical copy of a title.
 ///

@@ -118,34 +118,7 @@ pub struct TitleAuthor {
     pub created_at: DateTime<Utc>,
 }
 
-/// Defines the role of an author in relation to a specific title.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum AuthorRole {
-    /// Primary writer of the book.
-    MainAuthor,
-    /// Secondary writer or collaborator.
-    CoAuthor,
-    /// Person who translated the work.
-    Translator,
-    /// Person who created illustrations.
-    Illustrator,
-    /// Person who edited the work.
-    Editor,
-}
-
-impl std::fmt::Display for AuthorRole {
-    /// Formats the AuthorRole enum as a snake_case string for display and serialization.
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AuthorRole::MainAuthor => write!(f, "main_author"),
-            AuthorRole::CoAuthor => write!(f, "co_author"),
-            AuthorRole::Translator => write!(f, "translator"),
-            AuthorRole::Illustrator => write!(f, "illustrator"),
-            AuthorRole::Editor => write!(f, "editor"),
-        }
-    }
-}
+use shared::models::enums::AuthorRole;
 
 /// Request payload for associating an author with a title.
 #[derive(Debug, Clone, Serialize, Deserialize)]

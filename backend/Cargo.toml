@@ -32,5 +32,6 @@ strsim = "0.11"
 config = "0.15.19"
 clap = { version = "4.5.53", features = ["derive"] }
 dotenv = "0.15.0"
+shared = { path = "../shared", features = ["backend"] }
 
 [dev-dependencies]

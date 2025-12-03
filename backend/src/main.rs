@@ -8,15 +8,6 @@ use backend::run;
 use log::{info, error};
 use sqlx::mysql::MySqlPoolOptions;
 use std::net::TcpListener;
-use clap::Parser;
-
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    /// Path to the configuration file
-    #[arg(short, long)]
-    config: Option<String>,
-}
 
 /// Main entry point for the rbibli backend server.
 ///
@@ -74,8 +65,6 @@ async fn main() -> Result<(), std::io::Error> {
     // Load .env file if it exists
     dotenv::dotenv().ok();
 
-    // Parse command line arguments
-    let args = Args::parse();
 
     // Initialize logger
     // Set default log level to info if RUST_LOG is not set
@@ -91,7 +80,7 @@ async fn main() -> Result<(), std::io::Error> {
     info!("Starting rbibli backend application");
 
     // Load configuration
-    let configuration = backend::configuration::get_configuration(args.config).expect("Failed to read configuration.");
+    let configuration = backend::configuration::get_configuration().expect("Failed to read configuration.");
 
     // Get configuration from environment
     let database_url = configuration.database.connection_string();

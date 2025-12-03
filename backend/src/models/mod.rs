@@ -14,15 +14,24 @@ pub mod borrower;
 pub mod loan;
 
 
+// Re-export shared enums
+pub use shared::models::enums::{
+    VolumeCondition,
+    LoanStatus as VolumeLoanStatus,
+    AuthorRole,
+    DuplicateConfidence,
+    LoanRecordStatus as LoanStatus,
+};
+
+
 pub use title::{
     Title, TitleWithCount, CreateTitleRequest, UpdateTitleRequest, TitleSearchParams,
-    DuplicateConfidence, DuplicatePair, DuplicateDetectionResponse,
-    MergeTitlesRequest, MergeTitlesResponse
+    DuplicatePair, DuplicateDetectionResponse, MergeTitlesRequest, MergeTitlesResponse,
 };
 pub use location::{Location, LocationWithPath, CreateLocationRequest, UpdateLocationRequest};
 pub use author::{
     Author, AuthorWithTitleCount, CreateAuthorRequest, UpdateAuthorRequest,
-    TitleAuthor, AuthorRole, AddAuthorToTitleRequest
+    TitleAuthor, AddAuthorToTitleRequest
 };
 pub use publisher::{
     Publisher, PublisherWithTitleCount, CreatePublisherRequest, UpdatePublisherRequest
@@ -34,7 +43,7 @@ pub use series::{
     Series, SeriesWithTitleCount, CreateSeriesRequest, UpdateSeriesRequest
 };
 pub use volume::{
-    Volume, VolumeCondition, LoanStatus as VolumeLoanStatus, CreateVolumeRequest, UpdateVolumeRequest
+    Volume, CreateVolumeRequest, UpdateVolumeRequest
 };
 pub use borrower::{
     BorrowerGroup, Borrower, BorrowerWithGroup,
@@ -42,6 +51,6 @@ pub use borrower::{
     CreateBorrowerRequest, UpdateBorrowerRequest
 };
 pub use loan::{
-    Loan, LoanStatus, LoanDetail, CreateLoanRequest, ReturnLoanRequest
+    Loan, LoanDetail, CreateLoanRequest, ReturnLoanRequest
 };
 

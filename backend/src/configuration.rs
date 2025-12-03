@@ -53,18 +53,25 @@ impl DatabaseSettings {
     }
 }
 
-pub fn get_configuration(config_path: Option<String>) -> Result<Settings, config::ConfigError> {
-    let mut builder = config::Config::builder();
-    
-    if let Some(path) = config_path {
-        builder = builder.add_source(config::File::with_name(&path));
-    }
+pub fn get_configuration() -> Result<Settings, config::ConfigError> {
+    let mut builder = config::Config::builder()
+        // Add support for environment variables (e.g. APP__APPLICATION__PORT=5001)
+        .add_source(
+            config::Environment::with_prefix("APP")
+                .separator("__")
+        );
 
-    // Add support for environment variables (e.g. APP__APPLICATION__PORT=5001)
-    builder = builder.add_source(
-        config::Environment::with_prefix("APP")
-            .separator("__")
-    );
+    // Manually override with standard env vars if present
+    // This supports HOST, PORT, DATABASE_URL directly
+    if let Ok(port) = std::env::var("PORT") {
+        builder = builder.set_override("application.port", port)?;
+    }
+    if let Ok(host) = std::env::var("HOST") {
+        builder = builder.set_override("application.host", host)?;
+    }
+    if let Ok(db_url) = std::env::var("DATABASE_URL") {
+        builder = builder.set_override("database.url", db_url)?;
+    }
 
     let settings = builder.build()?;
 
@@ -77,7 +84,7 @@ mod tests {
 
     #[test]
     fn test_get_configuration() {
-        let config = get_configuration(None);
+        let config = get_configuration();
         // This might fail if env vars are not set, so we can't assert much here without setting them
         // But we can check if it returns a result
         // assert!(config.is_ok()); 
@@ -96,7 +103,7 @@ mod tests {
             std::env::set_var("APP__DATABASE__DATABASE_NAME", "test_db");
         }
 
-        let config = get_configuration(None).expect("Failed to load config from env vars");
+        let config = get_configuration().expect("Failed to load config from env vars");
         assert_eq!(config.application.port, 1234);
         assert_eq!(config.application.host, "test_host");
         assert_eq!(config.database.username, Some("test_user".to_string()));

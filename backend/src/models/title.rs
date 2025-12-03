@@ -327,19 +327,7 @@ impl TitleSearchParams {
     }
 }
 
-/// Confidence level for duplicate detection matches.
-///
-/// Used to categorize potential duplicates based on their similarity score.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "lowercase")]
-pub enum DuplicateConfidence {
-    /// High confidence (≥90%): Likely the same title.
-    High,
-    /// Medium confidence (70-89%): Possibly the same title, needs review.
-    Medium,
-    /// Low confidence (50-69%): Might be related, but likely different editions or works.
-    Low,
-}
+use shared::models::enums::DuplicateConfidence;
 
 /// Represents a potential duplicate title pair.
 ///

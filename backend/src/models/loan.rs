@@ -16,31 +16,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-/// Represents the current status of a loan.
-///
-/// # Variants
-///
-/// * `Active` - Loan is currently active and not overdue
-/// * `Returned` - Volume has been returned
-/// * `Overdue` - Loan is active but past the due date
-///
-/// # Database Mapping
-///
-/// Stored as VARCHAR in the database with lowercase values.
-#[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
-#[sqlx(type_name = "VARCHAR", rename_all = "lowercase")]
-#[serde(rename_all = "lowercase")]
-pub enum LoanStatus {
-    /// Loan is currently active and not yet due
-    #[sqlx(rename = "active")]
-    Active,
-    /// Volume has been returned to the library
-    #[sqlx(rename = "returned")]
-    Returned,
-    /// Loan is active but past the due date
-    #[sqlx(rename = "overdue")]
-    Overdue,
-}
+use shared::models::enums::LoanRecordStatus as LoanStatus;
 
 /// Core loan record representing a volume loaned to a borrower.
 ///

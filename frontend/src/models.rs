@@ -227,16 +227,7 @@ pub struct UpdateAuthorRequest {
     pub website_url: Option<String>,
 }
 
-/// AuthorRole enum for different author roles in a title
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum AuthorRole {
-    MainAuthor,
-    CoAuthor,
-    Translator,
-    Illustrator,
-    Editor,
-}
+pub use shared::models::enums::AuthorRole;
 
 /// AuthorWithRole includes role and display order for a title
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -332,59 +323,9 @@ pub struct UpdateGenreRequest {
     pub description: Option<String>,
 }
 
-/// VolumeCondition represents the physical condition of a volume
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum VolumeCondition {
-    #[serde(rename = "Excellent")]
-    Excellent,
-    #[serde(rename = "Good")]
-    Good,
-    #[serde(rename = "Fair")]
-    Fair,
-    #[serde(rename = "Poor")]
-    Poor,
-    #[serde(rename = "Damaged")]
-    Damaged,
-}
+pub use shared::models::enums::VolumeCondition;
 
-impl std::fmt::Display for VolumeCondition {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            VolumeCondition::Excellent => write!(f, "Excellent"),
-            VolumeCondition::Good => write!(f, "Good"),
-            VolumeCondition::Fair => write!(f, "Fair"),
-            VolumeCondition::Poor => write!(f, "Poor"),
-            VolumeCondition::Damaged => write!(f, "Damaged"),
-        }
-    }
-}
-
-/// LoanStatus represents the current loan status of a volume
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum LoanStatus {
-    #[serde(rename = "Available")]
-    Available,
-    #[serde(rename = "Loaned")]
-    Loaned,
-    #[serde(rename = "Overdue")]
-    Overdue,
-    #[serde(rename = "Lost")]
-    Lost,
-    #[serde(rename = "Maintenance")]
-    Maintenance,
-}
-
-impl std::fmt::Display for LoanStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LoanStatus::Available => write!(f, "Available"),
-            LoanStatus::Loaned => write!(f, "Loaned"),
-            LoanStatus::Overdue => write!(f, "Overdue"),
-            LoanStatus::Lost => write!(f, "Lost"),
-            LoanStatus::Maintenance => write!(f, "Maintenance"),
-        }
-    }
-}
+pub use shared::models::enums::LoanStatus;
 
 /// Represents a physical copy of a title.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -521,26 +462,7 @@ pub struct UpdateBorrowerRequest {
     pub group_id: Option<String>,
 }
 
-/// LoanRecordStatus represents the status of a loan record
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub enum LoanRecordStatus {
-    #[serde(rename = "active")]
-    Active,
-    #[serde(rename = "returned")]
-    Returned,
-    #[serde(rename = "overdue")]
-    Overdue,
-}
-
-impl std::fmt::Display for LoanRecordStatus {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LoanRecordStatus::Active => write!(f, "Active"),
-            LoanRecordStatus::Returned => write!(f, "Returned"),
-            LoanRecordStatus::Overdue => write!(f, "Overdue"),
-        }
-    }
-}
+pub use shared::models::enums::LoanRecordStatus;
 
 /// Represents a loan transaction.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -663,13 +585,7 @@ pub struct LibraryStatistics {
 // Duplicate Detection Models
 // ============================================================================
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum DuplicateConfidence {
-    High,
-    Medium,
-    Low,
-}
+pub use shared::models::enums::DuplicateConfidence;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DuplicatePair {
