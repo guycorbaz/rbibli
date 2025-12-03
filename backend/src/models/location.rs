@@ -56,26 +56,6 @@ pub struct LocationWithPath {
     pub volume_count: i32,
 }
 
-/// Request payload for creating a new location.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateLocationRequest {
-    /// Location name (required)
-    pub name: String,
-    /// Description
-    pub description: Option<String>,
-    /// Parent location UUID (optional)
-    pub parent_id: Option<String>,
-}
+pub use shared::dtos::locations::CreateLocationRequest;
 
-/// Request payload for updating an existing location.
-///
-/// All fields are optional; only provided fields will be updated.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateLocationRequest {
-    /// New name
-    pub name: Option<String>,
-    /// New description
-    pub description: Option<String>,
-    /// New parent location UUID (or empty to move to root)
-    pub parent_id: Option<String>,
-}
+pub use shared::dtos::locations::UpdateLocationRequest;

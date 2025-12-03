@@ -64,45 +64,9 @@ pub struct TitleWithCount {
     pub volume_count: i64,
 }
 
-/// Payload for creating a new title.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateTitleRequest {
-    pub title: String,
-    pub subtitle: Option<String>,
-    pub isbn: Option<String>,
-    pub publisher: Option<String>,
-    pub publisher_id: Option<String>,
-    pub publication_year: Option<i32>,
-    pub pages: Option<i32>,
-    pub language: String,
-    pub dewey_code: Option<String>,
-    #[serde(alias = "genre")]
-    pub genre_id: Option<String>,
-    pub series_id: Option<String>,
-    pub series_number: Option<String>,
-    pub summary: Option<String>,
-    pub cover_url: Option<String>,
-}
+pub use shared::dtos::titles::CreateTitleRequest;
 
-/// Payload for updating an existing title. All fields are optional.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateTitleRequest {
-    pub title: Option<String>,
-    pub subtitle: Option<String>,
-    pub isbn: Option<String>,
-    pub publisher: Option<String>,
-    pub publisher_id: Option<String>,
-    pub publication_year: Option<i32>,
-    pub pages: Option<i32>,
-    pub language: Option<String>,
-    pub dewey_code: Option<String>,
-    #[serde(alias = "genre")]
-    pub genre_id: Option<String>,
-    pub series_id: Option<String>,
-    pub series_number: Option<String>,
-    pub summary: Option<String>,
-    pub cover_url: Option<String>,
-}
+pub use shared::dtos::titles::UpdateTitleRequest;
 
 /// Represents a collection of related titles (e.g., "Harry Potter").
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -124,19 +88,9 @@ pub struct SeriesWithTitleCount {
     pub title_count: i64,
 }
 
-/// CreateSeriesRequest for creating a new series
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateSeriesRequest {
-    pub name: String,
-    pub description: Option<String>,
-}
+pub use shared::dtos::series::CreateSeriesRequest;
 
-/// UpdateSeriesRequest for updating an existing series
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateSeriesRequest {
-    pub name: Option<String>,
-    pub description: Option<String>,
-}
+pub use shared::dtos::series::UpdateSeriesRequest;
 
 /// Represents a physical location where volumes can be stored (e.g., "Shelf A", "Room 1").
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -162,21 +116,9 @@ pub struct LocationWithPath {
     pub volume_count: i32,
 }
 
-/// CreateLocationRequest for creating a new location
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateLocationRequest {
-    pub name: String,
-    pub description: Option<String>,
-    pub parent_id: Option<String>,
-}
+pub use shared::dtos::locations::CreateLocationRequest;
 
-/// UpdateLocationRequest for updating an existing location
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateLocationRequest {
-    pub name: Option<String>,
-    pub description: Option<String>,
-    pub parent_id: Option<String>,
-}
+pub use shared::dtos::locations::UpdateLocationRequest;
 
 /// Represents a book author.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -203,29 +145,9 @@ pub struct AuthorWithTitleCount {
     pub title_count: i64,
 }
 
-/// CreateAuthorRequest for creating a new author
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateAuthorRequest {
-    pub first_name: String,
-    pub last_name: String,
-    pub biography: Option<String>,
-    pub birth_date: Option<String>,
-    pub death_date: Option<String>,
-    pub nationality: Option<String>,
-    pub website_url: Option<String>,
-}
+pub use shared::dtos::authors::CreateAuthorRequest;
 
-/// UpdateAuthorRequest for updating an existing author
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateAuthorRequest {
-    pub first_name: Option<String>,
-    pub last_name: Option<String>,
-    pub biography: Option<String>,
-    pub birth_date: Option<String>,
-    pub death_date: Option<String>,
-    pub nationality: Option<String>,
-    pub website_url: Option<String>,
-}
+pub use shared::dtos::authors::UpdateAuthorRequest;
 
 pub use shared::models::enums::AuthorRole;
 
@@ -238,13 +160,7 @@ pub struct AuthorWithRole {
     pub display_order: i32,
 }
 
-/// AddAuthorToTitleRequest for associating an author with a title
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AddAuthorToTitleRequest {
-    pub author_id: String,
-    pub role: AuthorRole,
-    pub display_order: Option<i32>,
-}
+pub use shared::dtos::authors::AddAuthorToTitleRequest;
 
 /// Represents a book publisher.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -269,25 +185,9 @@ pub struct PublisherWithTitleCount {
     pub title_count: i64,
 }
 
-/// CreatePublisherRequest for creating a new publisher
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreatePublisherRequest {
-    pub name: String,
-    pub description: Option<String>,
-    pub website_url: Option<String>,
-    pub country: Option<String>,
-    pub founded_year: Option<i32>,
-}
+pub use shared::dtos::publishers::CreatePublisherRequest;
 
-/// UpdatePublisherRequest for updating a publisher
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdatePublisherRequest {
-    pub name: Option<String>,
-    pub description: Option<String>,
-    pub website_url: Option<String>,
-    pub country: Option<String>,
-    pub founded_year: Option<i32>,
-}
+pub use shared::dtos::publishers::UpdatePublisherRequest;
 
 /// Represents a book genre or category.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -309,19 +209,9 @@ pub struct GenreWithTitleCount {
     pub title_count: i64,
 }
 
-/// CreateGenreRequest for creating a new genre
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateGenreRequest {
-    pub name: String,
-    pub description: Option<String>,
-}
+pub use shared::dtos::genres::CreateGenreRequest;
 
-/// UpdateGenreRequest for updating a genre
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateGenreRequest {
-    pub name: Option<String>,
-    pub description: Option<String>,
-}
+pub use shared::dtos::genres::UpdateGenreRequest;
 
 pub use shared::models::enums::VolumeCondition;
 
@@ -344,25 +234,9 @@ pub struct Volume {
     pub updated_at: DateTime<Utc>,
 }
 
-/// CreateVolumeRequest for creating a new volume
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateVolumeRequest {
-    pub title_id: String,
-    pub barcode: String,
-    pub condition: VolumeCondition,
-    pub location_id: Option<String>,
-    pub individual_notes: Option<String>,
-}
+pub use shared::dtos::volumes::CreateVolumeRequest;
 
-/// UpdateVolumeRequest for updating an existing volume
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateVolumeRequest {
-    pub barcode: Option<String>,
-    pub condition: Option<VolumeCondition>,
-    pub location_id: Option<String>,
-    pub loan_status: Option<LoanStatus>,
-    pub individual_notes: Option<String>,
-}
+pub use shared::dtos::volumes::UpdateVolumeRequest;
 
 /// Response from ISBN lookup containing book data from Google Books API
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -438,29 +312,9 @@ pub struct BorrowerWithGroup {
     pub active_loan_count: i32,
 }
 
-/// CreateBorrowerRequest for creating a new borrower
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateBorrowerRequest {
-    pub name: String,
-    pub email: Option<String>,
-    pub phone: Option<String>,
-    pub address: Option<String>,
-    pub city: Option<String>,
-    pub zip: Option<String>,
-    pub group_id: Option<String>,
-}
+pub use shared::dtos::borrowers::CreateBorrowerRequest;
 
-/// UpdateBorrowerRequest for updating a borrower
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateBorrowerRequest {
-    pub name: Option<String>,
-    pub email: Option<String>,
-    pub phone: Option<String>,
-    pub address: Option<String>,
-    pub city: Option<String>,
-    pub zip: Option<String>,
-    pub group_id: Option<String>,
-}
+pub use shared::dtos::borrowers::UpdateBorrowerRequest;
 
 pub use shared::models::enums::LoanRecordStatus;
 
@@ -522,20 +376,9 @@ pub struct LoanDetail {
     pub is_overdue: bool,
 }
 
-/// CreateLoanRequest for creating a loan by barcode
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateLoanRequest {
-    pub borrower_id: String,
-    pub barcode: String,
-}
+pub use shared::dtos::loans::CreateLoanRequest;
 
-/// Response from creating a loan
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateLoanResponse {
-    pub id: String,
-    pub due_date: i64,
-    pub loan_duration_days: i32,
-}
+pub use shared::dtos::loans::CreateLoanResponse;
 
 
 // ============================================================================
@@ -604,16 +447,6 @@ pub struct DuplicateDetectionResponse {
     pub total_pairs: usize,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MergeTitlesRequest {
-    pub confirm: bool,
-}
+pub use shared::dtos::titles::MergeTitlesRequest;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MergeTitlesResponse {
-    pub success: bool,
-    pub primary_title_id: String,
-    pub volumes_moved: i64,
-    pub secondary_title_deleted: bool,
-    pub message: String,
-}
+pub use shared::dtos::titles::MergeTitlesResponse;

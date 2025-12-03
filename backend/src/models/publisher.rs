@@ -52,34 +52,6 @@ pub struct PublisherWithTitleCount {
     pub title_count: i64,
 }
 
-/// Request payload for creating a new publisher.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreatePublisherRequest {
-    /// Publisher name (required)
-    pub name: String,
-    /// Description
-    pub description: Option<String>,
-    /// Website URL
-    pub website_url: Option<String>,
-    /// Country
-    pub country: Option<String>,
-    /// Founding year
-    pub founded_year: Option<i32>,
-}
+pub use shared::dtos::publishers::CreatePublisherRequest;
 
-/// Request payload for updating an existing publisher.
-///
-/// All fields are optional; only provided fields will be updated.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdatePublisherRequest {
-    /// New name
-    pub name: Option<String>,
-    /// New description
-    pub description: Option<String>,
-    /// New website URL
-    pub website_url: Option<String>,
-    /// New country
-    pub country: Option<String>,
-    /// New founding year
-    pub founded_year: Option<i32>,
-}
+pub use shared::dtos::publishers::UpdatePublisherRequest;

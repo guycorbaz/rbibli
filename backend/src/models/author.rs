@@ -57,45 +57,9 @@ pub struct AuthorWithTitleCount {
     pub title_count: i64,
 }
 
-/// Request payload for creating a new author.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateAuthorRequest {
-    /// First name
-    pub first_name: String,
-    /// Last name
-    pub last_name: String,
-    /// Biography
-    pub biography: Option<String>,
-    /// Date of birth (ISO format: YYYY-MM-DD)
-    pub birth_date: Option<String>,
-    /// Date of death (ISO format: YYYY-MM-DD)
-    pub death_date: Option<String>,
-    /// Nationality
-    pub nationality: Option<String>,
-    /// Website URL
-    pub website_url: Option<String>,
-}
+pub use shared::dtos::authors::CreateAuthorRequest;
 
-/// Request payload for updating an existing author.
-///
-/// All fields are optional; only provided fields will be updated.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateAuthorRequest {
-    /// New first name
-    pub first_name: Option<String>,
-    /// New last name
-    pub last_name: Option<String>,
-    /// New biography
-    pub biography: Option<String>,
-    /// New birth date (ISO format: YYYY-MM-DD)
-    pub birth_date: Option<String>,
-    /// New death date (ISO format: YYYY-MM-DD)
-    pub death_date: Option<String>,
-    /// New nationality
-    pub nationality: Option<String>,
-    /// New website URL
-    pub website_url: Option<String>,
-}
+pub use shared::dtos::authors::UpdateAuthorRequest;
 
 /// Represents the relationship between a title and an author.
 ///
@@ -120,13 +84,4 @@ pub struct TitleAuthor {
 
 use shared::models::enums::AuthorRole;
 
-/// Request payload for associating an author with a title.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AddAuthorToTitleRequest {
-    /// UUID of the author to add
-    pub author_id: String,
-    /// Role of the author for this title
-    pub role: AuthorRole,
-    /// Optional display order (defaults to next available)
-    pub display_order: Option<i32>,
-}
+pub use shared::dtos::authors::AddAuthorToTitleRequest;

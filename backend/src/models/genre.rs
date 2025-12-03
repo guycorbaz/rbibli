@@ -46,22 +46,6 @@ pub struct GenreWithTitleCount {
     pub title_count: i64,
 }
 
-/// Request payload for creating a new genre.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateGenreRequest {
-    /// Genre name (required)
-    pub name: String,
-    /// Description
-    pub description: Option<String>,
-}
+pub use shared::dtos::genres::CreateGenreRequest;
 
-/// Request payload for updating an existing genre.
-///
-/// All fields are optional; only provided fields will be updated.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateGenreRequest {
-    /// New name
-    pub name: Option<String>,
-    /// New description
-    pub description: Option<String>,
-}
+pub use shared::dtos::genres::UpdateGenreRequest;

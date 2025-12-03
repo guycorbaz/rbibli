@@ -1044,25 +1044,25 @@ pub async fn search_titles(
     // Series filter
     if let Some(ref series_id) = params.series_id {
         where_clauses.push("t.series_id = ?".to_string());
-        bind_values.push(series_id.to_string());
+        bind_values.push(series_id.clone());
     }
 
     // Author filter
     if let Some(ref author_id) = params.author_id {
         where_clauses.push("ta.author_id = ?".to_string());
-        bind_values.push(author_id.to_string());
+        bind_values.push(author_id.clone());
     }
 
     // Genre filter
     if let Some(ref genre_id) = params.genre_id {
         where_clauses.push("t.genre_id = ?".to_string());
-        bind_values.push(genre_id.to_string());
+        bind_values.push(genre_id.clone());
     }
 
     // Publisher filter
     if let Some(ref publisher_id) = params.publisher_id {
         where_clauses.push("t.publisher_id = ?".to_string());
-        bind_values.push(publisher_id.to_string());
+        bind_values.push(publisher_id.clone());
     }
 
     // Publication year range
@@ -1079,7 +1079,7 @@ pub async fn search_titles(
     // Language filter
     if let Some(ref language) = params.language {
         where_clauses.push("t.language = ?".to_string());
-        bind_values.push(language.to_string());
+        bind_values.push(language.clone());
     }
 
     // Dewey classification filter
@@ -1091,7 +1091,7 @@ pub async fn search_titles(
     // Location filter (only for titles with volumes in that location)
     if let Some(ref location_id) = params.location_id {
         where_clauses.push("v.location_id = ?".to_string());
-        bind_values.push(location_id.to_string());
+        bind_values.push(location_id.clone());
     }
 
     // Build the complete WHERE clause

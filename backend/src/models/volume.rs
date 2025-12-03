@@ -49,34 +49,6 @@ pub struct Volume {
     pub updated_at: DateTime<Utc>,
 }
 
-/// Request payload for creating a new volume.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateVolumeRequest {
-    /// UUID of the parent title
-    pub title_id: String,
-    /// Unique barcode (must be globally unique)
-    pub barcode: String,
-    /// Initial physical condition
-    pub condition: VolumeCondition,
-    /// UUID of the initial storage location (optional)
-    pub location_id: Option<String>,
-    /// Initial notes
-    pub individual_notes: Option<String>,
-}
+pub use shared::dtos::volumes::CreateVolumeRequest;
 
-/// Request payload for updating an existing volume.
-///
-/// All fields are optional; only provided fields will be updated.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateVolumeRequest {
-    /// New barcode (must be unique if changed)
-    pub barcode: Option<String>,
-    /// New physical condition
-    pub condition: Option<VolumeCondition>,
-    /// New storage location UUID (or empty to remove location)
-    pub location_id: Option<String>,
-    /// New loan status (careful: changing this manually may bypass loan logic)
-    pub loan_status: Option<LoanStatus>,
-    /// New notes
-    pub individual_notes: Option<String>,
-}
+pub use shared::dtos::volumes::UpdateVolumeRequest;

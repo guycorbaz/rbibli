@@ -140,49 +140,6 @@ pub struct LoanDetail {
     pub is_overdue: bool,
 }
 
-/// Request payload for creating a new loan by barcode scanning.
-///
-/// # Fields
-///
-/// * `borrower_id` - UUID of the borrower (must exist in database)
-/// * `barcode` - Volume barcode to loan (format: numeric, e.g., 123456)
-///
-/// # Workflow
-///
-/// 1. System looks up volume by barcode
-/// 2. Validates volume is loanable and available
-/// 3. Determines loan duration from borrower's group settings
-/// 4. Creates loan record and updates volume status
-///
-/// # Validation
-///
-/// The system will reject the request if:
-/// - Borrower ID doesn't exist
-/// - Barcode is not found
-/// - Volume is already loaned
-/// - Volume is marked as not loanable
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateLoanRequest {
-    /// ID of the borrower
-    pub borrower_id: String,
-    /// Barcode of the volume to loan (e.g., "123456")
-    pub barcode: String,
-}
+pub use shared::dtos::loans::CreateLoanRequest;
 
-/// Request payload for returning a loaned volume.
-///
-/// # Fields
-///
-/// * `loan_id` - UUID of the loan to mark as returned
-///
-/// # Workflow
-///
-/// 1. Validates loan exists and is active
-/// 2. Sets return_date to current timestamp
-/// 3. Updates loan status to 'returned'
-/// 4. Updates volume status to 'available'
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReturnLoanRequest {
-    /// ID of the loan to return
-    pub loan_id: String,
-}
+pub use shared::dtos::loans::ReturnLoanRequest;

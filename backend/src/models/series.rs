@@ -87,62 +87,6 @@ pub struct SeriesWithTitleCount {
     pub title_count: i64,
 }
 
-/// Request payload for creating a new series.
-///
-/// # Fields
-///
-/// * `name` - Series name (required, e.g., "Harry Potter")
-/// * `description` - Optional description
-///
-/// # Example
-///
-/// ```json
-/// {
-///   "name": "Harry Potter",
-///   "description": "Fantasy series by J.K. Rowling featuring the young wizard Harry Potter"
-/// }
-/// ```
-///
-/// # Validation
-///
-/// - Name must not be empty
-/// - Name should be reasonably unique (no strict enforcement)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CreateSeriesRequest {
-    /// Series name (required)
-    pub name: String,
-    /// Optional description
-    pub description: Option<String>,
-}
+pub use shared::dtos::series::CreateSeriesRequest;
 
-/// Request payload for updating an existing series.
-///
-/// All fields are optional, allowing partial updates. Only provided
-/// fields will be updated in the database.
-///
-/// # Fields
-///
-/// * `name` - Optional new series name
-/// * `description` - Optional new description (can set to None to clear)
-///
-/// # Example
-///
-/// ```json
-/// {
-///   "name": "Updated Series Name",
-///   "description": "Updated description"
-/// }
-/// ```
-///
-/// # Behavior
-///
-/// - If name is None, the existing name is preserved
-/// - If description is None, the existing description is preserved
-/// - To clear a description, explicitly set it to empty string
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateSeriesRequest {
-    /// Optional new name for the series
-    pub name: Option<String>,
-    /// Optional new description (or None to keep existing)
-    pub description: Option<String>,
-}
+pub use shared::dtos::series::UpdateSeriesRequest;
