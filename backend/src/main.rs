@@ -71,6 +71,9 @@ struct Args {
 /// other initialization.
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
+    // Load .env file if it exists
+    dotenv::dotenv().ok();
+
     // Parse command line arguments
     let args = Args::parse();
 
@@ -86,10 +89,6 @@ async fn main() -> Result<(), std::io::Error> {
     env_logger::init();
 
     info!("Starting rbibli backend application");
-
-
-
-
 
     // Load configuration
     let configuration = backend::configuration::get_configuration(args.config).expect("Failed to read configuration.");

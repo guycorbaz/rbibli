@@ -32,7 +32,22 @@ cargo install wasm-pack
 
 # Install wasm-bindgen-cli (optional, for advanced use)
 cargo install wasm-bindgen-cli
+
+# Install trunk (recommended for development)
+cargo install trunk
 ```
+
+## WASM Build Optimization
+
+To ensure fast load times, the project is configured to optimize the WASM binary size in `Cargo.toml`. The `[profile.release]` section includes:
+
+- `opt-level = "z"`: Optimize for size.
+- `lto = true`: Enable Link Time Optimization.
+- `strip = true`: Remove symbols to reduce file size.
+- `codegen-units = 1`: Maximize optimization at the cost of compile time.
+- `panic = "abort"`: Remove panic unwinding code.
+
+These settings reduce the WASM binary size significantly (e.g., from ~55MB to <5MB), ensuring the application loads quickly in the browser.
 
 ## Slint
 
@@ -58,6 +73,10 @@ For more information about Slint:
 - [Slint Rust API](https://slint.dev/docs/rust/)
 - [Slint Language Reference](https://slint.dev/docs/slint/)
 - [Slint WASM Guide](https://slint.dev/docs/rust/slint/wasm_interpreter/)
+
+### Resizing Behavior
+
+The application uses a custom `ResizeObserver` in `index.html` and a 100% width/height layout in `app-window.slint` to ensure the UI correctly fills the browser window and resizes dynamically without layout thrashing.
 
 ## IDE Setup
 
@@ -95,24 +114,35 @@ wasm-pack build --target web --release
 # The build output will be in pkg/ directory
 ```
 
-### Serving the Web Application
+### Serving the Web Application (Recommended)
 
-After building, you need a web server to serve the application:
+The recommended way to serve the application during development is using `trunk`. It handles building, serving, and proxying API requests.
+
+```bash
+# Navigate to the frontend directory
+cd frontend
+
+# Start the development server
+trunk serve
+```
+
+This will:
+1. Build the application.
+2. Serve it at `http://localhost:8080`.
+3. Watch for file changes and auto-reload.
+4. **Proxy API requests**: Requests to `/api/` are automatically forwarded to the backend running at `http://127.0.0.1:8000`.
+
+### Manual Serving (Alternative)
+
+If you prefer to build manually with `wasm-pack`, you can serve the `dist` directory:
 
 ```bash
 # Option 1: Using Python's built-in HTTP server
 python3 -m http.server 8080
 
-# Option 2: Using miniserve (better for development)
-cargo install miniserve
+# Option 2: Using miniserve
 miniserve . --index index.html -p 8080
-
-# Option 3: Using basic-http-server
-cargo install basic-http-server
-basic-http-server .
 ```
-
-Then open your browser to `http://localhost:8080`
 
 ### Backend (API Server)
 

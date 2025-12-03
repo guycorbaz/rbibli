@@ -1,54 +1,52 @@
-# Stage 1: Build the Frontend (WASM)
-FROM rust:latest AS frontend-builder
-WORKDIR /usr/src/app
+# Stage 1: Builder
+# We use a single builder stage to build both frontend and backend
+# This avoids copying source files multiple times
+FROM rust:latest AS builder
 
-# Install trunk and add wasm target
+# Install trunk for frontend build
 RUN cargo install trunk
 RUN rustup target add wasm32-unknown-unknown
 
-# Copy entire project to satisfy workspace dependencies
+WORKDIR /usr/src/app
 COPY . .
 
-# Build frontend
+# Build Frontend
+# The output will be in frontend/dist
 WORKDIR /usr/src/app/frontend
 RUN trunk build --release
 
-# Stage 2: Build the Backend
-FROM rust:latest AS backend-builder
+# Build Backend
 WORKDIR /usr/src/app
-
-# Copy entire project
-COPY . .
-
-# Enable SQLx offline mode
-ENV SQLX_OFFLINE=true
-
-# Build backend binary
+# We use --bin backend to ensure we only build the backend binary
 RUN cargo build --release --bin backend
 
-# Stage 3: Runtime Environment
+# Stage 2: Runtime
 FROM debian:bookworm-slim
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Set the working directory
 WORKDIR /usr/local/bin
 
-# Copy backend binary
-COPY --from=backend-builder /usr/src/app/target/release/backend /usr/local/bin/backend
+# Copy the backend binary
+COPY --from=builder /usr/src/app/target/release/backend ./backend
 
-# Copy frontend static files
-# We copy them to ./static because the backend is configured to serve from there
-COPY --from=frontend-builder /usr/src/app/frontend/dist /usr/local/bin/static
+# Copy the frontend assets to a 'static' directory next to the binary
+# The backend is configured to serve files from ./static
+COPY --from=builder /usr/src/app/frontend/dist ./static
 
-# Expose port
+# Expose the application port
 EXPOSE 8080
 
-# Environment variables
-ENV HOST=0.0.0.0
-ENV PORT=8080
+# Set default environment variables
+# These can be overridden by docker-compose or runtime env vars
+ENV APP_APPLICATION__HOST=0.0.0.0
+ENV APP_APPLICATION__PORT=8080
 ENV RUST_LOG=info
 
-# Run rbibli application
-CMD ["backend"]
+# Run the application
+CMD ["./backend"]

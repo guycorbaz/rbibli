@@ -4,7 +4,7 @@
 //! which configures the Actix Web server, database connection pool, and API routes.
 //! It also exports the `handlers` and `models` modules.
 
-use actix_web::{web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use actix_web::dev::Server;
 use log::{info, error, debug};
 use sqlx::MySqlPool as Pool;
@@ -23,37 +23,7 @@ pub struct AppState {
 }
 
 
-/// Greets the user with a personalized message.
-///
-/// This asynchronous function serves as a request handler for the `actix-web` framework.
-/// It extracts a `name` parameter from the request path. If a name is provided,
-/// it returns a "Hello {name}!" message. If the `name` parameter is absent,
-/// it defaults to "World".
-///
-/// It also logs a debug message indicating that the endpoint was called
-/// and which name was used.
-///
-/// # Arguments
-///
-/// * `req` - An `HttpRequest` object from which the `name` parameter is extracted.
-///
-/// # Returns
-///
-/// An object that implements `impl Responder`, which resolves to a string
-/// containing the greeting.
-///
-/// # Example Routes
-///
-/// ```
-/// App::new()
-///     .route("/", web::get().to(greet))       // Responds with "Hello World!"
-///     .route("/{name}", web::get().to(greet)) // Responds with "Hello {name}!"
-/// ```
-async fn greet(req: HttpRequest) -> impl Responder {
-    let name = req.match_info().get("name").unwrap_or("World");
-    debug!("Greet endpoint called with name: {}", name);
-    format!("Hello {}!", &name)
-}
+
 
 
 /// Performs a basic health check of the service.
@@ -167,7 +137,6 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
         App::new()
             .wrap(cors)
             .app_data(db_pool.clone())
-            .route("/", web::get().to(greet))
             .route("/health", web::get().to(health_check))
             .route("/health/db", web::get().to(db_health_check))
             // API v1 routes - Titles
@@ -245,7 +214,6 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/statistics/genres", web::get().to(handlers::statistics::get_volumes_per_genre))
             .route("/api/v1/statistics/locations", web::get().to(handlers::statistics::get_volumes_per_location))
             .route("/api/v1/statistics/loans", web::get().to(handlers::statistics::get_loan_statistics))
-            .route("/{name}", web::get().to(greet))
             // Serve static files for the frontend
             .service(actix_files::Files::new("/", {
                 if std::path::Path::new("./static").exists() {

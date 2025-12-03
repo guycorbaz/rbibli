@@ -56,6 +56,25 @@ impl ApiClient {
             client: reqwest::Client::new(),
         }
     }
+}
+
+impl Default for ApiClient {
+    fn default() -> Self {
+        #[cfg(target_arch = "wasm32")]
+        {
+            let window = web_sys::window().expect("no global `window` exists");
+            let location = window.location();
+            let origin = location.origin().expect("no origin found");
+            Self::new(origin)
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            Self::new("http://localhost:8000".to_string())
+        }
+    }
+}
+
+impl ApiClient {
 
     /// Fetches all titles with their volume counts from the backend API.
     ///
@@ -2035,47 +2054,7 @@ impl ApiClient {
     }
 }
 
-impl Default for ApiClient {
-    /// Creates a default API client configured for local development.
-    ///
-    /// This implementation provides a convenient way to create an `ApiClient` instance
-    /// that connects to a backend server running locally on `http://localhost:8000`.
-    /// This is the typical configuration for development and testing.
-    ///
-    /// # Returns
-    ///
-    /// An `ApiClient` instance configured to connect to `http://localhost:8000`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rbibli_frontend::api_client::ApiClient;
-    ///
-    /// // Create a client using the default configuration
-    /// let client = ApiClient::default();
-    ///
-    /// // Equivalent to:
-    /// let explicit_client = ApiClient::new("http://localhost:8000".to_string());
-    /// ```
-    ///
-    /// # Usage in Production
-    ///
-    /// For production deployments, use `ApiClient::new()` with the appropriate server URL
-    /// instead of relying on this default implementation.
-    fn default() -> Self {
-        #[cfg(target_arch = "wasm32")]
-        {
-            let window = web_sys::window().expect("no global `window` exists");
-            let location = window.location();
-            let origin = location.origin().expect("no origin");
-            Self::new(origin)
-        }
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            Self::new("http://localhost:8000".to_string())
-        }
-    }
-}
+
 
 impl ApiClient {
     /// Uploads a cover image for a title.

@@ -20,9 +20,7 @@ use models::{
     CreateAuthorRequest, UpdateAuthorRequest, CreatePublisherRequest, UpdatePublisherRequest,
     CreateGenreRequest, UpdateGenreRequest, CreateSeriesRequest, UpdateSeriesRequest,
     CreateBorrowerGroupRequest, UpdateBorrowerGroupRequest, CreateBorrowerRequest,
-    UpdateBorrowerRequest, CreateLoanRequest,
-    LibraryStatistics as ModelsLibraryStatistics, GenreStatistic as ModelsGenreStatistic,
-    LocationStatistic as ModelsLocationStatistic, LoanStatistic as ModelsLoanStatistic
+    UpdateBorrowerRequest, CreateLoanRequest
 };
 use slint::{Model, ComponentHandle};
 

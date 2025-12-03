@@ -38,6 +38,7 @@ A modern, full-featured personal library management system built entirely in Rus
 - **[Slint 1.14.1](https://slint.dev/)** - Declarative UI framework for native and web
 - **Rust** - Type-safe, memory-safe systems programming language
 - **Reqwest** - HTTP client for API communication
+- **WASM Optimization** - Configured for minimal binary size (~55MB -> optimized)
 
 ### Backend
 - **[Actix-web 4.11.0](https://actix.rs/)** - High-performance web framework
@@ -139,8 +140,10 @@ services:
 5. **Start the frontend** (in a new terminal)
    ```bash
    cd frontend
-   cargo run --release
+   trunk serve --release
    ```
+   The frontend will be available at `http://localhost:8080`.
+   *Note: `trunk serve` is configured to proxy API requests to the backend at `http://127.0.0.1:8000`.*
 
 ## 📖 Usage
 

@@ -31,4 +31,3 @@ pkg/
 dist/
 
 #docker
-docker-compose.yml

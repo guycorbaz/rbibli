@@ -1,0 +1,20 @@
+services:
+  rbibli:
+    build: .
+    image: gcorbaz/rbibli:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - RUST_LOG=info
+      # Application Configuration
+      # Note: We use APP__ prefix (double underscore) because the config crate
+      # expects the separator to be present after the prefix when using separator("__")
+      - APP__APPLICATION__HOST=0.0.0.0
+      - APP__APPLICATION__PORT=8080
+      # Database Configuration
+      # You can now use a single URL for connection
+      # Format: mysql://username:password@host:port/database_name
+      # Defaults to connecting to the host machine's database
+      - APP__DATABASE__URL=${DATABASE_URL:-mysql://rbibli:rbibli@host.docker.internal:3306/rbibli}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
