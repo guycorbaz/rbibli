@@ -41,7 +41,14 @@
 
 import { Styles } from "../styles.slint";
 import { Page } from "page.slint";
-import { ListView, VerticalBox, HorizontalBox, Button, LineEdit, TextEdit } from "std-widgets.slint";
+import {
+    ListView,
+    VerticalBox,
+    HorizontalBox,
+    Button,
+    LineEdit,
+    TextEdit,
+} from "std-widgets.slint";
 
 // LocationData - Data structure for storage location information (EXPORTED)
 //
@@ -252,6 +259,7 @@ export component LocationsPage inherits Page {
                         width: 100px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.new-location-name;
                         placeholder-text: @tr("Location name (required)");
@@ -266,6 +274,7 @@ export component LocationsPage inherits Page {
                         width: 100px;
                         vertical-alignment: top;
                     }
+
                     TextEdit {
                         text <=> root.new-location-description;
                         height: 60px;
@@ -301,8 +310,7 @@ export component LocationsPage inherits Page {
                             root.create-location(
                                 root.new-location-name,
                                 root.new-location-description,
-                                root.new-location-parent-id
-                            );
+                                root.new-location-parent-id);
                             // Close dialog after submission
                             root.show-create-dialog = false;
                         }
@@ -339,6 +347,7 @@ export component LocationsPage inherits Page {
                         width: 100px;
                         vertical-alignment: center;
                     }
+
                     LineEdit {
                         text <=> root.edit-location-name;
                         placeholder-text: @tr("Location name (required)");
@@ -353,6 +362,7 @@ export component LocationsPage inherits Page {
                         width: 100px;
                         vertical-alignment: top;
                     }
+
                     TextEdit {
                         text <=> root.edit-location-description;
                         height: 60px;
@@ -388,8 +398,7 @@ export component LocationsPage inherits Page {
                                 root.edit-location-id,
                                 root.edit-location-name,
                                 root.edit-location-description,
-                                root.edit-location-parent-id
-                            );
+                                root.edit-location-parent-id);
                             // Close dialog after submission
                             root.show-edit-dialog = false;
                         }
@@ -481,14 +490,14 @@ export component LocationsPage inherits Page {
         if locations.length > 0: ListView {
             // Each location item is rendered with hierarchical indentation
             for location[index] in locations: Rectangle {
-                height: 70px;
+                height: layout.preferred-height;
                 border-width: 1px;
                 border-color: #ddd;
                 border-radius: 4px;
                 // Alternating row colors for better readability
                 background: Math.mod(index, 2) == 0 ? #fafafa : white;
 
-                HorizontalLayout {
+                layout := HorizontalLayout {
                     padding: 10px;
                     spacing: 10px;
 
@@ -536,7 +545,7 @@ export component LocationsPage inherits Page {
                             text: location.description;
                             font-size: 11px;
                             color: #888;
-                            overflow: elide;
+                            wrap: word-wrap;
                         }
                     }
 
@@ -580,9 +589,7 @@ export component LocationsPage inherits Page {
                         // Delete button - shows confirmation dialog
                         // Disabled if location has child locations or volumes
                         Button {
-                            text: location.child-count > 0 || location.volume-count > 0 ?
-                                  @tr("Delete") + " (" + (location.child-count + location.volume-count) + ")" :
-                                  @tr("Delete");
+                            text: location.child-count > 0 || location.volume-count > 0 ? @tr("Delete") + " (" + (location.child-count + location.volume-count) + ")" : @tr("Delete");
                             width: Styles.small_button_width;
                             height: Styles.small_button_height;
                             enabled: location.child-count == 0 && location.volume-count == 0;
