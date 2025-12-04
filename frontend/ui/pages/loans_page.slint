@@ -178,10 +178,11 @@ export component LoansPage inherits Page {
                     // Header with refresh button
                     HorizontalBox {
                         alignment: space-between;
-                        height: 35px; // Fixed height for header
+                        // height: 35px; // Removed fixed height to avoid clipping
 
                         HorizontalBox {
                             spacing: 10px;
+                            alignment: center; // Vertically center items
 
                             Text {
                                 text: @tr("Active Loans");
@@ -196,7 +197,7 @@ export component LoansPage inherits Page {
                                 border-radius: 12px;
                                 width: 60px;
                                 height: 24px;
-                                y: (parent.height - self.height) / 2;
+                                // y: (parent.height - self.height) / 2; // Removed manual positioning
 
                                 Text {
                                     text: "(" + root.active-loans.length + ")";
@@ -248,13 +249,13 @@ export component LoansPage inherits Page {
 
                     if root.active-loans.length > 0: ListView {
                         for loan[index] in root.active-loans: Rectangle {
-                            height: 120px;
+                            height: layout.preferred-height;
                             border-radius: 8px;
                             background: Math.mod(index, 2) == 0 ? #f8f8f8 : #ffffff;
                             border-width: 1px;
                             border-color: loan.is-overdue ? #ff0000 : #e0e0e0;
 
-                            HorizontalBox {
+                            layout := HorizontalBox {
                                 padding: 15px;
                                 spacing: 15px;
 
@@ -267,19 +268,21 @@ export component LoansPage inherits Page {
                                         text: loan.title;
                                         font-size: 16px;
                                         font-weight: 700;
-                                        overflow: elide;
+                                        wrap: word-wrap;
                                     }
 
                                     Text {
                                         text: "Barcode: " + loan.barcode;
                                         font-size: 14px;
                                         color: #666;
+                                        overflow: elide;
                                     }
 
                                     Text {
                                         text: "Borrower: " + loan.borrower-name;
                                         font-size: 14px;
                                         color: #666;
+                                        overflow: elide;
                                     }
 
                                     HorizontalBox {
