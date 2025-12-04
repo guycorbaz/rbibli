@@ -35,5 +35,28 @@
 /// - The build script itself is modified
 /// - Dependencies in `Cargo.toml` are updated
 fn main() {
+    // Compile translations
+    let lang_dir = std::path::Path::new("lang");
+    if lang_dir.exists() {
+        let po_path = lang_dir.join("fr.po");
+        let mo_path = lang_dir.join("fr.mo");
+
+        if po_path.exists() {
+            println!("cargo:rerun-if-changed={}", po_path.display());
+            
+            let status = std::process::Command::new("msgfmt")
+                .arg("-o")
+                .arg(&mo_path)
+                .arg(&po_path)
+                .status();
+
+            match status {
+                Ok(s) if s.success() => println!("Compiled translations: {}", po_path.display()),
+                Ok(s) => println!("cargo:warning=msgfmt failed with status: {}", s),
+                Err(_) => println!("cargo:warning=msgfmt not found. Install gettext to compile translations."),
+            }
+        }
+    }
+
     slint_build::compile("ui/app-window.slint").expect("Slint build failed");
 }

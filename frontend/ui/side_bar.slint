@@ -19,7 +19,7 @@
 // ============================================================================
 
 import { HorizontalBox, VerticalBox, Palette } from "std-widgets.slint";
-import { Styles} from "styles.slint";
+import { Styles } from "styles.slint";
 
 // SideBarItem - Internal component for a single sidebar menu item
 //
@@ -60,19 +60,21 @@ component SideBarItem inherits Rectangle {
     accessible-item-index: root.tab-index;
     accessible-item-selectable: true;
     accessible-item-selected: root.selected;
-    accessible-action-default => { self.clicked(); }
+    accessible-action-default => {
+        self.clicked();
+    }
 
     states [
-        pressed when touch.pressed : {
+        pressed when touch.pressed: {
             state.opacity: Styles.button_pressed_state;
         }
-        hover when touch.has-hover : {
+        hover when touch.has-hover: {
             state.opacity: Styles.button_has_over_state;
         }
-        selected when root.selected : {
+        selected when root.selected: {
             state.opacity: Styles.button_selected_state;
         }
-        focused when root.has-focus : {
+        focused when root.has-focus: {
             state.opacity: Styles.button_has_focus_state;
         }
     ]
@@ -89,8 +91,6 @@ component SideBarItem inherits Rectangle {
         spacing: 0px;
 
         label := Text {
-            vertical-alignment: center;
-            accessible-role: none;
             font-size: 14px;    // TODO: put in styles
             font-weight: 400;   // TODO: put in styles
         }
@@ -190,16 +190,16 @@ export component SideBar inherits Rectangle {
                 // Handle key press events for navigation and selection
                 key-pressed(event) => {
                     if (event.text == "\n") {
-                         root.current-item = root.current-focused;
-                         return accept;
+                        root.current-item = root.current-focused;
+                        return accept;
                     }
                     if (event.text == Key.UpArrow) {
-                         self.focused-tab = Math.max(self.focused-tab - 1, 0);
-                         return accept;
+                        self.focused-tab = Math.max(self.focused-tab - 1, 0);
+                        return accept;
                     }
                     if (event.text == Key.DownArrow) {
-                         self.focused-tab = Math.min(self.focused-tab + 1, root.model.length - 1);
-                         return accept;
+                        self.focused-tab = Math.min(self.focused-tab + 1, root.model.length - 1);
+                        return accept;
                     }
                     return reject;
                 }
@@ -207,8 +207,8 @@ export component SideBar inherits Rectangle {
                 // Handle key release events (Space bar activation)
                 key-released(event) => {
                     if (event.text == " ") {
-                         root.current-item = root.current-focused;
-                         return accept;
+                        root.current-item = root.current-focused;
+                        return accept;
                     }
                     return reject;
                 }
@@ -221,8 +221,10 @@ export component SideBar inherits Rectangle {
             }
 
             // Generate a SideBarItem for each entry in the model array
-            for item[index] in root.model : SideBarItem {
-                clicked => { root.current-item = index; }
+            for item[index] in root.model: SideBarItem {
+                clicked => {
+                    root.current-item = index;
+                }
 
                 tab-index: index;
                 has-focus: index == root.current-focused;
@@ -240,7 +242,7 @@ export component SideBar inherits Rectangle {
 
                 // Placeholder for child elements added by parent component
                 @children
-             }
+            }
         }
     }
 }

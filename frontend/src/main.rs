@@ -92,6 +92,11 @@ slint::include_modules!();
 #[cfg(not(target_arch = "wasm32"))]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    // Initialize gettext
+    gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "");
+    gettextrs::bindtextdomain("rbibli", "lang")?;
+    gettextrs::textdomain("rbibli")?;
+
     run().await
 }
 
@@ -107,12 +112,40 @@ fn main() {}
 
 async fn run() -> Result<(), Box<dyn Error>> {
     let ui = AppWindow::new()?;
+    let ui_weak = ui.as_weak();
 
     // Set application version from Cargo.toml
     ui.set_app_version(env!("CARGO_PKG_VERSION").into());
 
     // Create API client
     let api_client = Rc::new(ApiClient::default());
+
+    // Handle language change
+    let ui_handle = ui.as_weak();
+    ui.on_change_language(move |lang_code| {
+        println!("Changing language to: '{}'", lang_code);
+        
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            unsafe {
+                if lang_code.is_empty() {
+                    std::env::remove_var("LANGUAGE");
+                } else {
+                    std::env::set_var("LANGUAGE", lang_code.as_str());
+                }
+            }
+
+            // Re-initialize locale
+            gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "");
+            
+            println!("Language environment variable set. Restart may be required.");
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            println!("Language switching via gettext is not supported in WASM.");
+        }
+    });
 
     // Function to load titles and populate the UI
     //

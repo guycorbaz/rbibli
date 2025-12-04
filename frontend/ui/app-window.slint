@@ -63,6 +63,7 @@ import {
     LocationStatistic,
     LoanStatistic,
     LibraryStatistics,
+    SettingsPage,
 } from "pages/pages.slint";
 import { Styles } from "styles.slint";
 
@@ -327,6 +328,10 @@ export component AppWindow inherits Window {
     callback delete-location(string);
 
     // ========================================================================
+    // Callbacks - Settings Operations
+    callback change-language(string);
+
+    // ========================================================================
     // Callbacks - Author Operations
     // ========================================================================
 
@@ -543,7 +548,7 @@ export component AppWindow inherits Window {
                 title: @tr("Personal Library");
                 // Menu items (internationalized):
                 // 0: Titles, 1: Locations, 2: Authors, 3: Publishers,
-                // 4: Genres, 5: Series, 6: Loans, 7: Statistics, 8: About
+                // 4: Genres, 5: Series, 6: Loans, 7: Statistics, 8: About, 9: Settings
                 model: [
                     @tr("Menu" => "Titles"),
                     @tr("Menu" => "Locations"),
@@ -553,7 +558,8 @@ export component AppWindow inherits Window {
                     @tr("Menu" => "Series"),
                     @tr("Menu" => "Loans"),
                     @tr("Menu" => "Statistics"),
-                    @tr("Menu" => "About")
+                    @tr("Menu" => "About"),
+                    @tr("Menu" => "Settings")
                 ];
 
                 // Auto-load data when page changes
@@ -842,8 +848,13 @@ export component AppWindow inherits Window {
             }
 
             // PAGE 8: About Page - Application information and version
-            if(side-bar.current-item == 8): AboutPage {
-                app-version: root.app-version;
+            if side-bar.current-item == 8: AboutPage {
+                app-version: "0.2.1";
+            }
+            if side-bar.current-item == 9: SettingsPage {
+                change-language(lang) => {
+                    root.change-language(lang);
+                }
             }
         }
     }
