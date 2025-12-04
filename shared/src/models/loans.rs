@@ -27,6 +27,7 @@ pub struct Loan {
     /// Return date
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(with = "optional_ts_seconds")]
+    #[serde(default)]
     pub return_date: Option<DateTime<Utc>>,
     /// Current status
     pub status: LoanStatus,
@@ -70,6 +71,7 @@ pub struct LoanDetail {
     pub title: String,
     pub barcode: String,
     pub borrower_name: String,
+    #[serde(default)]
     pub borrower_email: Option<String>,
     pub is_overdue: bool,
 }

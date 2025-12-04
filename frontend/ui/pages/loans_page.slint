@@ -22,7 +22,17 @@
 
 import { Styles } from "../styles.slint";
 import { Page } from "page.slint";
-import { ListView, ScrollView, VerticalBox, HorizontalBox, Button, LineEdit, ComboBox, TextEdit, TabWidget } from "std-widgets.slint";
+import {
+    ListView,
+    ScrollView,
+    VerticalBox,
+    HorizontalBox,
+    Button,
+    LineEdit,
+    ComboBox,
+    TextEdit,
+    TabWidget,
+} from "std-widgets.slint";
 
 // BorrowerGroupData - Data structure for borrower groups
 export struct BorrowerGroupData {
@@ -163,10 +173,12 @@ export component LoansPage inherits Page {
                 VerticalBox {
                     spacing: 10px;
                     padding: 10px;
+                    alignment: stretch;
 
                     // Header with refresh button
                     HorizontalBox {
                         alignment: space-between;
+                        height: 35px; // Fixed height for header
 
                         HorizontalBox {
                             spacing: 10px;
@@ -175,6 +187,7 @@ export component LoansPage inherits Page {
                                 text: @tr("Active Loans");
                                 font-size: 18px;
                                 font-weight: 700;
+                                vertical-alignment: center;
                             }
 
                             // Debug: Show count
@@ -183,6 +196,7 @@ export component LoansPage inherits Page {
                                 border-radius: 12px;
                                 width: 60px;
                                 height: 24px;
+                                y: (parent.height - self.height) / 2;
 
                                 Text {
                                     text: "(" + root.active-loans.length + ")";
@@ -232,90 +246,89 @@ export component LoansPage inherits Page {
                         }
                     }
 
-                    if root.active-loans.length > 0: ScrollView {
-                        VerticalBox {
-                            spacing: 8px;
+                    if root.active-loans.length > 0: ListView {
+                        for loan[index] in root.active-loans: Rectangle {
+                            height: 120px;
+                            border-radius: 8px;
+                            background: Math.mod(index, 2) == 0 ? #f8f8f8 : #ffffff;
+                            border-width: 1px;
+                            border-color: loan.is-overdue ? #ff0000 : #e0e0e0;
 
-                            for loan[index] in root.active-loans: Rectangle {
-                                //height: 120px;
-                                border-radius: 8px;
-                                background: Math.mod(index, 2) == 0 ? #f8f8f8 : #ffffff;
-                                border-width: 1px;
-                                border-color: loan.is-overdue ? #ff0000 : #e0e0e0;
+                            HorizontalBox {
+                                padding: 15px;
+                                spacing: 15px;
 
-                                HorizontalBox {
-                                    padding: 15px;
-                                    spacing: 15px;
+                                VerticalBox {
+                                    spacing: 5px;
+                                    horizontal-stretch: 1;
+                                    alignment: center;
 
-                                    VerticalBox {
-                                        spacing: 5px;
-                                        horizontal-stretch: 1;
+                                    Text {
+                                        text: loan.title;
+                                        font-size: 16px;
+                                        font-weight: 700;
+                                        overflow: elide;
+                                    }
 
-                                        Text {
-                                            text: loan.title;
-                                            font-size: 16px;
-                                            font-weight: 700;
-                                        }
+                                    Text {
+                                        text: "Barcode: " + loan.barcode;
+                                        font-size: 14px;
+                                        color: #666;
+                                    }
 
-                                        Text {
-                                            text: "Barcode: " + loan.barcode;
-                                            font-size: 14px;
-                                            color: #666;
-                                        }
-
-                                        Text {
-                                            text: "Borrower: " + loan.borrower-name;
-                                            font-size: 14px;
-                                            color: #666;
-                                        }
-
-                                        HorizontalBox {
-                                            spacing: 20px;
-
-                                            Text {
-                                                text: "Due: " + loan.due-date;
-                                                font-size: 13px;
-                                                color: loan.is-overdue ? #ff0000 : #666;
-                                                font-weight: loan.is-overdue ? 700 : 400;
-                                            }
-
-                                            if loan.is-overdue: Text {
-                                                text: "OVERDUE";
-                                                font-size: 13px;
-                                                color: #ff0000;
-                                                font-weight: 700;
-                                            }
-
-                                            if loan.extension-count > 0: Text {
-                                                text: "Extended: " + loan.extension-count + "/1";
-                                                font-size: 13px;
-                                                color: #0066cc;
-                                                font-weight: 600;
-                                            }
-                                        }
+                                    Text {
+                                        text: "Borrower: " + loan.borrower-name;
+                                        font-size: 14px;
+                                        color: #666;
                                     }
 
                                     HorizontalBox {
-                                        spacing: 10px;
+                                        spacing: 20px;
 
-                                        Button {
-                                            text: @tr("Extend");
-                                            width: Styles.small_button_width;
-                                            height: Styles.small_button_height;
-                                            enabled: loan.extension-count < 1;
-                                            clicked => {
-                                                root.extend-loan(loan.id);
-                                            }
+                                        Text {
+                                            text: "Due: " + loan.due-date;
+                                            font-size: 13px;
+                                            color: loan.is-overdue ? #ff0000 : #666;
+                                            font-weight: loan.is-overdue ? 700 : 400;
                                         }
 
-                                        Button {
-                                            text: @tr("Return");
-                                            width: Styles.small_button_width;
-                                            height: Styles.small_button_height;
-                                            primary: true;
-                                            clicked => {
-                                                root.return-loan(loan.id);
-                                            }
+                                        if loan.is-overdue: Text {
+                                            text: "OVERDUE";
+                                            font-size: 13px;
+                                            color: #ff0000;
+                                            font-weight: 700;
+                                        }
+
+                                        if loan.extension-count > 0: Text {
+                                            text: "Extended: " + loan.extension-count + "/1";
+                                            font-size: 13px;
+                                            color: #0066cc;
+                                            font-weight: 600;
+                                        }
+                                    }
+                                }
+
+                                HorizontalBox {
+                                    spacing: 10px;
+                                    alignment: center;
+
+                                    Button {
+                                        text: @tr("Extend");
+                                        width: Styles.small_button_width;
+                                        height: Styles.small_button_height;
+                                        enabled: loan.extension-count < 1;
+                                        clicked => {
+                                            root.extend-loan(loan.id);
+                                        }
+                                    }
+
+                                    Button {
+                                        text: @tr("Return");
+                                        width: Styles.small_button_width;
+                                        height: Styles.small_button_height;
+                                        primary: true;
+                                        clicked => {
+                                            root.return-loan(loan.id);
                                         }
                                     }
                                 }
@@ -482,37 +495,83 @@ export component LoansPage inherits Page {
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Name:"); min-width: 100px; }
-                                    LineEdit { text <=> root.new-borrower-name; placeholder-text: @tr("Full name"); }
+                                    Text {
+                                        text: @tr("Name:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.new-borrower-name;
+                                        placeholder-text: @tr("Full name");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Email:"); min-width: 100px; }
-                                    LineEdit { text <=> root.new-borrower-email; placeholder-text: @tr("email@example.com"); }
+                                    Text {
+                                        text: @tr("Email:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.new-borrower-email;
+                                        placeholder-text: @tr("email@example.com");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Phone:"); min-width: 100px; }
-                                    LineEdit { text <=> root.new-borrower-phone; placeholder-text: @tr("+33 1 23 45 67 89"); }
+                                    Text {
+                                        text: @tr("Phone:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.new-borrower-phone;
+                                        placeholder-text: @tr("+33 1 23 45 67 89");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Address:"); min-width: 100px; }
-                                    LineEdit { text <=> root.new-borrower-address; placeholder-text: @tr("Street address"); }
+                                    Text {
+                                        text: @tr("Address:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.new-borrower-address;
+                                        placeholder-text: @tr("Street address");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("City:"); min-width: 100px; }
-                                    LineEdit { text <=> root.new-borrower-city; placeholder-text: @tr("City"); }
+                                    Text {
+                                        text: @tr("City:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.new-borrower-city;
+                                        placeholder-text: @tr("City");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("ZIP:"); min-width: 100px; }
-                                    LineEdit { text <=> root.new-borrower-zip; placeholder-text: @tr("Postal code"); }
+                                    Text {
+                                        text: @tr("ZIP:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.new-borrower-zip;
+                                        placeholder-text: @tr("Postal code");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Group:"); min-width: 100px; }
+                                    Text {
+                                        text: @tr("Group:");
+                                        min-width: 100px;
+                                    }
+
                                     ComboBox {
                                         model: root.group-names;
                                         current-index <=> root.new-borrower-group-index;
@@ -543,8 +602,7 @@ export component LoansPage inherits Page {
                                                     root.new-borrower-address,
                                                     root.new-borrower-city,
                                                     root.new-borrower-zip,
-                                                    root.borrower-groups[root.new-borrower-group-index].id
-                                                );
+                                                    root.borrower-groups[root.new-borrower-group-index].id);
                                                 root.show-create-borrower-dialog = false;
                                             }
                                         }
@@ -577,37 +635,83 @@ export component LoansPage inherits Page {
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Name:"); min-width: 100px; }
-                                    LineEdit { text <=> root.edit-borrower-name; placeholder-text: @tr("Full name"); }
+                                    Text {
+                                        text: @tr("Name:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.edit-borrower-name;
+                                        placeholder-text: @tr("Full name");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Email:"); min-width: 100px; }
-                                    LineEdit { text <=> root.edit-borrower-email; placeholder-text: @tr("email@example.com"); }
+                                    Text {
+                                        text: @tr("Email:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.edit-borrower-email;
+                                        placeholder-text: @tr("email@example.com");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Phone:"); min-width: 100px; }
-                                    LineEdit { text <=> root.edit-borrower-phone; placeholder-text: @tr("+33 1 23 45 67 89"); }
+                                    Text {
+                                        text: @tr("Phone:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.edit-borrower-phone;
+                                        placeholder-text: @tr("+33 1 23 45 67 89");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Address:"); min-width: 100px; }
-                                    LineEdit { text <=> root.edit-borrower-address; placeholder-text: @tr("Street address"); }
+                                    Text {
+                                        text: @tr("Address:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.edit-borrower-address;
+                                        placeholder-text: @tr("Street address");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("City:"); min-width: 100px; }
-                                    LineEdit { text <=> root.edit-borrower-city; placeholder-text: @tr("City"); }
+                                    Text {
+                                        text: @tr("City:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.edit-borrower-city;
+                                        placeholder-text: @tr("City");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("ZIP:"); min-width: 100px; }
-                                    LineEdit { text <=> root.edit-borrower-zip; placeholder-text: @tr("Postal code"); }
+                                    Text {
+                                        text: @tr("ZIP:");
+                                        min-width: 100px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.edit-borrower-zip;
+                                        placeholder-text: @tr("Postal code");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Group:"); min-width: 100px; }
+                                    Text {
+                                        text: @tr("Group:");
+                                        min-width: 100px;
+                                    }
+
                                     ComboBox {
                                         model: root.group-names;
                                         current-index <=> root.edit-borrower-group-index;
@@ -639,8 +743,7 @@ export component LoansPage inherits Page {
                                                     root.edit-borrower-address,
                                                     root.edit-borrower-city,
                                                     root.edit-borrower-zip,
-                                                    root.borrower-groups[root.edit-borrower-group-index].id
-                                                );
+                                                    root.borrower-groups[root.edit-borrower-group-index].id);
                                                 root.show-edit-borrower-dialog = false;
                                             }
                                         }
@@ -790,9 +893,7 @@ export component LoansPage inherits Page {
                                         }
 
                                         Button {
-                                            text: borrower.active-loan-count > 0 ?
-                                                   @tr("Delete") + " (" + borrower.active-loan-count + " loans)" :
-                                                   @tr("Delete");
+                                            text: borrower.active-loan-count > 0 ? @tr("Delete") + " (" + borrower.active-loan-count + " loans)" : @tr("Delete");
                                             enabled: borrower.active-loan-count == 0;
                                             clicked => {
                                                 root.delete-borrower-id = borrower.id;
@@ -894,19 +995,41 @@ export component LoansPage inherits Page {
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Name:"); min-width: 120px; }
-                                    LineEdit { text <=> root.new-group-name; placeholder-text: @tr("Group name"); }
+                                    Text {
+                                        text: @tr("Name:");
+                                        min-width: 120px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.new-group-name;
+                                        placeholder-text: @tr("Group name");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Loan Duration:"); min-width: 120px; }
-                                    LineEdit { text <=> root.new-group-duration; placeholder-text: "21"; input-type: number; }
-                                    Text { text: @tr("days"); vertical-alignment: center; }
+                                    Text {
+                                        text: @tr("Loan Duration:");
+                                        min-width: 120px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.new-group-duration;
+                                        placeholder-text: "21";
+                                        input-type: number;
+                                    }
+
+                                    Text {
+                                        text: @tr("days");
+                                        vertical-alignment: center;
+                                    }
                                 }
 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: @tr("Description:"); }
+                                    Text {
+                                        text: @tr("Description:");
+                                    }
+
                                     TextEdit {
                                         text <=> root.new-group-description;
                                         height: 80px;
@@ -932,8 +1055,7 @@ export component LoansPage inherits Page {
                                             root.create-borrower-group(
                                                 root.new-group-name,
                                                 root.new-group-duration.to-float(),
-                                                root.new-group-description
-                                            );
+                                                root.new-group-description);
                                             root.show-create-group-dialog = false;
                                         }
                                     }
@@ -965,19 +1087,41 @@ export component LoansPage inherits Page {
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Name:"); min-width: 120px; }
-                                    LineEdit { text <=> root.edit-group-name; placeholder-text: @tr("Group name"); }
+                                    Text {
+                                        text: @tr("Name:");
+                                        min-width: 120px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.edit-group-name;
+                                        placeholder-text: @tr("Group name");
+                                    }
                                 }
 
                                 HorizontalBox {
-                                    Text { text: @tr("Loan Duration:"); min-width: 120px; }
-                                    LineEdit { text <=> root.edit-group-duration; placeholder-text: "21"; input-type: number; }
-                                    Text { text: @tr("days"); vertical-alignment: center; }
+                                    Text {
+                                        text: @tr("Loan Duration:");
+                                        min-width: 120px;
+                                    }
+
+                                    LineEdit {
+                                        text <=> root.edit-group-duration;
+                                        placeholder-text: "21";
+                                        input-type: number;
+                                    }
+
+                                    Text {
+                                        text: @tr("days");
+                                        vertical-alignment: center;
+                                    }
                                 }
 
                                 VerticalBox {
                                     spacing: 5px;
-                                    Text { text: @tr("Description:"); }
+                                    Text {
+                                        text: @tr("Description:");
+                                    }
+
                                     TextEdit {
                                         text <=> root.edit-group-description;
                                         height: 80px;
@@ -1004,8 +1148,7 @@ export component LoansPage inherits Page {
                                                 root.edit-group-id,
                                                 root.edit-group-name,
                                                 root.edit-group-duration.to-float(),
-                                                root.edit-group-description
-                                            );
+                                                root.edit-group-description);
                                             root.show-edit-group-dialog = false;
                                         }
                                     }
