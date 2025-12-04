@@ -75,7 +75,7 @@ export component AboutPage inherits Page {
             Text {
                 text: @tr("rbibli Version");
                 font-size: 16px;
-                font-weight: 700;
+                font-weight: 800;
             }
 
             Text {
@@ -91,12 +91,35 @@ export component AboutPage inherits Page {
             Text {
                 text: @tr("Authors");
                 font-size: 16px;
-                font-weight: 700;
+                font-weight: 800;
             }
 
             Text {
                 text: "• Guy Corbaz";
                 font-size: 14px;
+            }
+        }
+
+        // Report Issues section
+        VerticalBox {
+            spacing: 10px;
+
+            Text {
+                text: @tr("Report Issues");
+                font-size: 16px;
+                font-weight: 800;
+            }
+
+            Text {
+                text: @tr("Found a bug or have a feature request? Please submit an issue on our GitHub repository. Include a clear description and steps to reproduce the problem.");
+                wrap: word-wrap;
+                font-size: 14px;
+            }
+
+            Text {
+                text: "https://github.com/guycorbaz/rbibli/issues";
+                font-size: 14px;
+                color: #0066cc;
             }
         }
 
