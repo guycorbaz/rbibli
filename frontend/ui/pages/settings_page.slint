@@ -30,19 +30,6 @@ export component SettingsPage inherits Page {
             spacing: 10px;
 
             Text {
-                text: "DEBUG: " + root.current-language;
-                color: red;
-                font-size: 24px;
-            }
-
-            Text {
-                text: "LOG: " + root.debug-log;
-                color: blue;
-                font-size: 14px;
-                wrap: word-wrap;
-            }
-
-            Text {
                 text: @tr("Language");
                 font-size: 18px;
                 font-weight: 700;
@@ -81,11 +68,6 @@ export component SettingsPage inherits Page {
                 font-size: 12px;
                 color: #666;
                 wrap: word-wrap;
-            }
-
-            Text {
-                text: "Debug: Current Language = '" + root.current-language + "'";
-                color: red;
             }
         }
     }
