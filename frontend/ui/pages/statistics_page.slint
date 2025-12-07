@@ -547,7 +547,7 @@ export component StatisticsPage inherits Page {
                                     overflow: elide;
                                 }
                                 Text {
-                                    text: stat.volume-count + " volumes (" +
+                                    text: stat.volume-count + " " + @tr("volumes") + " (" +
                                           Math.round(100.0 * stat.volume-count / Math.max(1, root.genre-total-volumes)) + "%)";
                                     font-size: 11px;
                                     color: #666;

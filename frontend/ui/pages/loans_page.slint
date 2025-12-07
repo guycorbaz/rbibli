@@ -272,14 +272,14 @@ export component LoansPage inherits Page {
                                     }
 
                                     Text {
-                                        text: "Barcode: " + loan.barcode;
+                                        text: @tr("Barcode:") + " " + loan.barcode;
                                         font-size: 14px;
                                         color: #666;
                                         overflow: elide;
                                     }
 
                                     Text {
-                                        text: "Borrower: " + loan.borrower-name;
+                                        text: @tr("Borrower:") + " " + loan.borrower-name;
                                         font-size: 14px;
                                         color: #666;
                                         overflow: elide;
@@ -289,21 +289,21 @@ export component LoansPage inherits Page {
                                         spacing: 20px;
 
                                         Text {
-                                            text: "Due: " + loan.due-date;
+                                            text: @tr("Due:") + " " + loan.due-date;
                                             font-size: 13px;
                                             color: loan.is-overdue ? #ff0000 : #666;
                                             font-weight: loan.is-overdue ? 700 : 400;
                                         }
 
                                         if loan.is-overdue: Text {
-                                            text: "OVERDUE";
+                                            text: @tr("OVERDUE");
                                             font-size: 13px;
                                             color: #ff0000;
                                             font-weight: 700;
                                         }
 
                                         if loan.extension-count > 0: Text {
-                                            text: "Extended: " + loan.extension-count + "/1";
+                                            text: @tr("Extended:") + " " + loan.extension-count + "/1";
                                             font-size: 13px;
                                             color: #0066cc;
                                             font-weight: 600;
@@ -859,19 +859,19 @@ export component LoansPage inherits Page {
                                         }
 
                                         if borrower.email != "": Text {
-                                            text: "Email: " + borrower.email;
+                                            text: @tr("Email:") + " " + borrower.email;
                                             font-size: 13px;
                                             color: #666;
                                         }
 
                                         if borrower.phone != "": Text {
-                                            text: "Phone: " + borrower.phone;
+                                            text: @tr("Phone:") + " " + borrower.phone;
                                             font-size: 13px;
                                             color: #666;
                                         }
 
                                         Text {
-                                            text: "Group: " + borrower.group-name;
+                                            text: @tr("Group:") + " " + borrower.group-name;
                                             font-size: 13px;
                                             color: #0088cc;
                                         }
@@ -1197,7 +1197,7 @@ export component LoansPage inherits Page {
                                         }
 
                                         Text {
-                                            text: "Loan duration: " + group.loan-duration-days + " days";
+                                            text: @tr("Loan Duration:") + " " + group.loan-duration-days + " " + @tr("days");
                                             font-size: 14px;
                                             color: #0088cc;
                                         }

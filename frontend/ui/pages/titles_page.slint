@@ -1801,7 +1801,7 @@ export component TitlesPage inherits Page {
                                 }
 
                                 Text {
-                                    text: author.role == "main_author" ? "Main Author" : author.role == "co_author" ? "Co-Author" : author.role == "translator" ? "Translator" : author.role == "illustrator" ? "Illustrator" : author.role == "editor" ? "Editor" : author.role;
+                                    text: author.role == "main_author" ? @tr("Main Author") : author.role == "co_author" ? @tr("Co-Author") : author.role == "translator" ? @tr("Translator") : author.role == "illustrator" ? @tr("Illustrator") : author.role == "editor" ? @tr("Editor") : author.role;
                                     font-size: 12px;
                                     color: #0066cc;
                                     vertical-alignment: center;
@@ -1941,7 +1941,7 @@ export component TitlesPage inherits Page {
                                     background: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
 
                                     Text {
-                                        text: "⚠ " + (title.duplicate-confidence == "High" ? "HIGH" : title.duplicate-confidence == "Medium" ? "MED" : "LOW");
+                                        text: "⚠ " + (title.duplicate-confidence == "High" ? @tr("HIGH") : title.duplicate-confidence == "Medium" ? @tr("MED") : @tr("LOW"));
                                         font-size: 10px;
                                         font-weight: 700;
                                         color: white;
@@ -1958,7 +1958,7 @@ export component TitlesPage inherits Page {
                                     background: title.is-duplicate-primary ? #00aa00 : #888888;
 
                                     Text {
-                                        text: title.is-duplicate-primary ? "PRIMARY" : "SECOND";
+                                        text: title.is-duplicate-primary ? @tr("PRIMARY") : @tr("SECOND");
                                         font-size: 9px;
                                         font-weight: 700;
                                         color: white;
@@ -1979,7 +1979,7 @@ export component TitlesPage inherits Page {
                                 spacing: 15px;
 
                                 if title.isbn != "": Text {
-                                    text: "ISBN: " + title.isbn;
+                                    text: @tr("ISBN:") + " " + title.isbn;
                                     font-size: 11px;
                                     color: #888;
                                 }
@@ -2000,7 +2000,7 @@ export component TitlesPage inherits Page {
                                 }
 
                                 Text {
-                                    text: "Volumes: " + title.volume-count;
+                                    text: @tr("Volumes:") + " " + title.volume-count;
                                     font-size: 11px;
                                     color: #0066cc;
                                     font-weight: 600;
@@ -2014,7 +2014,7 @@ export component TitlesPage inherits Page {
 
                                 // Duplicate similarity score
                                 if title.is-duplicate: Text {
-                                    text: "Similarity: " + Math.round(title.duplicate-similarity) + "%";
+                                    text: @tr("Similarity:") + " " + Math.round(title.duplicate-similarity) + "%";
                                     font-size: 11px;
                                     color: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
                                     font-weight: 700;
@@ -2026,7 +2026,7 @@ export component TitlesPage inherits Page {
                                 spacing: 8px;
 
                                 Text {
-                                    text: "Match: " + title.duplicate-match-reasons;
+                                    text: @tr("Match:") + " " + title.duplicate-match-reasons;
                                     font-size: 10px;
                                     color: #666;
                                     overflow: elide;
@@ -2203,25 +2203,25 @@ export component TitlesPage inherits Page {
                                             spacing: 15px;
 
                                             Text {
-                                                text: "Copy #" + volume.copy-number;
+                                                text: @tr("Copy #") + volume.copy-number;
                                                 font-size: 13px;
                                                 font-weight: 600;
                                             }
 
                                             Text {
-                                                text: "Barcode: " + volume.barcode;
+                                                text: @tr("Barcode:") + " " + volume.barcode;
                                                 font-size: 12px;
                                                 color: #444;
                                             }
 
                                             Text {
-                                                text: "Condition: " + volume.condition;
+                                                text: @tr("Condition:") + " " + volume.condition;
                                                 font-size: 12px;
                                                 color: #666;
                                             }
 
                                             Text {
-                                                text: "Status: " + volume.loan-status;
+                                                text: @tr("Status:") + " " + volume.loan-status;
                                                 font-size: 12px;
                                                 color: volume.loan-status == "Available" ? #008800 : #cc0000;
                                                 font-weight: 600;

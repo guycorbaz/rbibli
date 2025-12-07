@@ -1,98 +1,99 @@
-# SPDX-FileCopyrightText: 2025 gcorbaz <guy@corbaz.org>
 msgid ""
 msgstr ""
 "Project-Id-Version: frontend\n"
 "POT-Creation-Date: 2025-12-07 10:11+0000\n"
-"PO-Revision-Date: 2025-12-07 13:54+0100\n"
-"Last-Translator: gcorbaz <guy@corbaz.org>\n"
-"Language-Team: French <kde-i18n-doc@kde.org>\n"
-"Language: fr\n"
+"PO-Revision-Date: \n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: de\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n > 1);\n"
-"X-Generator: Lokalize 23.08.5\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #. Page title and description (internationalized)
 #: ui/pages/locations_page.slint:128
 #, fuzzy
 msgctxt "LocationsPage"
 msgid "Locations"
-msgstr "Emplacements"
+msgstr "Standorte"
 
 #: ui/pages/locations_page.slint:129
-#, fuzzy
 msgctxt "LocationsPage"
 msgid "Manage storage locations for your volumes"
-msgstr "Gérez les emplacements de stockage de vos volumes"
+msgstr ""
 
 #: ui/pages/locations_page.slint:192
+#, fuzzy
 msgctxt "LocationsPage"
 msgid "Storage Locations"
-msgstr "Emplacements de stockage"
+msgstr "Standorte"
 
 #: ui/pages/locations_page.slint:203
 msgctxt "LocationsPage"
 msgid "Refresh"
-msgstr "Actualiser"
+msgstr ""
 
 #: ui/pages/locations_page.slint:213
+#, fuzzy
 msgctxt "LocationsPage"
 msgid "+ New Location"
-msgstr "+ Nouvel emplacement"
+msgstr "Standorte"
 
 #: ui/pages/locations_page.slint:249
 msgctxt "LocationsPage"
 msgid "Create New Location"
-msgstr "Créer un nouvel emplacement"
+msgstr ""
 
 #: ui/pages/locations_page.slint:258 ui/pages/locations_page.slint:346
 msgctxt "LocationsPage"
 msgid "Name:"
-msgstr "Nom:"
+msgstr ""
 
 #: ui/pages/locations_page.slint:265 ui/pages/locations_page.slint:353
 msgctxt "LocationsPage"
 msgid "Location name (required)"
-msgstr "Nom de l'emplacement (requis)"
+msgstr ""
 
 #: ui/pages/locations_page.slint:273 ui/pages/locations_page.slint:361
 msgctxt "LocationsPage"
 msgid "Description:"
-msgstr "Description:"
+msgstr ""
 
 #: ui/pages/locations_page.slint:291 ui/pages/locations_page.slint:379
 #: ui/pages/locations_page.slint:446
 msgctxt "LocationsPage"
 msgid "Cancel"
-msgstr "Annuler"
+msgstr ""
 
 #: ui/pages/locations_page.slint:302
 msgctxt "LocationsPage"
 msgid "Create"
-msgstr "Créer"
+msgstr ""
 
 #: ui/pages/locations_page.slint:337
+#, fuzzy
 msgctxt "LocationsPage"
 msgid "Edit Location"
-msgstr "Modifier"
+msgstr "Standorte"
 
 #: ui/pages/locations_page.slint:390
 msgctxt "LocationsPage"
 msgid "Save"
-msgstr "Enregistrer"
+msgstr ""
 
 #: ui/pages/locations_page.slint:425
+#, fuzzy
 msgctxt "LocationsPage"
 msgid "Delete Location?"
-msgstr "Supprimer l'emplacement ?"
+msgstr "Standorte"
 
 #: ui/pages/locations_page.slint:433
 msgctxt "LocationsPage"
 msgid ""
 "Are you sure you want to delete this location?\n"
 "\n"
-msgstr "Êtes-vous sûr de vouloir supprimer cet emplacement ?\n\n"
+msgstr ""
 
 #: ui/pages/locations_page.slint:433
 msgctxt "LocationsPage"
@@ -102,43 +103,40 @@ msgid ""
 "Note: This may fail if the location has child locations or volumes stored in "
 "it."
 msgstr ""
-"\n"
-"\n"
-"Note : Cela peut échouer si l'emplacement contient des sous-emplacements ou "
-"des volumes."
 
 #: ui/pages/locations_page.slint:456 ui/pages/locations_page.slint:592
 msgctxt "LocationsPage"
 msgid "Delete"
-msgstr "Supprimer"
+msgstr ""
 
 #: ui/pages/locations_page.slint:477
 msgctxt "LocationsPage"
 msgid "No locations found. Click 'New Location' to create one."
 msgstr ""
-"Aucun emplacement trouvé. Cliquez sur 'Nouvel emplacement' pour en créer un."
 
 #: ui/pages/locations_page.slint:561
 msgctxt "LocationsPage"
 msgid "Add Child"
-msgstr "Ajouter"
+msgstr ""
 
 #: ui/pages/locations_page.slint:575
 msgctxt "LocationsPage"
 msgid "Edit"
-msgstr "Modifier"
+msgstr ""
 
 #. Page title (internationalized)
 #: ui/pages/about_page.slint:52
+#, fuzzy
 msgctxt "AboutPage"
 msgid "About"
-msgstr "À propos"
+msgstr "Über"
 
 #. Application description
 #: ui/pages/about_page.slint:58
+#, fuzzy
 msgctxt "AboutPage"
 msgid "Personal book library management"
-msgstr "Gestion de bibliothèque personnelle"
+msgstr "Persönliche Bibliothek"
 
 #: ui/pages/about_page.slint:66
 msgctxt "AboutPage"
@@ -148,25 +146,22 @@ msgid ""
 "technology, it offers an intuitive interface for managing your reading "
 "journey."
 msgstr ""
-"rbibli est une application de gestion de bibliothèque personnelle conçue "
-"pour vous aider à organiser, suivre et découvrir votre collection de livres. "
-"Construite avec des technologies modernes, elle offre une interface "
-"intuitive pour gérer votre parcours de lecture."
 
 #: ui/pages/about_page.slint:76
 msgctxt "AboutPage"
 msgid "rbibli Version"
-msgstr "Version de rbibli"
+msgstr ""
 
 #: ui/pages/about_page.slint:92
+#, fuzzy
 msgctxt "AboutPage"
 msgid "Authors"
-msgstr "Auteurs"
+msgstr "Autoren"
 
 #: ui/pages/about_page.slint:108
 msgctxt "AboutPage"
 msgid "Report Issues"
-msgstr "Signaler un problème"
+msgstr ""
 
 #: ui/pages/about_page.slint:114
 msgctxt "AboutPage"
@@ -174,325 +169,324 @@ msgid ""
 "Found a bug or have a feature request? Please submit an issue on our GitHub "
 "repository. Include a clear description and steps to reproduce the problem."
 msgstr ""
-"Vous avez trouvé un bug ou souhaitez une fonctionnalité ? Veuillez soumettre "
-"un problème sur notre dépôt GitHub. Incluez une description claire et les "
-"étapes pour reproduire le problème."
 
 #: ui/pages/loans_page.slint:89
 msgctxt "LoansPage"
 msgid "Loans Management"
-msgstr "Gestion des emprunts"
+msgstr ""
 
 #: ui/pages/loans_page.slint:90
 msgctxt "LoansPage"
 msgid "Manage book loans, borrowers, and loan policies"
 msgstr ""
-"Gérer les emprunts de livres, les emprunteurs et les politiques de prêt"
 
 #: ui/pages/loans_page.slint:171 ui/pages/loans_page.slint:188
 msgctxt "LoansPage"
 msgid "Active Loans"
-msgstr "Emprunts en cours"
+msgstr ""
 
 #: ui/pages/loans_page.slint:214 ui/pages/loans_page.slint:381
 #: ui/pages/loans_page.slint:458 ui/pages/loans_page.slint:959
 msgctxt "LoansPage"
 msgid "Refresh"
-msgstr "Actualiser"
+msgstr ""
 
 #: ui/pages/loans_page.slint:234
 msgctxt "LoansPage"
 msgid "📚 No Active Loans"
-msgstr "📚 Aucun emprunt actif"
+msgstr ""
 
 #: ui/pages/loans_page.slint:242
 msgctxt "LoansPage"
 msgid "Create a new loan using the 'Create Loan' tab"
-msgstr "Créez un nouvel emprunt en utilisant l'onglet 'Créer un emprunt'"
+msgstr ""
 
 #: ui/pages/loans_page.slint:275 ui/pages/loans_page.slint:393
 msgctxt "LoansPage"
 msgid "Barcode:"
-msgstr "Code-barres:"
+msgstr ""
 
 #: ui/pages/loans_page.slint:282 ui/pages/loans_page.slint:370
 msgctxt "LoansPage"
 msgid "Borrower:"
-msgstr "Emprunteur:"
+msgstr ""
 
 #: ui/pages/loans_page.slint:292
 msgctxt "LoansPage"
 msgid "Due:"
-msgstr "Échéance :"
+msgstr ""
 
 #: ui/pages/loans_page.slint:299
 msgctxt "LoansPage"
 msgid "OVERDUE"
-msgstr "EN RETARD"
+msgstr ""
 
 #: ui/pages/loans_page.slint:306
 msgctxt "LoansPage"
 msgid "Extended:"
-msgstr "Prolongé :"
+msgstr ""
 
 #: ui/pages/loans_page.slint:319
 msgctxt "LoansPage"
 msgid "Extend"
-msgstr "Prolonger"
+msgstr ""
 
 #: ui/pages/loans_page.slint:329
 msgctxt "LoansPage"
 msgid "Return"
-msgstr "Retourner"
+msgstr ""
 
 #: ui/pages/loans_page.slint:346 ui/pages/loans_page.slint:422
 msgctxt "LoansPage"
 msgid "Create Loan"
-msgstr "Créer un emprunt"
+msgstr ""
 
 #: ui/pages/loans_page.slint:354
 msgctxt "LoansPage"
 msgid "Create New Loan"
-msgstr "Nouveau prêt"
+msgstr ""
 
 #: ui/pages/loans_page.slint:360
 msgctxt "LoansPage"
 msgid "Select a borrower and scan the volume barcode to create a loan"
 msgstr ""
-"Sélectionnez un emprunteur et scannez le code-barres du volume pour créer un "
-"prêt"
 
 #: ui/pages/loans_page.slint:400
 msgctxt "LoansPage"
 msgid "Scan or enter barcode (e.g., 123456)"
-msgstr "Scannez ou saisissez le code-barres (par exemple, 123456)"
+msgstr ""
 
 #: ui/pages/loans_page.slint:437 ui/pages/loans_page.slint:449
 msgctxt "LoansPage"
 msgid "Borrowers"
-msgstr "Emprunteurs"
+msgstr ""
 
 #: ui/pages/loans_page.slint:465
 msgctxt "LoansPage"
 msgid "New Borrower"
-msgstr "Nouvel emprunteur"
+msgstr ""
 
 #: ui/pages/loans_page.slint:495
 msgctxt "LoansPage"
 msgid "Create New Borrower"
-msgstr "Crée un nouvel emprunteur"
+msgstr ""
 
 #: ui/pages/loans_page.slint:502 ui/pages/loans_page.slint:642
 #: ui/pages/loans_page.slint:1002 ui/pages/loans_page.slint:1094
 msgctxt "LoansPage"
 msgid "Name:"
-msgstr "Nom :"
+msgstr ""
 
 #: ui/pages/loans_page.slint:508 ui/pages/loans_page.slint:648
 msgctxt "LoansPage"
 msgid "Full name"
-msgstr "Nom complet"
+msgstr ""
 
 #: ui/pages/loans_page.slint:514 ui/pages/loans_page.slint:654
 #: ui/pages/loans_page.slint:862
 msgctxt "LoansPage"
 msgid "Email:"
-msgstr "Email:"
+msgstr ""
 
 #: ui/pages/loans_page.slint:520 ui/pages/loans_page.slint:660
 msgctxt "LoansPage"
 msgid "email@example.com"
-msgstr "email@example.com"
+msgstr ""
 
 #: ui/pages/loans_page.slint:526 ui/pages/loans_page.slint:666
 #: ui/pages/loans_page.slint:868
 msgctxt "LoansPage"
 msgid "Phone:"
-msgstr "Téléphone:"
+msgstr ""
 
 #: ui/pages/loans_page.slint:532 ui/pages/loans_page.slint:672
 msgctxt "LoansPage"
 msgid "+33 1 23 45 67 89"
-msgstr "+41 21 123 45 67"
+msgstr ""
 
 #: ui/pages/loans_page.slint:538 ui/pages/loans_page.slint:678
 msgctxt "LoansPage"
 msgid "Address:"
-msgstr "Adresse:"
+msgstr ""
 
 #: ui/pages/loans_page.slint:544 ui/pages/loans_page.slint:684
 msgctxt "LoansPage"
 msgid "Street address"
-msgstr "Adresse postale"
+msgstr ""
 
 #: ui/pages/loans_page.slint:550 ui/pages/loans_page.slint:690
 msgctxt "LoansPage"
 msgid "City:"
-msgstr "Ville:"
+msgstr ""
 
-# Additional missing strings found in Slint UI files
 #: ui/pages/loans_page.slint:556 ui/pages/loans_page.slint:696
 msgctxt "LoansPage"
 msgid "City"
-msgstr "Ville"
+msgstr ""
 
 #: ui/pages/loans_page.slint:562 ui/pages/loans_page.slint:702
 msgctxt "LoansPage"
 msgid "ZIP:"
-msgstr "Code postal:"
+msgstr ""
 
 #: ui/pages/loans_page.slint:568 ui/pages/loans_page.slint:708
 msgctxt "LoansPage"
 msgid "Postal code"
-msgstr "Code postal"
+msgstr ""
 
 #: ui/pages/loans_page.slint:574 ui/pages/loans_page.slint:714
 #: ui/pages/loans_page.slint:874
 msgctxt "LoansPage"
 msgid "Group:"
-msgstr "Groupe:"
+msgstr ""
 
 #: ui/pages/loans_page.slint:589 ui/pages/loans_page.slint:729
 #: ui/pages/loans_page.slint:800 ui/pages/loans_page.slint:1047
 #: ui/pages/loans_page.slint:1139
 msgctxt "LoansPage"
 msgid "Cancel"
-msgstr "Annuler"
+msgstr ""
 
 #: ui/pages/loans_page.slint:596 ui/pages/loans_page.slint:1054
 msgctxt "LoansPage"
 msgid "Create"
-msgstr "Créer"
+msgstr ""
 
 #: ui/pages/loans_page.slint:635
 msgctxt "LoansPage"
 msgid "Edit Borrower"
-msgstr "Modifier"
+msgstr ""
 
 #: ui/pages/loans_page.slint:736 ui/pages/loans_page.slint:1146
 msgctxt "LoansPage"
 msgid "Save"
-msgstr "Enregistrer"
+msgstr ""
 
 #: ui/pages/loans_page.slint:779
 msgctxt "LoansPage"
 msgid "Delete Borrower?"
-msgstr "Supprimer l'emprunteur ?"
+msgstr ""
 
 #: ui/pages/loans_page.slint:787
 msgctxt "LoansPage"
 msgid "Are you sure you want to delete this borrower?\\n\\n"
-msgstr "Êtes-vous sur de vouloir effacer cet emprunteur ?"
+msgstr ""
 
 #: ui/pages/loans_page.slint:810 ui/pages/loans_page.slint:899
 #: ui/pages/loans_page.slint:1227
 msgctxt "LoansPage"
 msgid "Delete"
-msgstr "Supprimer"
+msgstr ""
 
 #: ui/pages/loans_page.slint:830
 msgctxt "LoansPage"
 msgid "No borrowers yet"
-msgstr "Pas encore d'emprunteurs"
+msgstr ""
 
 #: ui/pages/loans_page.slint:884 ui/pages/loans_page.slint:1216
 msgctxt "LoansPage"
 msgid "Edit"
-msgstr "Modifier"
+msgstr ""
 
 #: ui/pages/loans_page.slint:917
 msgctxt "LoansPage"
 msgid "Groups"
-msgstr "Groupes"
+msgstr ""
 
 #: ui/pages/loans_page.slint:932
 msgctxt "LoansPage"
 msgid "Borrower Groups"
-msgstr "Groupe d'emprunteur"
+msgstr ""
 
 #: ui/pages/loans_page.slint:966
 msgctxt "LoansPage"
 msgid "New Group"
-msgstr "Nouveau groupe"
+msgstr ""
 
 #: ui/pages/loans_page.slint:995
 msgctxt "LoansPage"
 msgid "Create New Group"
-msgstr "Crée un nouveau groupe"
+msgstr ""
 
 #: ui/pages/loans_page.slint:1008 ui/pages/loans_page.slint:1100
 msgctxt "LoansPage"
 msgid "Group name"
-msgstr "Nom de groupe"
+msgstr ""
 
 #: ui/pages/loans_page.slint:1014 ui/pages/loans_page.slint:1106
 #: ui/pages/loans_page.slint:1200
+#, fuzzy
 msgctxt "LoansPage"
 msgid "Loan Duration:"
-msgstr "Durée du prêt :"
+msgstr "Standorte"
 
 #: ui/pages/loans_page.slint:1025 ui/pages/loans_page.slint:1117
 #: ui/pages/loans_page.slint:1200
 msgctxt "LoansPage"
 msgid "days"
-msgstr "jours"
+msgstr ""
 
 #: ui/pages/loans_page.slint:1033 ui/pages/loans_page.slint:1125
 msgctxt "LoansPage"
 msgid "Description:"
-msgstr "Description :"
+msgstr ""
 
 #: ui/pages/loans_page.slint:1087
 msgctxt "LoansPage"
 msgid "Edit Group"
-msgstr "Modifier"
+msgstr ""
 
 #: ui/pages/loans_page.slint:1167
 msgctxt "LoansPage"
 msgid "No groups available"
-msgstr "Aucun groupe disponible"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:55
+#, fuzzy
 msgctxt "StatisticsPage"
 msgid "Statistics"
-msgstr "Statistiques"
+msgstr "Statistiken"
 
 #: ui/pages/statistics_page.slint:56
 msgctxt "StatisticsPage"
 msgid "View library statistics and analytics"
-msgstr "Consulter les statistiques et les analyses de la bibliothèque"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:107
+#, fuzzy
 msgctxt "StatisticsPage"
 msgid "Library Statistics"
-msgstr "Statistiques de la bibliothèque"
+msgstr "Statistiken"
 
 #: ui/pages/statistics_page.slint:113
 msgctxt "StatisticsPage"
 msgid "Refresh"
-msgstr "Actualiser"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:124
 msgctxt "StatisticsPage"
 msgid "Overview"
-msgstr "Aperçu"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:153
+#, fuzzy
 msgctxt "StatisticsPage"
 msgid "Titles"
-msgstr "Titres"
+msgstr "Titel"
 
 #: ui/pages/statistics_page.slint:181
 msgctxt "StatisticsPage"
 msgid "Volumes"
-msgstr "Volumes"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:209
+#, fuzzy
 msgctxt "StatisticsPage"
 msgid "Authors"
-msgstr "Auteurs"
+msgstr "Autoren"
 
 #: ui/pages/statistics_page.slint:237
+#, fuzzy
 msgctxt "StatisticsPage"
 msgid "Genres"
 msgstr "Genres"
@@ -500,816 +494,833 @@ msgstr "Genres"
 #: ui/pages/statistics_page.slint:269
 msgctxt "StatisticsPage"
 msgid "Active Loans"
-msgstr "Emprunts en cours"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:297
 msgctxt "StatisticsPage"
 msgid "Overdue"
-msgstr "En retard"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:325
 msgctxt "StatisticsPage"
 msgid "Borrowers"
-msgstr "Emprunteurs"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:353
+#, fuzzy
 msgctxt "StatisticsPage"
 msgid "Locations"
-msgstr "Emplacements"
+msgstr "Standorte"
 
 #: ui/pages/statistics_page.slint:364
 msgctxt "StatisticsPage"
 msgid "Volumes per Genre"
-msgstr "Volumes par genre"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:371
-#, fuzzy
 msgctxt "StatisticsPage"
 msgid "No genre statistics available. Click Refresh to load data."
 msgstr ""
-"Aucune statistique disponible pour ce genre. Cliquez sur Actualiser pour "
-"charger les données."
 
 #: ui/pages/statistics_page.slint:504
 msgctxt "StatisticsPage"
 msgid "Total Volumes"
-msgstr "Volumes totaux"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:519
 msgctxt "StatisticsPage"
 msgid "Legend"
-msgstr "Légende"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:550 ui/pages/statistics_page.slint:603
 msgctxt "StatisticsPage"
 msgid "volumes"
-msgstr "volumes"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:564
 msgctxt "StatisticsPage"
 msgid "Volumes per Location"
-msgstr "Volumes par emplacement"
+msgstr ""
 
 #: ui/pages/statistics_page.slint:571
 msgctxt "StatisticsPage"
 msgid "No location statistics available."
-msgstr "Aucune statistique de localisation disponible."
+msgstr ""
 
 #: ui/pages/publishers_page.slint:17 ui/pages/publishers_page.slint:57
+#, fuzzy
 msgctxt "PublishersPage"
 msgid "Publishers"
-msgstr "Éditeurs"
+msgstr "Verlage"
 
 #: ui/pages/publishers_page.slint:18
 msgctxt "PublishersPage"
 msgid "Manage book publishers in your library"
-msgstr "Gérer les éditeurs de livres dans votre bibliothèque"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:66
 msgctxt "PublishersPage"
 msgid "Refresh"
-msgstr "Actualiser"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:75
+#, fuzzy
 msgctxt "PublishersPage"
 msgid "+ New Publisher"
-msgstr "+ Nouvel éditeur"
+msgstr "Verlage"
 
 #: ui/pages/publishers_page.slint:103
 msgctxt "PublishersPage"
 msgid "Create New Publisher"
-msgstr "Créer un nouvel éditeur"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:111 ui/pages/publishers_page.slint:227
 msgctxt "PublishersPage"
 msgid "Name:"
-msgstr "Nom:"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:117 ui/pages/publishers_page.slint:233
 msgctxt "PublishersPage"
 msgid "Publisher name (required)"
-msgstr "Nom de l'éditeur (obligatoire)"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:124 ui/pages/publishers_page.slint:240
 msgctxt "PublishersPage"
 msgid "Description:"
-msgstr "Description:"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:137 ui/pages/publishers_page.slint:253
 msgctxt "PublishersPage"
 msgid "Website:"
-msgstr "Site web:"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:143 ui/pages/publishers_page.slint:259
 msgctxt "PublishersPage"
 msgid "https://..."
-msgstr "https://..."
+msgstr ""
 
 #: ui/pages/publishers_page.slint:150 ui/pages/publishers_page.slint:266
 msgctxt "PublishersPage"
 msgid "Country:"
-msgstr "Pays:"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:156 ui/pages/publishers_page.slint:272
 msgctxt "PublishersPage"
 msgid "E.g., USA, UK, France"
-msgstr "Par ex. USA, UK, France"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:163 ui/pages/publishers_page.slint:279
 msgctxt "PublishersPage"
 msgid "Founded Year:"
-msgstr "Année de fondation:"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:169 ui/pages/publishers_page.slint:285
 msgctxt "PublishersPage"
 msgid "E.g., 1950"
-msgstr "Par ex.,1950"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:178 ui/pages/publishers_page.slint:294
 #: ui/pages/publishers_page.slint:358
 msgctxt "PublishersPage"
 msgid "Cancel"
-msgstr "Annuler"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:187
 msgctxt "PublishersPage"
 msgid "Create"
-msgstr "Créer"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:219
+#, fuzzy
 msgctxt "PublishersPage"
 msgid "Edit Publisher"
-msgstr "Modifier"
+msgstr "Verlage"
 
 #: ui/pages/publishers_page.slint:303
 msgctxt "PublishersPage"
 msgid "Save"
-msgstr "Enregistrer"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:337
+#, fuzzy
 msgctxt "PublishersPage"
 msgid "Delete Publisher?"
-msgstr "Supprimer l'éditeur ?"
+msgstr "Verlage"
 
 #: ui/pages/publishers_page.slint:345
 msgctxt "PublishersPage"
 msgid ""
 "Are you sure you want to delete this publisher?\n"
 "\n"
-msgstr "Êtes-vous sur de vouloir effacer cet éditeur ?\n\n"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:368 ui/pages/publishers_page.slint:497
 msgctxt "PublishersPage"
 msgid "Delete"
-msgstr "Supprimer"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:387
 msgctxt "PublishersPage"
 msgid "No publishers found. Click 'New Publisher' to create one."
-msgstr "Aucun éditeur trouvé. Cliquez sur « Nouvel éditeur » pour en créer un."
+msgstr ""
 
 #: ui/pages/publishers_page.slint:430
 msgctxt "PublishersPage"
 msgid "books"
-msgstr "livres"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:451
 msgctxt "PublishersPage"
 msgid "Founded"
-msgstr "Fondée"
+msgstr ""
 
 #: ui/pages/publishers_page.slint:482
 msgctxt "PublishersPage"
 msgid "Edit"
-msgstr "Modifier"
+msgstr ""
 
 #. Page title and description (internationalized)
 #: ui/pages/authors_page.slint:111 ui/pages/authors_page.slint:185
+#, fuzzy
 msgctxt "AuthorsPage"
 msgid "Authors"
-msgstr "Auteurs"
+msgstr "Autoren"
 
 #: ui/pages/authors_page.slint:112
 msgctxt "AuthorsPage"
 msgid "Manage book authors in your library"
-msgstr "Gérer les auteurs de livres de votre bibliothèque"
+msgstr ""
 
 #: ui/pages/authors_page.slint:196
 msgctxt "AuthorsPage"
 msgid "Refresh"
-msgstr "Actualiser"
+msgstr ""
 
 #: ui/pages/authors_page.slint:206
+#, fuzzy
 msgctxt "AuthorsPage"
 msgid "+ New Author"
-msgstr "+ Nouvel auteur"
+msgstr "Autoren"
 
 #: ui/pages/authors_page.slint:242
 msgctxt "AuthorsPage"
 msgid "Create New Author"
-msgstr "Nouvel auteur"
+msgstr ""
 
 #: ui/pages/authors_page.slint:251 ui/pages/authors_page.slint:413
 msgctxt "AuthorsPage"
 msgid "First Name:"
-msgstr "Prénom:"
+msgstr ""
 
 #: ui/pages/authors_page.slint:257 ui/pages/authors_page.slint:419
 msgctxt "AuthorsPage"
 msgid "First name (required)"
-msgstr "Prénom (obligatoire)"
+msgstr ""
 
 #: ui/pages/authors_page.slint:265 ui/pages/authors_page.slint:427
 msgctxt "AuthorsPage"
 msgid "Last Name:"
-msgstr "Nom de famille:"
+msgstr ""
 
 #: ui/pages/authors_page.slint:271 ui/pages/authors_page.slint:433
 msgctxt "AuthorsPage"
 msgid "Last name (required)"
-msgstr "Nom de famille (obligatoire)"
+msgstr ""
 
 #: ui/pages/authors_page.slint:279 ui/pages/authors_page.slint:441
 msgctxt "AuthorsPage"
 msgid "Biography:"
-msgstr "Biographie:"
+msgstr ""
 
 #: ui/pages/authors_page.slint:293 ui/pages/authors_page.slint:455
 msgctxt "AuthorsPage"
 msgid "Birth Date:"
-msgstr "Date de naissance:"
+msgstr ""
 
 #: ui/pages/authors_page.slint:299 ui/pages/authors_page.slint:313
 #: ui/pages/authors_page.slint:461 ui/pages/authors_page.slint:475
 msgctxt "AuthorsPage"
 msgid "YYYY-MM-DD"
-msgstr "YYYY-MM-DD"
+msgstr ""
 
 #: ui/pages/authors_page.slint:307 ui/pages/authors_page.slint:469
 msgctxt "AuthorsPage"
 msgid "Death Date:"
-msgstr "Date du décès:"
+msgstr ""
 
 #: ui/pages/authors_page.slint:321 ui/pages/authors_page.slint:483
 msgctxt "AuthorsPage"
 msgid "Nationality:"
-msgstr "Nationalité:"
+msgstr ""
 
 #: ui/pages/authors_page.slint:327 ui/pages/authors_page.slint:489
 msgctxt "AuthorsPage"
 msgid "E.g., American, British"
-msgstr "Par ex., Américain, Anglais"
+msgstr ""
 
 #: ui/pages/authors_page.slint:335 ui/pages/authors_page.slint:497
 msgctxt "AuthorsPage"
 msgid "Website:"
-msgstr "Site web:"
+msgstr ""
 
 #: ui/pages/authors_page.slint:341 ui/pages/authors_page.slint:503
 msgctxt "AuthorsPage"
 msgid "https://..."
-msgstr "https://..."
+msgstr ""
 
 #: ui/pages/authors_page.slint:352 ui/pages/authors_page.slint:514
 #: ui/pages/authors_page.slint:588
 msgctxt "AuthorsPage"
 msgid "Cancel"
-msgstr "Annuler"
+msgstr ""
 
 #: ui/pages/authors_page.slint:363
 msgctxt "AuthorsPage"
 msgid "Create"
-msgstr "Créer"
+msgstr ""
 
 #: ui/pages/authors_page.slint:404
+#, fuzzy
 msgctxt "AuthorsPage"
 msgid "Edit Author"
-msgstr "Modifier"
+msgstr "Autoren"
 
 #: ui/pages/authors_page.slint:525
 msgctxt "AuthorsPage"
 msgid "Save"
-msgstr "Enregistrer"
+msgstr ""
 
 #: ui/pages/authors_page.slint:567
 msgctxt "AuthorsPage"
 msgid "Delete Author?"
-msgstr "Supprimer l'auteur?"
+msgstr ""
 
 #: ui/pages/authors_page.slint:575
 msgctxt "AuthorsPage"
 msgid ""
 "Are you sure you want to delete this author?\n"
 "\n"
-msgstr "Êtes-vous sur de vouloir effacer cet auteur ?\n\n"
+msgstr ""
 
 #: ui/pages/authors_page.slint:598 ui/pages/authors_page.slint:750
 msgctxt "AuthorsPage"
 msgid "Delete"
-msgstr "Supprimer"
+msgstr ""
 
 #: ui/pages/authors_page.slint:619
 msgctxt "AuthorsPage"
 msgid "No authors found. Click 'New Author' to create one."
-msgstr "Aucun auteur trouvé. Cliquez sur « Nouvel auteur » pour en créer un."
+msgstr ""
 
 #: ui/pages/authors_page.slint:670
 msgctxt "AuthorsPage"
 msgid "books"
-msgstr "livres"
+msgstr ""
 
 #: ui/pages/authors_page.slint:727
 msgctxt "AuthorsPage"
 msgid "Edit"
-msgstr "Modifier"
+msgstr ""
 
 #. Page title and description (internationalized)
 #: ui/pages/series_page.slint:94
+#, fuzzy
 msgctxt "SeriesPage"
 msgid "Series"
-msgstr "Séries"
+msgstr "Reihen"
 
 #: ui/pages/series_page.slint:95
 msgctxt "SeriesPage"
 msgid "Manage book series and categories"
-msgstr "Gérer les séries et catégories de livres"
+msgstr ""
 
 #: ui/pages/series_page.slint:156
+#, fuzzy
 msgctxt "SeriesPage"
 msgid "Book Series"
-msgstr "Série"
+msgstr "Reihen"
 
 #: ui/pages/series_page.slint:167
 msgctxt "SeriesPage"
 msgid "Refresh"
-msgstr "Actualiser"
+msgstr ""
 
 #: ui/pages/series_page.slint:177
+#, fuzzy
 msgctxt "SeriesPage"
 msgid "+ New Series"
-msgstr "+ Nouvelle série"
+msgstr "Reihen"
 
 #: ui/pages/series_page.slint:208
 msgctxt "SeriesPage"
 msgid "Create New Series"
-msgstr "Nouvelle série"
+msgstr ""
 
 #: ui/pages/series_page.slint:217 ui/pages/series_page.slint:301
 msgctxt "SeriesPage"
 msgid "Name:"
-msgstr "Nom:"
+msgstr ""
 
 #: ui/pages/series_page.slint:223 ui/pages/series_page.slint:307
 msgctxt "SeriesPage"
 msgid "Series name (required)"
-msgstr "Nom de la série (obligatoire)"
+msgstr ""
 
 #: ui/pages/series_page.slint:231 ui/pages/series_page.slint:315
 msgctxt "SeriesPage"
 msgid "Description:"
-msgstr "Description:"
+msgstr ""
 
 #: ui/pages/series_page.slint:248 ui/pages/series_page.slint:332
 #: ui/pages/series_page.slint:397
 msgctxt "SeriesPage"
 msgid "Cancel"
-msgstr "Annuler"
+msgstr ""
 
 #: ui/pages/series_page.slint:259 ui/pages/series_page.slint:343
 msgctxt "SeriesPage"
 msgid "Save"
-msgstr "Enregistrer"
+msgstr ""
 
 #: ui/pages/series_page.slint:292
+#, fuzzy
 msgctxt "SeriesPage"
 msgid "Edit Series"
-msgstr "Modifier"
+msgstr "Reihen"
 
 #: ui/pages/series_page.slint:376
 msgctxt "SeriesPage"
 msgid "Delete Series?"
-msgstr "Supprimer la série ?"
+msgstr ""
 
 #: ui/pages/series_page.slint:384
-#, fuzzy
 msgctxt "SeriesPage"
 msgid ""
 "Are you sure you want to delete this series?\n"
 "\n"
-msgstr "Êtes-vous sur de vouloir effacer cette série ?\n\n"
+msgstr ""
 
 #: ui/pages/series_page.slint:407 ui/pages/series_page.slint:503
 msgctxt "SeriesPage"
 msgid "Delete"
-msgstr "Supprimer"
+msgstr ""
 
 #: ui/pages/series_page.slint:426
 msgctxt "SeriesPage"
 msgid "No series found. Click Refresh to load series from the backend."
 msgstr ""
-"Aucune série trouvée. Cliquez sur Actualiser pour charger les séries depuis "
-"le backend."
 
 #: ui/pages/series_page.slint:487
 msgctxt "SeriesPage"
 msgid "Edit"
-msgstr "Modifier"
+msgstr ""
 
 #: ui/pages/titles_page.slint:122
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Titles"
-msgstr "Titres"
+msgstr "Titel"
 
 #: ui/pages/titles_page.slint:123
 msgctxt "TitlesPage"
 msgid "Manage your book titles and volumes"
-msgstr "Gérez vos titres et volumes"
+msgstr ""
 
 #: ui/pages/titles_page.slint:286
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Book Titles"
-msgstr "Titre"
+msgstr "Titel"
 
 #: ui/pages/titles_page.slint:295
 msgctxt "TitlesPage"
 msgid "Refresh"
-msgstr "Actualiser"
+msgstr ""
 
 #: ui/pages/titles_page.slint:304
 msgctxt "TitlesPage"
 msgid "+ New Title"
-msgstr "+ Nouveau titre"
+msgstr ""
 
 #: ui/pages/titles_page.slint:326
 msgctxt "TitlesPage"
 msgid "🔍 Find Duplicates"
-msgstr "🔍 Rechercher les doublons"
+msgstr ""
 
 #: ui/pages/titles_page.slint:353
 msgctxt "TitlesPage"
 msgid "▼ Hide Filters"
-msgstr "▼ Masquer les filtres"
+msgstr ""
 
 #: ui/pages/titles_page.slint:353
 msgctxt "TitlesPage"
 msgid "▶ Show Filters"
-msgstr "▶ Afficher les filtres"
+msgstr ""
 
 #: ui/pages/titles_page.slint:362
 msgctxt "TitlesPage"
 msgid "Clear All Filters"
-msgstr "Effacer tous les filtres"
+msgstr ""
 
 #: ui/pages/titles_page.slint:388
 msgctxt "TitlesPage"
 msgid "Search"
-msgstr "Rechercher"
+msgstr ""
 
 #: ui/pages/titles_page.slint:431
 msgctxt "TitlesPage"
 msgid "Basic Filters"
-msgstr "Filtre de base"
+msgstr ""
 
 #: ui/pages/titles_page.slint:441
 msgctxt "TitlesPage"
 msgid "Search:"
-msgstr "Rechercher:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:448
 msgctxt "TitlesPage"
 msgid "Search title, subtitle, author, ISBN..."
-msgstr "Rechercher le titre, le sous-titre, l'auteur, l'ISBN..."
+msgstr ""
 
 #: ui/pages/titles_page.slint:456 ui/pages/titles_page.slint:1054
 #: ui/pages/titles_page.slint:1298
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Series:"
-msgstr "Séries:"
+msgstr "Reihen"
 
 #: ui/pages/titles_page.slint:471 ui/pages/titles_page.slint:1838
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Author:"
-msgstr "Auteur:"
+msgstr "Autoren"
 
 #: ui/pages/titles_page.slint:486 ui/pages/titles_page.slint:1039
 #: ui/pages/titles_page.slint:1283
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Genre:"
-msgstr "Genre:"
+msgstr "Genres"
 
 #: ui/pages/titles_page.slint:501 ui/pages/titles_page.slint:983
 #: ui/pages/titles_page.slint:1227
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Publisher:"
-msgstr "Éditeur:"
+msgstr "Verlage"
 
 #: ui/pages/titles_page.slint:516
 msgctxt "TitlesPage"
 msgid "▼ Hide Advanced Filters"
-msgstr "▼ Masquer les filtres avancés"
+msgstr ""
 
 #: ui/pages/titles_page.slint:516
 msgctxt "TitlesPage"
 msgid "▶ Show Advanced Filters"
-msgstr "▶ Afficher les filtres avancés"
+msgstr ""
 
 #: ui/pages/titles_page.slint:536
 msgctxt "TitlesPage"
 msgid "Advanced Filters"
-msgstr "Filtres avancés"
+msgstr ""
 
 #: ui/pages/titles_page.slint:546
 msgctxt "TitlesPage"
 msgid "Title contains:"
-msgstr "Le titre contient:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:553
 msgctxt "TitlesPage"
 msgid "Partial title match..."
-msgstr "Correspondance pour le titre partiel..."
+msgstr ""
 
 #: ui/pages/titles_page.slint:561 ui/pages/titles_page.slint:947
 #: ui/pages/titles_page.slint:1191
 msgctxt "TitlesPage"
 msgid "Subtitle:"
-msgstr "Sous-titre:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:568
 msgctxt "TitlesPage"
 msgid "Partial subtitle match..."
-msgstr "Correspondance partielle des sous-titres..."
+msgstr ""
 
 #: ui/pages/titles_page.slint:576 ui/pages/titles_page.slint:961
 #: ui/pages/titles_page.slint:1205 ui/pages/titles_page.slint:1982
 msgctxt "TitlesPage"
 msgid "ISBN:"
-msgstr "ISBN:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:583
 msgctxt "TitlesPage"
 msgid "Full or partial ISBN..."
-msgstr "ISBN complet ou partiel..."
+msgstr ""
 
 #: ui/pages/titles_page.slint:591
 msgctxt "TitlesPage"
 msgid "Year:"
-msgstr "Année:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:597
 msgctxt "TitlesPage"
 msgid "From"
-msgstr "De"
+msgstr ""
 
 #: ui/pages/titles_page.slint:604
 msgctxt "TitlesPage"
 msgid "2000"
-msgstr "2000"
+msgstr ""
 
 #: ui/pages/titles_page.slint:609
 msgctxt "TitlesPage"
 msgid "To"
-msgstr "À"
+msgstr ""
 
 #: ui/pages/titles_page.slint:616
 msgctxt "TitlesPage"
 msgid "2024"
-msgstr "2024"
+msgstr ""
 
 #: ui/pages/titles_page.slint:625 ui/pages/titles_page.slint:1025
 #: ui/pages/titles_page.slint:1269
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Language:"
-msgstr "Langue:"
+msgstr "Sprache"
 
 #: ui/pages/titles_page.slint:632
 msgctxt "TitlesPage"
 msgid "e.g., en, fr, es"
-msgstr "par ex., en. fr, es"
+msgstr ""
 
 #: ui/pages/titles_page.slint:640 ui/pages/titles_page.slint:1069
 #: ui/pages/titles_page.slint:1313
 msgctxt "TitlesPage"
 msgid "Dewey Code:"
-msgstr "Code Dewey:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:647
 msgctxt "TitlesPage"
 msgid "e.g., 800 (Literature)"
-msgstr "Par ex. 800 (Littérature)"
+msgstr ""
 
 #: ui/pages/titles_page.slint:655 ui/pages/titles_page.slint:1522
 #: ui/pages/titles_page.slint:1686
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Location:"
-msgstr "Emplacement:"
+msgstr "Standorte"
 
 #: ui/pages/titles_page.slint:670
 msgctxt "TitlesPage"
 msgid "Show:"
-msgstr "Afficher:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:697
 msgctxt "TitlesPage"
 msgid "Owned (has volumes)"
-msgstr "Possédé (possède des volumes)"
+msgstr ""
 
 #: ui/pages/titles_page.slint:722
 msgctxt "TitlesPage"
 msgid "Wishlist only"
-msgstr "Liste de souhaits uniquement"
+msgstr ""
 
 #: ui/pages/titles_page.slint:746
 msgctxt "TitlesPage"
 msgid "Available for loan"
-msgstr "Disponible à l'emprunt"
+msgstr ""
 
 #: ui/pages/titles_page.slint:771
 msgctxt "TitlesPage"
 msgid "🔍 Duplicate Filters"
-msgstr "🔍 Recherche de doublons"
+msgstr ""
 
 #: ui/pages/titles_page.slint:778
 msgctxt "TitlesPage"
 msgid "Clear Duplicates"
-msgstr "Supprimer les doublons"
+msgstr ""
 
 #: ui/pages/titles_page.slint:810
 msgctxt "TitlesPage"
 msgid "Show only duplicates"
-msgstr "Afficher uniquement les doublons"
+msgstr ""
 
 #: ui/pages/titles_page.slint:823
 msgctxt "TitlesPage"
 msgid "Confidence:"
-msgstr "Confiance:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:850
 msgctxt "TitlesPage"
 msgid "High"
-msgstr "Élevé"
+msgstr ""
 
 #: ui/pages/titles_page.slint:874
 msgctxt "TitlesPage"
 msgid "Medium"
-msgstr "Moyen"
+msgstr ""
 
 #: ui/pages/titles_page.slint:898
 msgctxt "TitlesPage"
 msgid "Low"
-msgstr "Faible"
+msgstr ""
 
 #: ui/pages/titles_page.slint:925
 msgctxt "TitlesPage"
 msgid "Create New Title"
-msgstr "Crée un nouveau titre"
+msgstr ""
 
 #: ui/pages/titles_page.slint:933 ui/pages/titles_page.slint:1177
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Title:"
-msgstr "Titre:"
+msgstr "Titel"
 
 #: ui/pages/titles_page.slint:940 ui/pages/titles_page.slint:1184
 msgctxt "TitlesPage"
 msgid "Title (required)"
-msgstr "Titre (obligatoire)"
+msgstr ""
 
 #: ui/pages/titles_page.slint:954 ui/pages/titles_page.slint:1198
 msgctxt "TitlesPage"
 msgid "Subtitle (optional)"
-msgstr "Sous-titre (facultatif)"
+msgstr ""
 
 #: ui/pages/titles_page.slint:968 ui/pages/titles_page.slint:1212
 msgctxt "TitlesPage"
 msgid "ISBN-13 or ISBN-10"
-msgstr "ISBN-13 ou ISBN-10"
+msgstr ""
 
 #: ui/pages/titles_page.slint:972 ui/pages/titles_page.slint:1216
 msgctxt "TitlesPage"
 msgid "Fetch from ISBN"
-msgstr "Récupérer à partir de l'ISBN"
+msgstr ""
 
 #: ui/pages/titles_page.slint:997 ui/pages/titles_page.slint:1241
 msgctxt "TitlesPage"
 msgid "Pub. Year:"
-msgstr "Année de publication:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1004 ui/pages/titles_page.slint:1248
 msgctxt "TitlesPage"
 msgid "E.g., 2024"
-msgstr "Par ex., 2024"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1011 ui/pages/titles_page.slint:1255
 msgctxt "TitlesPage"
 msgid "Pages:"
-msgstr "Pages:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1018 ui/pages/titles_page.slint:1262
 msgctxt "TitlesPage"
 msgid "Number of pages"
-msgstr "Nombre de pages"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1032 ui/pages/titles_page.slint:1276
 msgctxt "TitlesPage"
 msgid "E.g., fr, en, es"
-msgstr "Par ex., fr, en.es"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1076 ui/pages/titles_page.slint:1320
 msgctxt "TitlesPage"
 msgid "E.g., 635.048"
-msgstr "Par ex. 635.048"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1083 ui/pages/titles_page.slint:1327
 msgctxt "TitlesPage"
 msgid "Summary:"
-msgstr "Résumé:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1097 ui/pages/titles_page.slint:1341
 msgctxt "TitlesPage"
 msgid "Cover URL:"
-msgstr "URL de couverture:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1104 ui/pages/titles_page.slint:1348
 msgctxt "TitlesPage"
 msgid "https://example.com/cover.jpg"
-msgstr "https://example.com/cover.jpg"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1113 ui/pages/titles_page.slint:1372
 #: ui/pages/titles_page.slint:1450 ui/pages/titles_page.slint:1552
 #: ui/pages/titles_page.slint:1614 ui/pages/titles_page.slint:1716
 msgctxt "TitlesPage"
 msgid "Cancel"
-msgstr "Annuler"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1122 ui/pages/titles_page.slint:1381
 #: ui/pages/titles_page.slint:1725
 msgctxt "TitlesPage"
 msgid "Save"
-msgstr "Enregistrer"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1169
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Edit Title"
-msgstr "Modifier"
+msgstr "Titel"
 
 #: ui/pages/titles_page.slint:1357 ui/pages/titles_page.slint:1759
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Manage Authors"
-msgstr "Gérer les auteurs"
+msgstr "Autoren"
 
 #: ui/pages/titles_page.slint:1432
 msgctxt "TitlesPage"
 msgid "Delete Title?"
-msgstr "Supprimer le titre ?"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1439
 msgctxt "TitlesPage"
 msgid ""
 "Are you sure you want to delete this title?\n"
 "\n"
-msgstr "Êtes-vous sur de vouloir effacer ce titre ?\n\n"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1459 ui/pages/titles_page.slint:1623
 #: ui/pages/titles_page.slint:2076 ui/pages/titles_page.slint:2275
 msgctxt "TitlesPage"
 msgid "Delete"
-msgstr "Supprimer"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1486
 msgctxt "TitlesPage"
 msgid "Add New Volume"
-msgstr "Ajouter"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1494 ui/pages/titles_page.slint:1658
 #: ui/pages/titles_page.slint:2212
 msgctxt "TitlesPage"
 msgid "Barcode:"
-msgstr "Code-barres:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1501 ui/pages/titles_page.slint:1665
 msgctxt "TitlesPage"
 msgid "123456"
-msgstr "123456"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1508 ui/pages/titles_page.slint:1672
 #: ui/pages/titles_page.slint:2218
 msgctxt "TitlesPage"
 msgid "Condition:"
-msgstr "État:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1536 ui/pages/titles_page.slint:1700
 msgctxt "TitlesPage"
 msgid "Notes:"
-msgstr "Remarques:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1561
 msgctxt "TitlesPage"
 msgid "Create"
-msgstr "Créer"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1596
 msgctxt "TitlesPage"
 msgid "Delete Volume?"
-msgstr "Supprimer le volume ?"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1603
 msgctxt "TitlesPage"
@@ -1317,186 +1328,187 @@ msgid ""
 "Are you sure you want to delete this volume?\n"
 "\n"
 "Barcode: "
-msgstr "Êtes-vous sur de vouloir efface ce volume  ? "
+msgstr ""
 
 #: ui/pages/titles_page.slint:1650
 msgctxt "TitlesPage"
 msgid "Edit Volume"
-msgstr "Modifier"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1766
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Current Authors:"
-msgstr "Auteurs actuels:"
+msgstr "Autoren"
 
 #: ui/pages/titles_page.slint:1772
 msgctxt "TitlesPage"
 msgid "No authors assigned yet"
-msgstr "Aucun auteur attribué pour le moment"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1804
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Main Author"
-msgstr "Auteur principal"
+msgstr "Autoren"
 
 #: ui/pages/titles_page.slint:1804
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Co-Author"
-msgstr "Co-auteur"
+msgstr "Autoren"
 
 #: ui/pages/titles_page.slint:1804
 msgctxt "TitlesPage"
 msgid "Translator"
-msgstr "Traducteur"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1804
 msgctxt "TitlesPage"
 msgid "Illustrator"
-msgstr "Illustrateur"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1804
 msgctxt "TitlesPage"
 msgid "Editor"
-msgstr "Éditeur"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1811
 msgctxt "TitlesPage"
 msgid "Remove"
-msgstr "Supprimer"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1830
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Add Author:"
-msgstr "Ajouter un auteur:"
+msgstr "Autoren"
 
 #: ui/pages/titles_page.slint:1852
 msgctxt "TitlesPage"
 msgid "Role:"
-msgstr "Rôle:"
+msgstr ""
 
-# Missing translations for rbibli frontend - French
-# These strings are used in the UI but not yet in fr.po
-# Please translate and merge into lang/fr.po
 #: ui/pages/titles_page.slint:1868
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Add Author"
-msgstr "Ajouter"
+msgstr "Autoren"
 
 #: ui/pages/titles_page.slint:1888
 msgctxt "TitlesPage"
 msgid "Close"
-msgstr "Fermer"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1902
-#, fuzzy
 msgctxt "TitlesPage"
 msgid "No titles found. Click Refresh to load titles from the backend."
 msgstr ""
-"Aucun titre trouvé. Cliquez sur Actualiser pour charger les titres depuis le "
-"backend."
 
 #: ui/pages/titles_page.slint:1944
 msgctxt "TitlesPage"
 msgid "HIGH"
-msgstr "ÉLEVÉ"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1944
 msgctxt "TitlesPage"
 msgid "MED"
-msgstr "MOY"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1944
 msgctxt "TitlesPage"
 msgid "LOW"
-msgstr "BAS"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1961
 msgctxt "TitlesPage"
 msgid "PRIMARY"
-msgstr "PRINCIPAL"
+msgstr ""
 
 #: ui/pages/titles_page.slint:1961
 msgctxt "TitlesPage"
 msgid "SECOND"
-msgstr "SECOND"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2003
 msgctxt "TitlesPage"
 msgid "Volumes:"
-msgstr "Volumes:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2017
 msgctxt "TitlesPage"
 msgid "Similarity:"
-msgstr "Similarité:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2029
 msgctxt "TitlesPage"
 msgid "Match:"
-msgstr "Correspondance:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2046 ui/pages/titles_page.slint:2255
 msgctxt "TitlesPage"
 msgid "Edit"
-msgstr "Modifier"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2091
 msgctxt "TitlesPage"
 msgid "▲ Hide Volumes"
-msgstr "▲ Masquer les volumes"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2091
 msgctxt "TitlesPage"
 msgid "▼ Show Volumes"
-msgstr "▼ Afficher les volumes"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2106
+#, fuzzy
 msgctxt "TitlesPage"
 msgid "Authors"
-msgstr "Auteurs"
+msgstr "Autoren"
 
 #: ui/pages/titles_page.slint:2119
 msgctxt "TitlesPage"
 msgid "🔀 Merge"
-msgstr "🔀 Fusionner"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2130
 msgctxt "TitlesPage"
 msgid "✖ Not Duplicate"
-msgstr "✖ Pas de doublon"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2156
 msgctxt "TitlesPage"
 msgid "Volumes for this title:"
-msgstr "Volumes pour ce titre :"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2162
 msgctxt "TitlesPage"
 msgid "+ Add Volume"
-msgstr "+Ajouter"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2179
 msgctxt "TitlesPage"
 msgid "No volumes found for this title."
-msgstr "Aucun volume trouvé pour ce titre."
+msgstr ""
 
 #: ui/pages/titles_page.slint:2206
 msgctxt "TitlesPage"
 msgid "Copy #"
-msgstr "Copie n°"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2224
 msgctxt "TitlesPage"
 msgid "Status:"
-msgstr "Statut:"
+msgstr ""
 
 #: ui/pages/titles_page.slint:2242
 msgctxt "TitlesPage"
 msgid "Notes: "
-msgstr "Remarques:"
+msgstr ""
 
 #. Page title and description (internationalized)
 #: ui/pages/genres_page.slint:94
+#, fuzzy
 msgctxt "GenresPage"
 msgid "Genres"
 msgstr "Genres"
@@ -1504,9 +1516,10 @@ msgstr "Genres"
 #: ui/pages/genres_page.slint:95
 msgctxt "GenresPage"
 msgid "Manage book genres and categories"
-msgstr "Gérer les genres et catégories de livres"
+msgstr ""
 
 #: ui/pages/genres_page.slint:156
+#, fuzzy
 msgctxt "GenresPage"
 msgid "Book Genres"
 msgstr "Genres"
@@ -1514,193 +1527,180 @@ msgstr "Genres"
 #: ui/pages/genres_page.slint:167
 msgctxt "GenresPage"
 msgid "Refresh"
-msgstr "Actualiser"
+msgstr ""
 
 #: ui/pages/genres_page.slint:177
 msgctxt "GenresPage"
 msgid "+ New Genre"
-msgstr "+ Nouveau genre"
+msgstr ""
 
 #: ui/pages/genres_page.slint:208
 msgctxt "GenresPage"
 msgid "Create New Genre"
-msgstr "Créer un nouveau genre"
+msgstr ""
 
 #: ui/pages/genres_page.slint:217 ui/pages/genres_page.slint:301
 msgctxt "GenresPage"
 msgid "Name:"
-msgstr "Nom:"
+msgstr ""
 
 #: ui/pages/genres_page.slint:223 ui/pages/genres_page.slint:307
 msgctxt "GenresPage"
 msgid "Genre name (required)"
-msgstr "Nom du genre (obligatoire)"
+msgstr ""
 
 #: ui/pages/genres_page.slint:231 ui/pages/genres_page.slint:315
 msgctxt "GenresPage"
 msgid "Description:"
-msgstr "Description:"
+msgstr ""
 
 #: ui/pages/genres_page.slint:248 ui/pages/genres_page.slint:332
 #: ui/pages/genres_page.slint:397
 msgctxt "GenresPage"
 msgid "Cancel"
-msgstr "Annuler"
+msgstr ""
 
 #: ui/pages/genres_page.slint:259 ui/pages/genres_page.slint:343
 msgctxt "GenresPage"
 msgid "Save"
-msgstr "Enregistrer"
+msgstr ""
 
 #: ui/pages/genres_page.slint:292
+#, fuzzy
 msgctxt "GenresPage"
 msgid "Edit Genre"
-msgstr "Modifier"
+msgstr "Genres"
 
 #: ui/pages/genres_page.slint:376
 msgctxt "GenresPage"
 msgid "Delete Genre?"
-msgstr "Supprimer le genre ?"
+msgstr ""
 
 #: ui/pages/genres_page.slint:384
 msgctxt "GenresPage"
 msgid ""
 "Are you sure you want to delete this genre?\n"
 "\n"
-msgstr "Êtes-vous sur de vouloir effacer ce genre ?\n\n"
+msgstr ""
 
 #: ui/pages/genres_page.slint:407 ui/pages/genres_page.slint:503
 msgctxt "GenresPage"
 msgid "Delete"
-msgstr "Supprimer"
+msgstr ""
 
 #: ui/pages/genres_page.slint:426
 msgctxt "GenresPage"
 msgid "No genres found. Click Refresh to load genres from the backend."
 msgstr ""
-"Aucun genre trouvé. Cliquez sur Actualiser pour charger les genres depuis le "
-"backend."
 
 #: ui/pages/genres_page.slint:472
+#, fuzzy
 msgctxt "GenresPage"
 msgid "Titles:"
-msgstr "Titres:"
+msgstr "Titel"
 
 #: ui/pages/genres_page.slint:487
 msgctxt "GenresPage"
 msgid "Edit"
-msgstr "Modifier"
+msgstr ""
 
 #: ui/pages/settings_page.slint:10
+#, fuzzy
 msgctxt "SettingsPage"
 msgid "Settings"
-msgstr "Paramètres"
+msgstr "EINSTELLUNGEN (DE)"
 
 #: ui/pages/settings_page.slint:11
 msgctxt "SettingsPage"
 msgid "Configure application settings"
-msgstr "Configurer les paramètres de l'application"
+msgstr ""
 
 #: ui/pages/settings_page.slint:46
+#, fuzzy
 msgctxt "SettingsPage"
 msgid "Language"
-msgstr "Langue"
+msgstr "Sprache"
 
 #: ui/pages/settings_page.slint:56
+#, fuzzy
 msgctxt "SettingsPage"
 msgid "Interface Language:"
-msgstr "Langue de l'interface:"
+msgstr "Sprache:"
 
 #: ui/pages/settings_page.slint:63
+#, fuzzy
 msgctxt "SettingsPage"
 msgid "System Default"
-msgstr "Par défaut (Système)"
+msgstr "Systemstandard"
 
 #: ui/pages/settings_page.slint:80
 msgctxt "SettingsPage"
 msgid "Note: Changing language may require a restart to fully take effect."
 msgstr ""
-"Remarque : Le changement de langue peut nécessiter un redémarrage pour"
-" prendre "
-"pleinement effet."
 
 #: ui/pages/page.slint:98
 msgctxt "Page"
 msgid "Widgets enabled"
-msgstr "Widgets activés"
+msgstr ""
 
 #: ui/pages/page.slint:106
 msgctxt "Page"
 msgid "Widgets read-only"
-msgstr "Widgets en lecture seule"
+msgstr ""
 
 #. Window title (internationalized)
 #: ui/app-window.slint:533 ui/app-window.slint:554
+#, fuzzy
 msgctxt "AppWindow"
 msgid "Personal Library"
-msgstr "Bibliothèque personnelle"
+msgstr "Persönliche Bibliothek"
 
 #: ui/app-window.slint:559
-#, fuzzy
 msgctxt "Menu"
 msgid "Titles"
-msgstr "Titres"
+msgstr "Titel"
 
 #: ui/app-window.slint:560
-#, fuzzy
 msgctxt "Menu"
 msgid "Locations"
-msgstr "Emplacements"
+msgstr "Standorte"
 
 #: ui/app-window.slint:561
-#, fuzzy
 msgctxt "Menu"
 msgid "Authors"
-msgstr "Auteurs"
+msgstr "Autoren"
 
 #: ui/app-window.slint:562
-#, fuzzy
 msgctxt "Menu"
 msgid "Publishers"
-msgstr "Éditeurs"
+msgstr "Verlage"
 
 #: ui/app-window.slint:563
-#, fuzzy
 msgctxt "Menu"
 msgid "Genres"
 msgstr "Genres"
 
 #: ui/app-window.slint:564
-#, fuzzy
 msgctxt "Menu"
 msgid "Series"
-msgstr "Séries"
+msgstr "Reihen"
 
 #: ui/app-window.slint:565
-#, fuzzy
 msgctxt "Menu"
 msgid "Loans"
-msgstr "Emprunts"
+msgstr "Ausleihen"
 
 #: ui/app-window.slint:566
-#, fuzzy
 msgctxt "Menu"
 msgid "Statistics"
-msgstr "Statistiques"
+msgstr "Statistiken"
 
 #: ui/app-window.slint:567
-#, fuzzy
 msgctxt "Menu"
 msgid "About"
-msgstr "À propos"
+msgstr "Über"
 
 #: ui/app-window.slint:568
-#, fuzzy
 msgctxt "Menu"
 msgid "Settings"
-msgstr "Paramètres"
-
-#~ msgid "Loans"
-#~ msgstr "Emprunts"
-
-
+msgstr "Einstellungen"

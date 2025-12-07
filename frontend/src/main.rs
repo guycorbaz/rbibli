@@ -24,6 +24,9 @@ use models::{
 };
 use slint::{Model, ComponentHandle};
 
+#[cfg(not(target_arch = "wasm32"))]
+use serde::{Deserialize, Serialize};
+
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -90,12 +93,51 @@ slint::include_modules!();
 /// The function may panic if the Slint UI initialization fails in an unrecoverable way,
 /// though this is typically returned as an error instead.
 #[cfg(not(target_arch = "wasm32"))]
+#[derive(Serialize, Deserialize, Default)]
+struct AppConfig {
+    language: String,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn get_config_path() -> Option<std::path::PathBuf> {
+    if let Some(proj_dirs) = directories::ProjectDirs::from("com", "rbibli", "rbibli") {
+        let config_dir = proj_dirs.config_dir();
+        if !config_dir.exists() {
+            let _ = std::fs::create_dir_all(config_dir);
+        }
+        Some(config_dir.join("config.json"))
+    } else {
+        None
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn load_config() -> AppConfig {
+    if let Some(path) = get_config_path() {
+        if path.exists() {
+            if let Ok(content) = std::fs::read_to_string(path) {
+                if let Ok(config) = serde_json::from_str(&content) {
+                    return config;
+                }
+            }
+        }
+    }
+    AppConfig::default()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn save_config(config: &AppConfig) {
+    if let Some(path) = get_config_path() {
+        if let Ok(content) = serde_json::to_string_pretty(config) {
+            let _ = std::fs::write(path, content);
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Initialize gettext
-    gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "");
-    gettextrs::bindtextdomain("rbibli", "lang")?;
-    gettextrs::textdomain("rbibli")?;
+
 
     run().await
 }
@@ -120,6 +162,77 @@ async fn run() -> Result<(), Box<dyn Error>> {
     // Create API client
     let api_client = Rc::new(ApiClient::default());
 
+    // Restore saved language (WASM only)
+    #[cfg(target_arch = "wasm32")]
+    {
+        let mut lang = String::new();
+
+        if let Some(window) = web_sys::window() {
+            // Try to restore from localStorage first
+            if let Ok(Some(storage)) = window.local_storage() {
+                if let Ok(Some(saved_lang)) = storage.get_item("rbibli_language") {
+                    if !saved_lang.is_empty() {
+                        println!("Restoring saved language: {}", saved_lang);
+                        lang = saved_lang;
+                    }
+                }
+            }
+
+            // If no saved language, detect browser locale
+            if lang.is_empty() {
+                if let Some(navigator) = window.navigator().language() {
+                    println!("Detected browser locale: {}", navigator);
+                    if navigator.starts_with("fr") {
+                        lang = "fr".to_string();
+                    } else if navigator.starts_with("de") {
+                        lang = "de".to_string();
+                    } else {
+                        lang = "en".to_string();
+                    }
+                    println!("Selected language based on browser: {}", lang);
+                }
+            }
+
+            // Apply the language
+            if !lang.is_empty() {
+                println!("Applying language: {}", lang);
+                let result = slint::select_bundled_translation(&lang);
+                match result {
+                    Ok(_) => {
+                        println!("Successfully set language to '{}'", lang);
+                        ui.set_current_language(lang.clone().into());
+                        ui.window().request_redraw();
+                    },
+                    Err(e) => println!("Failed to set language to '{}': {:?}", lang, e),
+                }
+            }
+        }
+    }
+
+    // Restore saved language (Native)
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let config = load_config();
+        let mut lang = config.language;
+        
+        if lang.is_empty() {
+             // Detect system language if no preference saved
+             let locale = sys_locale::get_locale().unwrap_or_else(|| "en-US".to_string());
+             println!("Detected system locale: {}", locale);
+             if locale.starts_with("fr") {
+                 lang = "fr".to_string();
+             } else {
+                 lang = "en".to_string();
+             }
+        }
+
+        if !lang.is_empty() {
+            println!("Restoring saved/detected language: {}", lang);
+            let _ = slint::select_bundled_translation(&lang);
+            ui.set_current_language(lang.into());
+        }
+    }
+
     // Handle language change
     let ui_handle = ui.as_weak();
     ui.on_change_language(move |lang_code| {
@@ -127,6 +240,28 @@ async fn run() -> Result<(), Box<dyn Error>> {
         
         #[cfg(not(target_arch = "wasm32"))]
         {
+            println!("Switching language to: '{}' (bundled)", lang_code);
+            let result = slint::select_bundled_translation(lang_code.as_str());
+             match result {
+                Ok(_) => {
+                    println!("Successfully switched language to '{}'", lang_code);
+                    if let Some(ui) = ui_handle.upgrade() {
+                        ui.set_debug_log(format!("Success switching to '{}'", lang_code).into());
+                    }
+                    
+                    // Persist to config file
+                    let mut config = load_config();
+                    config.language = lang_code.to_string();
+                    save_config(&config);
+                },
+                Err(e) => {
+                    println!("Failed to switch language to '{}'. Error: {:?}", lang_code, e);
+                    if let Some(ui) = ui_handle.upgrade() {
+                        ui.set_debug_log(format!("Error switching to '{}': {:?}", lang_code, e).into());
+                    }
+                }
+            }
+
             unsafe {
                 if lang_code.is_empty() {
                     std::env::remove_var("LANGUAGE");
@@ -135,15 +270,47 @@ async fn run() -> Result<(), Box<dyn Error>> {
                 }
             }
 
-            // Re-initialize locale
-            gettextrs::setlocale(gettextrs::LocaleCategory::LcAll, "");
+
             
             println!("Language environment variable set. Restart may be required.");
         }
 
         #[cfg(target_arch = "wasm32")]
         {
-            println!("Language switching via gettext is not supported in WASM.");
+            let log = |msg: &str| {
+                web_sys::console::log_1(&msg.into());
+            };
+            
+            log(&format!("Attempting to switch language to: '{}'", lang_code));
+            
+            let result = slint::select_bundled_translation(lang_code.as_str());
+            match result {
+                Ok(_) => {
+                    log(&format!("Successfully switched language to '{}'", lang_code));
+                    if let Some(ui) = ui_handle.upgrade() {
+                        ui.set_debug_log(format!("Success: '{}'", lang_code).into());
+                        ui.window().request_redraw();
+                    }
+                    
+                    // Persist to localStorage
+                    if let Some(window) = web_sys::window() {
+                        if let Ok(Some(storage)) = window.local_storage() {
+                            let _ = storage.set_item("rbibli_language", lang_code.as_str());
+                        }
+                    }
+                },
+                Err(e) => {
+                    log(&format!("Failed to switch language to '{}'. Error: {:?}", lang_code, e));
+                    if let Some(ui) = ui_handle.upgrade() {
+                        ui.set_debug_log(format!("Error: '{}' {:?}", lang_code, e).into());
+                    }
+                }
+            }
+        }
+
+        // Update the UI property to reflect the change
+        if let Some(ui) = ui_handle.upgrade() {
+            ui.set_current_language(lang_code);
         }
     });
 

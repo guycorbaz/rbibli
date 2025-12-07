@@ -516,6 +516,12 @@ export component AppWindow inherits Window {
     // Triggers loading of all statistics from the backend
     callback load-statistics();
 
+    // Current language code (e.g. "en", "fr")
+    in-out property <string> current-language: "";
+
+    // Debug message for WASM language switching
+    in-out property <string> debug-log: "Ready";
+
     // ========================================================================
     // Window Configuration
     // ========================================================================
@@ -852,6 +858,8 @@ export component AppWindow inherits Window {
                 app-version: "0.2.1";
             }
             if side-bar.current-item == 9: SettingsPage {
+                current-language <=> root.current-language;
+                debug-log <=> root.debug-log;
                 change-language(lang) => {
                     root.change-language(lang);
                 }

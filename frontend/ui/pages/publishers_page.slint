@@ -427,7 +427,7 @@ export component PublishersPage inherits Page {
                                 height: 20px;
 
                                 Text {
-                                    text: publisher.title-count + " books";
+                                    text: publisher.title-count + " " + @tr("books");
                                     color: white;
                                     font-size: 11px;
                                     horizontal-alignment: center;
@@ -448,7 +448,7 @@ export component PublishersPage inherits Page {
                             }
 
                             if publisher.founded-year > 0: Text {
-                                text: "📅 Founded " + publisher.founded-year;
+                                text: "📅 " + @tr("Founded") + " " + publisher.founded-year;
                                 font-size: 12px;
                                 color: #666;
                                 overflow: elide;
