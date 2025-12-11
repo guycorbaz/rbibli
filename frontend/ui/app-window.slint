@@ -855,7 +855,7 @@ export component AppWindow inherits Window {
 
             // PAGE 8: About Page - Application information and version
             if side-bar.current-item == 8: AboutPage {
-                app-version: "0.2.1";
+                app-version: root.app-version;
             }
             if side-bar.current-item == 9: SettingsPage {
                 current-language <=> root.current-language;

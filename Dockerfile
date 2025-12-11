@@ -3,9 +3,16 @@
 # This avoids copying source files multiple times
 FROM rust:latest AS builder
 
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y gettext binaryen
+
 # Install trunk for frontend build
 RUN cargo install trunk
 RUN rustup target add wasm32-unknown-unknown
+
+# Install wasm-bindgen-cli to avoid download errors during build
+RUN cargo install wasm-bindgen-cli --version 0.2.106
 
 WORKDIR /usr/src/app
 COPY . .

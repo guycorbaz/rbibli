@@ -1,5 +1,5 @@
 # rbibli - Personal Library Management System
-
+<!--  -->
 A modern, full-featured personal library management system built entirely in Rust using Slint for the user interface. Designed for small-scale use (friends and family) with a focus on simplicity, data integrity, and flexible deployment options.
 
 ## ✨ Features
