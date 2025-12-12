@@ -41,7 +41,7 @@ baseurl: "/rbibli"
 
 # Additional Settings
 show_downloads: true
-#google_analytics: # Add your GA tracking ID if needed
+google_analytics: 516282538
 
 # Logo (optional - add a logo image to docs/ directory)
 # logo: /assets/images/logo.png
@@ -50,6 +50,4 @@ show_downloads: true
 lang: en-US
 author:
   name: Guy Corbaz
-  twitter: guycorbaz
-twitter:
-  username: guycorbaz
+
