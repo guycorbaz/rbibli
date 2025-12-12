@@ -6,11 +6,12 @@ The backend is a REST API built with **actix-web** and **tokio** for async opera
 
 ## Current Status (Updated: 2025-11-26)
 
-**Phase 3: Nearly Complete (~88% Complete)**
+### Phase 3: Nearly Complete (~88% Complete)
 
 The backend has comprehensive functionality with MariaDB integration and full CRUD operations for all core entities. Volume management, loan system, statistics dashboard, ISBN lookup, and cover image uploads are all fully implemented. Dewey classification has been simplified to manual input fields on the Title entity.
 
 ### ✅ Fully Implemented
+
 - Health check endpoints (/health, /health/db)
 - **Titles API** (full CRUD with business rule validation)
 - **Volumes API** (full CRUD with barcode support)
@@ -25,14 +26,18 @@ The backend has comprehensive functionality with MariaDB integration and full CR
 - **Statistics API** (library overview, volumes per genre/location, loan status)
 - **ISBN Lookup API** (Google Books integration)
 - **Cover Upload API** (upload, get, delete cover images)
+- **Title-Author Relationship API** (add, remove, list authors for title)
+- **Merge Titles API** (merge two titles, moving volumes)
+- **Duplicate Detection API** (find potential duplicates)
+- **Loan Extension API** (extend due date)
 - Database integration with connection pooling
 - UUID-based entity IDs
 - Timestamp management (created_at, updated_at)
 
 ### ⏳ Planned / Not Yet Implemented
-- Title-Author relationship endpoints (junction table exists)
-- Loan extension functionality
-- Advanced search and filter endpoints
+
+- Update author role/order in title relationship
+- Advanced search and filter endpoints (Filtering implemented, full-text search partial)
 - Import/export endpoints (CSV, JSON)
 - Barcode generation endpoints
 
@@ -46,7 +51,7 @@ The backend has comprehensive functionality with MariaDB integration and full CR
 
 ## Base URL
 
-```
+```http
 http://localhost:8000
 ```
 
@@ -58,16 +63,18 @@ http://localhost:8000
 
 Check service and database health status.
 
-```
+```http
 GET /health          - Basic health check
 GET /health/db       - Database connectivity check
 ```
 
 **Responses:**
+
 - `200 OK`: Service is healthy
 - `503 Service Unavailable`: Database connection failed
 
 **Example Response** (`/health/db`):
+
 ```json
 {
   "status": "ok",
@@ -81,7 +88,7 @@ GET /health/db       - Database connectivity check
 
 Manage book titles (abstract book metadata).
 
-```
+```http
 GET    /api/v1/titles              - List all titles with volume counts
 POST   /api/v1/titles              - Create a new title
 PUT    /api/v1/titles/{id}         - Update title information (partial updates)
@@ -89,6 +96,7 @@ DELETE /api/v1/titles/{id}         - Delete a title (only if no volumes exist)
 ```
 
 **Features:**
+
 - LEFT JOIN with volumes to include `volume_count` in listings
 - Genre, publisher, and series foreign key relationships
 - Series association with optional series_number field
@@ -97,9 +105,11 @@ DELETE /api/v1/titles/{id}         - Delete a title (only if no volumes exist)
 - ISBN, Dewey classification (manual code), cover URL support
 
 **DELETE Business Rules:**
+
 - **Success (200)**: Title deleted if `volume_count == 0`
 - **Not Found (404)**: Title ID doesn't exist
 - **Conflict (409)**: Title has volumes, returns:
+
   ```json
   {
     "error": {
@@ -111,6 +121,7 @@ DELETE /api/v1/titles/{id}         - Delete a title (only if no volumes exist)
   ```
 
 **Example Title Object:**
+
 ```json
 {
   "id": "123e4567-e89b-12d3-a456-426614174000",
@@ -143,7 +154,7 @@ DELETE /api/v1/titles/{id}         - Delete a title (only if no volumes exist)
 
 Manage physical book copies with barcode tracking.
 
-```
+```http
 GET    /api/v1/titles/{title_id}/volumes  - List volumes for a specific title
 POST   /api/v1/volumes                    - Create a new volume
 GET    /api/v1/volumes/{id}               - Get volume details
@@ -152,6 +163,7 @@ DELETE /api/v1/volumes/{id}               - Delete a volume (if not loaned)
 ```
 
 **Features:**
+
 - Unique barcode per volume (Code 128 format: `VOL-000001`)
 - Automatic copy numbering per title
 - Condition tracking (excellent, good, fair, poor, damaged)
@@ -160,6 +172,7 @@ DELETE /api/v1/volumes/{id}               - Delete a volume (if not loaned)
 - Individual volume notes
 
 **Example Volume Object:**
+
 ```json
 {
   "id": "vol-uuid",
@@ -181,7 +194,7 @@ DELETE /api/v1/volumes/{id}               - Delete a volume (if not loaned)
 
 Manage book authors with biographical information.
 
-```
+```http
 GET    /api/v1/authors             - List all authors with title counts
 GET    /api/v1/authors/{id}        - Get author details
 POST   /api/v1/authors             - Create a new author
@@ -190,11 +203,13 @@ DELETE /api/v1/authors/{id}        - Delete an author
 ```
 
 **Features:**
+
 - Title count per author via LEFT JOIN
 - Biographical information (birth/death dates, nationality, biography)
 - Website and contact information
 
 **Example Author Object:**
+
 ```json
 {
   "id": "author-uuid",
@@ -216,7 +231,7 @@ DELETE /api/v1/authors/{id}        - Delete an author
 
 Manage publishing companies and their catalogs.
 
-```
+```http
 GET    /api/v1/publishers          - List all publishers with title counts
 GET    /api/v1/publishers/{id}     - Get publisher details
 POST   /api/v1/publishers          - Create a new publisher
@@ -225,10 +240,12 @@ DELETE /api/v1/publishers/{id}     - Delete a publisher
 ```
 
 **Features:**
+
 - Title count per publisher
 - Company details (founded year, country, website, description)
 
 **Example Publisher Object:**
+
 ```json
 {
   "id": "pub-uuid",
@@ -249,7 +266,7 @@ DELETE /api/v1/publishers/{id}     - Delete a publisher
 
 Manage book genres and categories.
 
-```
+```http
 GET    /api/v1/genres              - List all genres with title counts
 GET    /api/v1/genres/{id}         - Get genre details
 POST   /api/v1/genres              - Create a new genre
@@ -258,6 +275,7 @@ DELETE /api/v1/genres/{id}         - Delete a genre
 ```
 
 **Example Genre Object:**
+
 ```json
 {
   "id": "genre-uuid",
@@ -275,7 +293,7 @@ DELETE /api/v1/genres/{id}         - Delete a genre
 
 Manage book series collections (e.g., Harry Potter, Asterix, etc.).
 
-```
+```http
 GET    /api/v1/series              - List all series with title counts
 GET    /api/v1/series/{id}         - Get series details
 POST   /api/v1/series              - Create a new series
@@ -284,12 +302,14 @@ DELETE /api/v1/series/{id}         - Delete a series (only if no titles associat
 ```
 
 **Features:**
+
 - Series-to-title relationship (one-to-many)
 - Title count per series
 - Delete protection: cannot delete series with associated titles
 - Series can have optional description
 
 **Example Series Object:**
+
 ```json
 {
   "id": "series-uuid",
@@ -302,6 +322,7 @@ DELETE /api/v1/series/{id}         - Delete a series (only if no titles associat
 ```
 
 **DELETE Business Rules:**
+
 - **Success (200)**: Series deleted if `title_count == 0`
 - **Conflict (409)**: Series has associated titles, cannot delete
 
@@ -311,7 +332,7 @@ DELETE /api/v1/series/{id}         - Delete a series (only if no titles associat
 
 Manage storage locations with hierarchical organization.
 
-```
+```http
 GET    /api/v1/locations           - List all locations with full hierarchical paths
 GET    /api/v1/locations/{id}      - Get location details
 POST   /api/v1/locations           - Create a new location
@@ -320,12 +341,14 @@ DELETE /api/v1/locations/{id}      - Delete a location
 ```
 
 **Features:**
+
 - Recursive CTE to build full paths: `"Office > Bookshelf A > Shelf 3"`
 - Self-referencing hierarchy (parent_id foreign key)
 - Volume count per location
 - Level tracking (0 = root, 1 = child, etc.)
 
 **Example Location Object:**
+
 ```json
 {
   "id": "location-uuid",
@@ -345,7 +368,7 @@ DELETE /api/v1/locations/{id}      - Delete a location
 
 Manage library borrowers (friends, family, colleagues).
 
-```
+```http
 GET    /api/v1/borrowers            - List all borrowers with group information
 POST   /api/v1/borrowers            - Create a new borrower
 PUT    /api/v1/borrowers/{id}       - Update borrower information
@@ -353,11 +376,13 @@ DELETE /api/v1/borrowers/{id}       - Delete a borrower
 ```
 
 **Features:**
+
 - Simple contact information (name, email, phone, address)
 - Borrower group association for loan policies
 - Trust-based system (no complex restrictions)
 
 **Example Borrower Object:**
+
 ```json
 {
   "id": "borrower-uuid",
@@ -381,7 +406,7 @@ DELETE /api/v1/borrowers/{id}       - Delete a borrower
 
 Manage borrower groups with custom loan policies.
 
-```
+```http
 GET    /api/v1/borrower-groups      - List all borrower groups
 POST   /api/v1/borrower-groups      - Create a new borrower group
 PUT    /api/v1/borrower-groups/{id} - Update borrower group
@@ -389,11 +414,13 @@ DELETE /api/v1/borrower-groups/{id} - Delete a borrower group
 ```
 
 **Features:**
+
 - Custom loan duration per group (in days)
 - Group descriptions and metadata
 - Applied automatically when creating loans
 
 **Example Borrower Group Object:**
+
 ```json
 {
   "id": "group-uuid",
@@ -411,7 +438,7 @@ DELETE /api/v1/borrower-groups/{id} - Delete a borrower group
 
 Manage book loans with barcode-based checkout.
 
-```
+```http
 GET    /api/v1/loans                - List active loans with details
 POST   /api/v1/loans                - Create a new loan by barcode
 GET    /api/v1/loans/overdue        - List overdue loans
@@ -419,6 +446,7 @@ POST   /api/v1/loans/{id}/return    - Return a loaned volume
 ```
 
 **Features:**
+
 - Barcode-based loan creation
 - Automatic due date calculation from borrower group policy
 - Overdue status calculation
@@ -426,6 +454,7 @@ POST   /api/v1/loans/{id}/return    - Return a loaned volume
 - Volume status updates on return
 
 **Create Loan Request:**
+
 ```json
 {
   "borrower_id": "borrower-uuid",
@@ -434,6 +463,7 @@ POST   /api/v1/loans/{id}/return    - Return a loaned volume
 ```
 
 **Loan Detail Response:**
+
 ```json
 {
   "loan": {
@@ -459,7 +489,7 @@ POST   /api/v1/loans/{id}/return    - Return a loaned volume
 
 View library analytics and statistics.
 
-```
+```http
 GET /api/v1/statistics/library      - Overall library statistics
 GET /api/v1/statistics/genres       - Volumes per genre
 GET /api/v1/statistics/locations    - Volumes per location
@@ -467,6 +497,7 @@ GET /api/v1/statistics/loans        - Loan status breakdown
 ```
 
 **Library Statistics Response:**
+
 ```json
 {
   "total_titles": 150,
@@ -482,6 +513,7 @@ GET /api/v1/statistics/loans        - Loan status breakdown
 ```
 
 **Genre Statistics Response:**
+
 ```json
 [
   {
@@ -494,6 +526,7 @@ GET /api/v1/statistics/loans        - Loan status breakdown
 ```
 
 **Location Statistics Response:**
+
 ```json
 [
   {
@@ -511,14 +544,16 @@ GET /api/v1/statistics/loans        - Loan status breakdown
 
 Look up book metadata via ISBN using Google Books API.
 
-```
+```http
 GET /api/v1/isbn/{isbn}             - Lookup book by ISBN
 ```
 
 **Query Parameters:**
+
 - `isbn` (path) - 10 or 13 digit ISBN
 
 **Response:**
+
 ```json
 {
   "title": "The Rust Programming Language",
@@ -543,19 +578,21 @@ GET /api/v1/isbn/{isbn}             - Lookup book by ISBN
 
 Upload and manage book cover images.
 
-```
+```http
 POST   /api/v1/uploads/cover         - Upload cover image
 GET    /api/v1/uploads/cover/{title_id} - Get cover image
 DELETE /api/v1/uploads/cover/{title_id} - Delete cover image
 ```
 
 **Upload Request:**
+
 - Content-Type: `multipart/form-data`
 - Field: `cover` (image file)
 - Supported formats: JPEG, PNG, GIF
 - Max size: 5MB
 
 **Response:**
+
 ```json
 {
   "url": "/api/v1/uploads/cover/title-uuid"
@@ -576,6 +613,7 @@ All endpoints follow standard HTTP status codes:
 - **500 Internal Server Error**: Server error
 
 **Error Response Format:**
+
 ```json
 {
   "error": {
@@ -587,6 +625,7 @@ All endpoints follow standard HTTP status codes:
 ```
 
 **Common Error Codes:**
+
 - `HAS_VOLUMES` - Cannot delete title with existing volumes
 - `DUPLICATE_BARCODE` - Volume barcode already exists
 - `NOT_FOUND` - Resource not found
@@ -622,6 +661,7 @@ Server starts on `http://localhost:8000` by default.
 ### Configure via environment variables
 
 Create `backend/.env`:
+
 ```env
 DATABASE_URL=mysql://username:password@localhost:3306/rbibli
 HOST=127.0.0.1
@@ -649,24 +689,78 @@ cargo test
 
 ## Development
 
-See [`development_environment.md`](development_environment.md) for detailed setup instructions and [`CLAUDE.md`](CLAUDE.md) for architecture overview.
+See [`development_environment.md`](development_environment.md) for detailed setup instructions and [`architecture.md`](architecture.md) for architecture overview.
+
+---
+
+### Loan Extension ✅
+
+Extend the due date of an active loan.
+
+```http
+POST /api/v1/loans/{id}/extend     - Extend loan due date
+```
+
+**Response:**
+
+```json
+{
+  "message": "Loan extended successfully",
+  "new_due_date": "2024-12-15"
+}
+```
+
+---
+
+### Title-Author Relationships ✅
+
+Manage authors associated with a title.
+
+```http
+GET    /api/v1/titles/{title_id}/authors             - List authors for a title
+POST   /api/v1/titles/{title_id}/authors             - Add author to title
+DELETE /api/v1/titles/{title_id}/authors/{author_id} - Remove author from title
+```
+
+**Add Author Request:**
+
+```json
+{
+  "author_id": "author-uuid",
+  "role": "main_author",
+  "display_order": 1
+}
+```
+
+---
+
+### Duplicate Detection & Merging ✅
+
+Find and resolve duplicate titles.
+
+```http
+GET    /api/v1/titles/duplicates?min_score=50        - Detect potential duplicates
+POST   /api/v1/titles/{primary_id}/merge/{secondary_id} - Merge secondary into primary
+```
+
+**Merge Request:**
+
+```json
+{
+  "confirm": true
+}
+```
 
 ---
 
 ## Future Planned Features
 
 ### Title-Author Relationships ⏳
-- `POST /api/v1/titles/{id}/authors` - Add author to title with role
-- `DELETE /api/v1/titles/{title_id}/authors/{author_id}` - Remove author from title
+
 - `PUT /api/v1/titles/{title_id}/authors/{author_id}` - Update author role/order
 
-### Series Management ⏳
-- Full CRUD for series (collections of related titles)
-- Series ordering and numbering
-
 ### Advanced Features ⏳
-- Full-text search across titles and summaries
-- Loan extension functionality
+
+- Full-text search across titles and summaries (Partial support via `GET /api/v1/titles/search?q=...`)
 - Import/export (CSV, JSON)
 - Barcode generation API
-- Advanced filtering and sorting options

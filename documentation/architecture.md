@@ -1,68 +1,38 @@
 # Technical Architecture - Personal Library Manager
 
-> **⚠️ IMPORTANT NOTE - ARCHITECTURE CHANGE (November 2024)**
->
-> This document was originally written for a **Leptos (web) + Axum (backend)** architecture.
->
-> **The project has transitioned to:**
-> - **Frontend**: **Slint** UI framework (native-first, WASM compilation later)
-> - **Backend**: REST API using **actix-web** (instead of Axum) + **tokio**
-> - **Database**: **MariaDB** (instead of PostgreSQL)
->
-> **What remains valid:**
-> - Data models (Title, Volume, Loan, Borrower, etc.)
-> - Business logic and rules
-> - Database schema concepts
-> - Title/Volume separation architecture
-> - Loan management workflows
-> - Duplicate detection strategies
->
-> **What is outdated:**
-> - Frontend implementation details (Section 1.2, Leptos components)
-> - Specific framework references (Axum → actix-web, Leptos → Slint)
-> - Trunk build tool (now wasm-pack)
-> - Tailwind CSS references (now Slint styling)
->
-> **For current architecture**, see:
-> - `CLAUDE.md` - Current project overview
-> - `development_environment.md` - Slint setup guide
-> - `planning.md` - Updated development roadmap
-> - `api.md` - Backend API documentation
-
 ## Overview
-**Web application** developed in Rust with a modular, performant and secure architecture for managing a personal library. The frontend uses Slint UI framework compiled to WebAssembly, and the backend uses actix-web for the REST API.
+
+**Web application** developed in Rust with a modular, performant and secure architecture for managing a personal library. The frontend uses the **Slint** UI framework (native-first, WASM-ready), and the backend uses **actix-web** for the REST API.
 
 ## 1. Technical Stack
 
 ### 1.1 Backend (Rust)
-- **Web framework**: Axum (async, performant, type-safe)
-- **Database**: PostgreSQL, MySQL or MariaDB with SQLx (async, compile-time checked queries)
-- **ORM/Query Builder**: SQLx + multi-DBMS migrations
-- **Authentication**: JWT with jsonwebtoken
-- **Validation**: validator crate
-- **Serialization**: serde (JSON/XML)
-- **Logging**: tracing + tracing-subscriber
+
+- **Web framework**: actix-web (async, high-performance)
+- **Database**: MariaDB with SQLx (async, compile-time checked queries)
+- **Async Runtime**: tokio
+- **Serialization**: serde (JSON)
+- **Logging**: log + env_logger
 - **Configuration**: config crate + environment variables
 
-### 1.2 Frontend (Rust with Leptos)
-- **Web framework**: Leptos (reactive Rust framework for SPA)
-- **Compilation**: WebAssembly (WASM) for optimal performance
-- **CSS Framework**: Tailwind CSS
-- **Global state**: Leptos Context API and reactive signals
-- **HTTP Client**: reqwest-wasm
-- **UI Components**: Custom Leptos components
-- **Internationalization**: leptos-i18n
-- **Build tool**: Trunk for WASM bundling
-- **Reactivity**: Fine-grained signals system
+### 1.2 Frontend (Slint)
+
+- **UI Framework**: Slint (Declarative GUI for tracking titles, volumes, loans)
+- **Language**: .slint markup + Rust business logic
+- **HTTP Client**: reqwest (native) / reqwest-wasm (web)
+- **State Management**: Slint global singletons + Rust callbacks
+- **Build Targets**: Native Desktop (Linux/Windows/macOS) and WebAssembly (WASM)
 
 ### 1.3 Infrastructure
-- **Containerization**: Single Docker container (Frontend + Backend)
+
+- **Containerization**: Docker (Frontend + Backend)
 - **Database**: MariaDB 10.11+
 - **File storage**: Local filesystem (for covers)
 
 ## 2. General Architecture
 
 ### 2.1 Project structure
+
 ```
 library-manager/
 ├── backend/
@@ -73,169 +43,103 @@ library-manager/
 │   │   ├── models/
 │   │   ├── handlers/
 │   │   └── migrations/
-│   └── Cargo.toml
+│   ├── Cargo.toml
+│   └── static/             # Static files for WASM frontend
 ├── frontend/
 │   ├── src/
-│   │   ├── main.rs
-│   │   ├── models.rs
-│   │   └── api_client.rs
-│   ├── ui/
-│   │   ├── app-window.slint
+│   │   ├── main.rs         # Rust logic & callbacks
 │   │   └── ...
+│   ├── ui/
+│   │   ├── app-window.slint # Main UI definition
+│   │   ├── pages/
+│   │   │   ├── titles_page.slint
+│   │   │   └── ...
+│   │   └── side_bar.slint
 │   ├── Cargo.toml
 │   └── index.html
-├── Dockerfile          # Unified build for both frontend and backend
+├── Dockerfile              # Unified build
 ├── docker-compose.yml
 └── documentation/
 ```
 
 ### 2.2 Layered architecture
-```
-┌─────────────────────────────────────┐
-│      Frontend (Slint WASM)          │
-│   (Served by Backend Static Files)  │
-├─────────────────────────────────────┤
-│          REST API (Actix)           │
-├─────────────────────────────────────┤
-│         Business Services           │
-├─────────────────────────────────────┤
-│         Repositories                │
-├─────────────────────────────────────┤
-│             MariaDB                 │
-└─────────────────────────────────────┘
+
+```mermaid
+graph TD
+    Client[Client Browser / Desktop App]
+    Slint[Slint UI (WASM/Native)]
+    Actix[Actix Web REST API]
+    SQLx[SQLx Data Access]
+    DB[(MariaDB)]
+
+    Client -->|User Interaction| Slint
+    Slint -->|HTTP Requests| Actix
+    Actix -->|SQL Queries| SQLx
+    SQLx -->|TCP| DB
 ```
 
-### 2.3 Leptos Frontend - Reactive architecture
-```rust
-// src/app.rs
-use leptos::*;
-use leptos_router::*;
+### 2.3 Slint Frontend - Component Architecture
 
-#[component]
-pub fn App() -> impl IntoView {
-    // Global application state
-    provide_context(create_rw_signal(AppState::new()));
+The frontend is built using **Slint**, a declarative GUI toolkit.
+
+```slint
+// ui/app-window.slint
+import { Button, VerticalBox, ScrollView } from "std-widgets.slint";
+import { SideBar } from "side_bar.slint";
+import { TitlesPage } from "pages/titles_page.slint";
+// ... other imports
+
+export component AppWindow inherits Window {
+    title: @tr("Personal Library");
+    min-width: 1024px;
+    min-height: 768px;
+
+    // Global Properties
+    in-out property <[TitleData]> titles: [];
+    in-out property <[AuthorData]> authors: [];
+    // ...
+
+    // Callbacks to Rust Backend
+    callback load-titles();
+    callback create-title(string, string, ...);
     
-    view! {
-        <Router>
-            <nav class="bg-blue-600 text-white p-4">
-                <div class="container mx-auto flex justify-between">
-                    <h1 class="text-xl font-bold">"Library Manager"</h1>
-                    <div class="space-x-4">
-                        <A href="/" class="hover:underline">"Home"</A>
-                        <A href="/volumes" class="hover:underline">"Volumes"</A>
-                        <A href="/loans" class="hover:underline">"Loans"</A>
-                        <A href="/scan" class="hover:underline">"Scanner"</A>
-                    </div>
-                </div>
-            </nav>
+    HorizontalLayout {
+        // Navigation Sidebar
+        side-bar := SideBar {
+            model: [
+                @tr("Titles"), 
+                @tr("Locations"), 
+                // ...
+            ];
             
-            <main class="container mx-auto p-4">
-                <Routes>
-                    <Route path="/" view=Dashboard/>
-                    <Route path="/volumes" view=VolumesPage/>
-                    <Route path="/volumes/new" view=VolumeForm/>
-                    <Route path="/volumes/:id" view=VolumeDetail/>
-                    <Route path="/loans" view=LoansPage/>
-                    <Route path="/scan" view=ScanPage/>
-                </Routes>
-            </main>
-            
-            <NotificationCenter />
-        </Router>
-    }
-}
+            changed current-item => {
+                // Route navigation logic
+            }
+        }
 
-// src/components/volume/volume_card.rs
-#[component]
-pub fn VolumeCard(volume: Volume) -> impl IntoView {
-    let is_available = move || volume.loan_status == LoanStatus::Available;
-    
-    view! {
-        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-            <div class="flex items-start space-x-4">
-                <img 
-                    src={volume.cover_url.unwrap_or_else(|| "/default-cover.jpg".to_string())}
-                    alt={format!("Cover of {}", volume.title)}
-                    class="w-16 h-24 object-cover rounded"
-                />
-                <div class="flex-1">
-                    <h3 class="text-lg font-semibold text-gray-900">{volume.title}</h3>
-                    {volume.subtitle.map(|subtitle| view! {
-                        <p class="text-sm text-gray-600">{subtitle}</p>
-                    })}
-                    <p class="text-sm text-gray-500 mt-1">
-                        "Barcode: " <span class="font-mono">{volume.barcode}</span>
-                    </p>
-                    <div class="flex items-center mt-2 space-x-2">
-                        <span class={format!("px-2 py-1 rounded-full text-xs font-medium {}", 
-                            condition_color(&volume.condition))}>
-                            {condition_label(&volume.condition)}
-                        </span>
-                        {volume.dewey_code.map(|code| view! {
-                            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
-                                {code}
-                            </span>
-                        })}
-                        <Show when=move || !is_available()>
-                            <span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">
-                                "On Loan"
-                            </span>
-                        </Show>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-}
-
-// src/components/volume/volumes_list.rs
-#[component]
-pub fn VolumesList() -> impl IntoView {
-    let volumes = create_resource(|| (), |_| async { 
-        api_client().get_volumes().await 
-    });
-
-    view! {
-        <div class="space-y-4">
-            <Suspense fallback=move || view! { 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {(0..6).map(|_| view! {
-                        <div class="animate-pulse bg-gray-200 h-48 rounded-lg"></div>
-                    }).collect_view()}
-                </div>
-            }>
-                {move || volumes.get().map(|vols| match vols {
-                    Ok(volumes) => view! {
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <For
-                                each=move || volumes.clone()
-                                key=|vol| vol.id
-                                children=move |vol| view! { <VolumeCard volume=vol/> }
-                            />
-                        </div>
-                    }.into_view(),
-                    Err(_) => view! { 
-                        <div class="text-center py-8">
-                            <p class="text-red-600">"Error loading volumes"</p>
-                            <button 
-                                class="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                                on:click=move |_| volumes.refetch()
-                            >
-                                "Retry"
-                            </button>
-                        </div>
-                    }.into_view()
-                })}
-            </Suspense>
-        </div>
+        // Main Content Area
+        if(side-bar.current-item == 0): TitlesPage {
+            titles: root.titles;
+            load-titles => { root.load-titles(); }
+        }
+        if(side-bar.current-item == 1): LocationsPage { /* ... */ }
+        // ...
     }
 }
 ```
+
+**Key Concepts:**
+
+- **.slint files**: Define the UI structure and styling declaratively.
+- **AppWindow**: Root component that manages global state and routing.
+- **Callbacks**: Mechanism for UI to trigger Rust backend logic (e.g., `load-titles`).
+- **Properties**: Data flow from Rust to UI (e.g., `titles` list).
+- **WASM support**: Compiles to WebAssembly for running in browser, communicating via `reqwest-wasm`.
 
 ## 3. Data Model
 
 ### 3.1 Main entities - Title/Volume Hierarchy
+
 ```rust
 // models/title.rs
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -304,6 +208,7 @@ pub struct TitleWithVolumes {
 ```
 
 ### 3.2 Relations and Additional Entities
+
 ```rust
 // models/author.rs
 #[derive(Debug, Serialize, Deserialize, sqlx::FromRow)]
@@ -448,65 +353,46 @@ impl TitleType {
 ## 4. REST API
 
 ### 4.1 Endpoint structure
-```rust
-// handlers/volumes.rs
-pub async fn create_volume(
-    State(app_state): State<AppState>,
-    Json(payload): Json<CreateVolumeRequest>,
-) -> Result<Json<Volume>, AppError> {
-    // Implementation
-}
 
-pub async fn get_volumes(
-    State(app_state): State<AppState>,
-    Query(params): Query<VolumeQueryParams>,
-) -> Result<Json<PaginatedResponse<Volume>>, AppError> {
+### 4.1 Implementation Pattern
+
+The backend uses **Actix Web** with the following pattern:
+
+```rust
+pub async fn handler_name(
+    data: web::Data<AppState>,      // Database pool
+    path: web::Path<Uuid>,          // Path parameters
+    json: web::Json<MyPayload>,     // JSON body
+    query: web::Query<MyParams>,    // Query parameters
+) -> impl Responder {
     // Implementation
 }
 ```
 
 ### 4.2 Basic API Routes for Personal Use
+
+### 4.2 Actix Handler Implementation
+
 ```rust
 // handlers/titles.rs
+use actix_web::{web, HttpResponse, Responder};
+use sqlx::MySqlPool;
+
+pub async fn list_titles(data: web::Data<AppState>) -> impl Responder {
+    let query = "SELECT * FROM titles";
+    // ... Direct SQLx query implementation
+}
+
 pub async fn create_title(
-    State(app_state): State<AppState>,
+    data: web::Data<AppState>,
     Json(payload): Json<CreateTitleRequest>,
-) -> Result<Json<TitleWithVolumes>, AppError> {
-    // Create title and optionally first volume
-}
-
-pub async fn get_titles(
-    State(app_state): State<AppState>,
-    Query(params): Query<TitleQueryParams>,
-) -> Result<Json<PaginatedResponse<TitleWithVolumes>>, AppError> {
-    // Get titles with volume counts and availability
-}
-
-pub async fn add_volume_to_title(
-    State(app_state): State<AppState>,
-    Path(title_id): Path<Uuid>,
-    Json(payload): Json<CreateVolumeRequest>,
-) -> Result<Json<Volume>, AppError> {
-    // Add new volume copy to existing title
-}
-
-// handlers/duplicates.rs
-pub async fn get_duplicate_candidates(
-    State(app_state): State<AppState>,
-    Query(params): Query<DuplicateQueryParams>,
-) -> Result<Json<Vec<DuplicateCandidate>>, AppError> {
-    // Get potential duplicates for review
-}
-
-pub async fn merge_titles(
-    State(app_state): State<AppState>,
-    Json(payload): Json<MergeTitlesRequest>,
-) -> Result<Json<TitleWithVolumes>, AppError> {
-    // Merge two duplicate titles
+) -> impl Responder {
+    // ... Logic to create title and optional volume
 }
 ```
 
 ### 4.3 Simplified API Endpoints (Personal Use)
+
 ```
 # Essential Title Management
 GET    /api/v1/titles                    - List titles with basic information
@@ -553,710 +439,51 @@ GET    /api/v1/reports/basic             - Basic collection statistics
 GET    /api/v1/reports/loans             - Simple loan reports
 ```
 
-## 5. Services and Business Logic
+## 5. Backend Architecture & Data Flow
 
-### 5.1 Title/Volume Service Architecture
+### 5.1 Architecture Pattern: Handler-Centric
+
+The application follows a pragmatic **Handler-Centric** architecture, suitable for its scope as a personal library manager.
+
+- **Actix Web Handlers**: Serve as the entry points for API requests. They handle:
+  - Request extraction (JSON body, Path parameters, Query strings)
+  - Business logic validation
+  - Direct database interactions via `sqlx`
+  - Response formatting (JSON)
+- **AppState**: Holds shared resources, primarily the `sqlx::MySqlPool` for database connections.
+- **Models**: Rust structs that map to database tables (`sqlx::FromRow`) and API responses (`serde::Serialize`).
+
+This approach minimizes boilerplate by avoiding unnecessary Service/Repository abstraction layers for simple CRUD operations.
+
+### 5.2 Database Access
+
+Database interactions are performed directly within handlers using **SQLx**. This provides:
+
+- **Compile-time verification**: SQL queries are checked against the database schema at compile time.
+- **Async/Await**: Non-blocking database I/O.
+- **Type Safety**: Automatic mapping from SQL types to Rust types.
+
 ```rust
-// services/title_service.rs
-pub struct TitleService {
-    title_repo: Arc<dyn TitleRepository>,
-    volume_repo: Arc<dyn VolumeRepository>,
-    author_repo: Arc<dyn AuthorRepository>,
-    barcode_generator: Arc<dyn BarcodeGenerator>,
-    duplicate_service: Arc<DuplicateService>,
-}
-
-impl TitleService {
-    pub async fn create_title_with_volume(
-        &self,
-        request: CreateTitleRequest,
-    ) -> Result<TitleWithVolumes, ServiceError> {
-        // 1. Check for duplicates before creating
-        let duplicates = self.duplicate_service
-            .detect_duplicates_for_new_title(&request)
-            .await?;
-        
-        if !duplicates.is_empty() && !request.force_create {
-            return Err(ServiceError::PotentialDuplicates(duplicates));
+// Example: Fetching a title by ID
+pub async fn get_title(data: web::Data<AppState>, id: web::Path<Uuid>) -> impl Responder {
+    let query = "SELECT * FROM titles WHERE id = ?";
+    match sqlx::query_as::<_, Title>(query)
+        .bind(id.into_inner())
+        .fetch_optional(&data.db_pool)
+        .await 
+    {
+        Ok(Some(title)) => HttpResponse::Ok().json(title),
+        Ok(None) => HttpResponse::NotFound().finish(),
+        Err(e) => {
+            error!("Database error: {}", e);
+            HttpResponse::InternalServerError().finish()
         }
-        
-        // 2. Create the title
-        let mut title_data = request.into();
-        // Set title type for loan duration rules
-        if title_data.title_type.is_none() {
-            title_data.title_type = Some(self.infer_title_type(&title_data));
-        }
-        
-        let title = self.title_repo.create(title_data).await?;
-        
-        // 3. Create first volume automatically if requested
-        if request.create_first_volume {
-            let volume_request = CreateVolumeRequest {
-                title_id: title.id,
-                copy_number: 1,
-                condition: VolumeCondition::Good,
-                location: request.initial_location,
-            };
-            
-            let volume = self.volume_repo.create(volume_request).await?;
-            
-            Ok(TitleWithVolumes {
-                title,
-                volumes: vec![volume],
-                authors: vec![],
-                total_volumes: 1,
-                available_volumes: 1,
-            })
-        } else {
-            // Wishlist title with 0 volumes
-            Ok(TitleWithVolumes {
-                title,
-                volumes: vec![],
-                authors: vec![],
-                total_volumes: 0,
-                available_volumes: 0,
-            })
-        }
-    }
-
-    fn infer_title_type(&self, title_data: &CreateTitleData) -> TitleType {
-        // Simple inference based on genre or Dewey code
-        if let Some(dewey) = &title_data.dewey_code {
-            match dewey.chars().next() {
-                Some('0'..='1') => TitleType::Reference,
-                Some('8') => TitleType::Fiction,
-                _ => TitleType::NonFiction,
-            }
-        } else if let Some(genre) = &title_data.genre {
-            match genre.to_lowercase().as_str() {
-                "fiction" | "novel" | "fantasy" | "sci-fi" => TitleType::Fiction,
-                "magazine" | "periodical" => TitleType::Magazine,
-                "reference" | "dictionary" | "encyclopedia" => TitleType::Reference,
-                _ => TitleType::NonFiction,
-            }
-        } else {
-            TitleType::NonFiction
-        }
-    }
-
-    pub async fn add_volume_copy(
-        &self,
-        title_id: Uuid,
-        request: AddVolumeCopyRequest,
-    ) -> Result<Volume, ServiceError> {
-        // Find the next copy number
-        let next_copy_number = self.volume_repo
-            .get_next_copy_number(title_id)
-            .await?;
-        
-        let volume_request = CreateVolumeRequest {
-            title_id,
-            copy_number: next_copy_number,
-            condition: request.condition,
-            location: request.location,
-        };
-        
-        self.volume_repo.create(volume_request).await
-    }
-
-    pub async fn get_title_with_volumes(
-        &self,
-        title_id: Uuid,
-    ) -> Result<TitleWithVolumes, ServiceError> {
-        let title = self.title_repo.find_by_id(title_id).await?
-            .ok_or(ServiceError::NotFound)?;
-        
-        let volumes = self.volume_repo.find_by_title_id(title_id).await?;
-        let authors = self.author_repo.find_by_title_id(title_id).await?;
-        
-        let available_volumes = volumes.iter()
-            .filter(|v| v.loan_status == LoanStatus::Available)
-            .count() as i32;
-        
-        Ok(TitleWithVolumes {
-            title,
-            volumes: volumes.clone(),
-            authors,
-            total_volumes: volumes.len() as i32,
-            available_volumes,
-        })
-    }
-}
-
-// services/loan_service.rs (Simplified for personal use)
-pub struct LoanService {
-    loan_repo: Arc<dyn LoanRepository>,
-    volume_repo: Arc<dyn VolumeRepository>,
-    title_repo: Arc<dyn TitleRepository>,
-    wishlist_repo: Arc<dyn WishlistRepository>,
-}
-
-impl LoanService {
-    pub async fn create_loan(
-        &self,
-        title_id: Uuid,
-        borrower_id: Uuid,
-    ) -> Result<Loan, ServiceError> {
-        // 1. Find best available volume
-        let volume = self.select_best_available_volume(title_id).await?
-            .ok_or(ServiceError::NoVolumeAvailable)?;
-        
-        // 2. Get title to determine loan duration
-        let title = self.title_repo.find_by_id(title_id).await?
-            .ok_or(ServiceError::NotFound)?;
-        
-        let loan_days = title.title_type
-            .map(|t| t.default_loan_days())
-            .unwrap_or(14);
-        
-        // 3. Create loan
-        let loan_request = CreateLoanRequest {
-            title_id,
-            volume_id: volume.id,
-            borrower_id,
-            due_date: Utc::now() + Duration::days(loan_days as i64),
-        };
-        
-        let loan = self.loan_repo.create(loan_request).await?;
-        
-        // 4. Update volume status
-        self.volume_repo.update_loan_status(volume.id, LoanStatus::Loaned).await?;
-        
-        // 5. Check if anyone has this title on wishlist
-        self.notify_wishlist_users(title_id).await?;
-        
-        Ok(loan)
-    }
-
-    async fn select_best_available_volume(
-        &self,
-        title_id: Uuid,
-    ) -> Result<Option<Volume>, ServiceError> {
-        let available_volumes = self.volume_repo
-            .find_available_by_title_id(title_id)
-            .await?;
-        
-        if available_volumes.is_empty() {
-            return Ok(None);
-        }
-        
-        // Selection priority:
-        // 1. Best physical condition
-        // 2. Lowest copy number (FIFO)
-        let best_volume = available_volumes
-            .into_iter()
-            .min_by(|a, b| {
-                let condition_order = |c: &VolumeCondition| match c {
-                    VolumeCondition::Excellent => 0,
-                    VolumeCondition::Good => 1,
-                    VolumeCondition::Fair => 2,
-                    VolumeCondition::Poor => 3,
-                    VolumeCondition::Damaged => 4,
-                };
-                
-                condition_order(&a.condition)
-                    .cmp(&condition_order(&b.condition))
-                    .then_with(|| a.copy_number.cmp(&b.copy_number))
-            });
-        
-        Ok(best_volume)
-    }
-
-    async fn notify_wishlist_users(&self, title_id: Uuid) -> Result<(), ServiceError> {
-        // Simple notification for wishlist users when title becomes available
-        let wishlist_items = self.wishlist_repo.find_by_title_id(title_id).await?;
-        
-        for item in wishlist_items {
-            // Send basic email notification if configured
-            // This is optional and simple
-        }
-        
-        Ok(())
-    }
-}
-
-// services/duplicate_service.rs (New service for duplicate management)
-pub struct DuplicateService {
-    duplicate_repo: Arc<dyn DuplicateRepository>,
-    title_repo: Arc<dyn TitleRepository>,
-}
-
-impl DuplicateService {
-    pub async fn detect_duplicates_for_new_title(
-        &self,
-        request: &CreateTitleRequest,
-    ) -> Result<Vec<DuplicateCandidate>, ServiceError> {
-        let mut candidates = Vec::new();
-        
-        // 1. Check for identical ISBN
-        if let Some(isbn) = &request.isbn {
-            if let Some(existing) = self.title_repo.find_by_isbn(isbn).await? {
-                candidates.push(DuplicateCandidate {
-                    id: Uuid::new_v4(),
-                    title_id_1: Uuid::new_v4(), // Would be the new title's ID
-                    title_id_2: existing.id,
-                    confidence_score: 1.0,
-                    detection_type: DuplicateType::IdenticalIsbn,
-                    status: DuplicateStatus::Pending,
-                    created_at: Utc::now(),
-                    reviewed_at: None,
-                });
-            }
-        }
-        
-        // 2. Check for title + author matches
-        let similar_titles = self.title_repo
-            .find_similar_titles(&request.title, &request.authors)
-            .await?;
-        
-        for similar in similar_titles {
-            let confidence = self.calculate_similarity_score(&request.title, &similar.title);
-            if confidence > 0.85 {
-                candidates.push(DuplicateCandidate {
-                    id: Uuid::new_v4(),
-                    title_id_1: Uuid::new_v4(),
-                    title_id_2: similar.id,
-                    confidence_score: confidence,
-                    detection_type: if confidence > 0.95 {
-                        DuplicateType::TitleAuthorMatch
-                    } else {
-                        DuplicateType::FuzzyMatch
-                    },
-                    status: DuplicateStatus::Pending,
-                    created_at: Utc::now(),
-                    reviewed_at: None,
-                });
-            }
-        }
-        
-        Ok(candidates)
-    }
-
-    pub async fn merge_titles(
-        &self,
-        primary_id: Uuid,
-        secondary_id: Uuid,
-    ) -> Result<TitleWithVolumes, ServiceError> {
-        // 1. Get both titles
-        let primary = self.title_repo.find_by_id(primary_id).await?
-            .ok_or(ServiceError::NotFound)?;
-        let secondary = self.title_repo.find_by_id(secondary_id).await?
-            .ok_or(ServiceError::NotFound)?;
-        
-        // 2. Merge metadata (keep primary, add secondary info as needed)
-        let mut merged_title = primary;
-        if merged_title.isbn.is_none() && secondary.isbn.is_some() {
-            merged_title.isbn = secondary.isbn;
-        }
-        if merged_title.cover_url.is_none() && secondary.cover_url.is_some() {
-            merged_title.cover_url = secondary.cover_url;
-        }
-        
-        // 3. Move all volumes from secondary to primary
-        self.title_repo.move_volumes_to_title(secondary_id, primary_id).await?;
-        
-        // 4. Update copy numbers sequentially
-        self.title_repo.renumber_volumes(primary_id).await?;
-        
-        // 5. Delete secondary title
-        self.title_repo.delete(secondary_id).await?;
-        
-        // 6. Mark duplicate as merged
-        self.duplicate_repo.mark_as_merged(primary_id, secondary_id).await?;
-        
-        // 7. Return merged result
-        let volumes = self.title_repo.get_volumes_for_title(primary_id).await?;
-        let authors = self.title_repo.get_authors_for_title(primary_id).await?;
-        
-        Ok(TitleWithVolumes {
-            title: merged_title,
-            volumes: volumes.clone(),
-            authors,
-            total_volumes: volumes.len() as i32,
-            available_volumes: volumes.iter()
-                .filter(|v| v.loan_status == LoanStatus::Available)
-                .count() as i32,
-        })
-    }
-
-    fn calculate_similarity_score(&self, title1: &str, title2: &str) -> f32 {
-        // Simple Levenshtein distance implementation
-        let title1_normalized = self.normalize_string(title1);
-        let title2_normalized = self.normalize_string(title2);
-        
-        let distance = levenshtein_distance(&title1_normalized, &title2_normalized);
-        let max_len = title1_normalized.len().max(title2_normalized.len());
-        
-        if max_len == 0 {
-            1.0
-        } else {
-            1.0 - (distance as f32 / max_len as f32)
-        }
-    }
-
-    fn normalize_string(&self, s: &str) -> String {
-        s.to_lowercase()
-            .chars()
-            .filter(|c| c.is_alphanumeric() || c.is_whitespace())
-            .collect::<String>()
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join(" ")
-    }
-}
-
-// services/wishlist_service.rs (Simple wishlist instead of complex reservations)
-pub struct WishlistService {
-    wishlist_repo: Arc<dyn WishlistRepository>,
-    title_repo: Arc<dyn TitleRepository>,
-}
-
-impl WishlistService {
-    pub async fn add_to_wishlist(
-        &self,
-        title_id: Uuid,
-        borrower_id: Uuid,
-        notes: Option<String>,
-    ) -> Result<WishlistItem, ServiceError> {
-        // Check if title exists
-        self.title_repo.find_by_id(title_id).await?
-            .ok_or(ServiceError::NotFound)?;
-        
-        let wishlist_item = WishlistItem {
-            id: Uuid::new_v4(),
-            title_id,
-            borrower_id,
-            added_date: Utc::now(),
-            notes,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        };
-        
-        self.wishlist_repo.create(wishlist_item).await
-    }
-
-    pub async fn get_borrower_wishlist(
-        &self,
-        borrower_id: Uuid,
-    ) -> Result<Vec<WishlistItemWithTitle>, ServiceError> {
-        self.wishlist_repo.find_by_borrower_with_titles(borrower_id).await
-    }
-}
-```
-
-### 5.2 Barcode and Scanner Services
-```rust
-// services/barcode_service.rs
-pub trait BarcodeGenerator: Send + Sync {
-    async fn generate_unique_barcode(&self) -> Result<String, BarcodeError>;
-    fn validate_volume_barcode(&self, barcode: &str) -> bool;
-    fn validate_isbn_barcode(&self, isbn: &str) -> bool;
-}
-
-pub struct SequentialBarcodeGenerator {
-    repo: Arc<dyn BarcodeRepository>,
-}
-
-impl BarcodeGenerator for SequentialBarcodeGenerator {
-    async fn generate_unique_barcode(&self) -> Result<String, BarcodeError> {
-        let next_id = self.repo.get_next_sequence().await?;
-        Ok(format!("VOL-{:06}", next_id)) // Code 128 format
-    }
-    
-    fn validate_volume_barcode(&self, barcode: &str) -> bool {
-        // Validate VOL-XXXXXX format (Code 128)
-        let re = regex::Regex::new(r"^VOL-\d{6}$").unwrap();
-        re.is_match(barcode)
-    }
-    
-    fn validate_isbn_barcode(&self, isbn: &str) -> bool {
-        // Validate EAN-13 format for ISBN
-        let re = regex::Regex::new(r"^\d{13}$").unwrap();
-        re.is_match(isbn) && self.validate_isbn_checksum(isbn)
-    }
-    
-    fn validate_isbn_checksum(&self, isbn: &str) -> bool {
-        // EAN-13 checksum validation
-        let digits: Vec<u32> = isbn.chars()
-            .filter_map(|c| c.to_digit(10))
-            .collect();
-        
-        if digits.len() != 13 {
-            return false;
-        }
-        
-        let sum: u32 = digits[..12].iter()
-            .enumerate()
-            .map(|(i, &digit)| if i % 2 == 0 { digit } else { digit * 3 })
-            .sum();
-        
-        let check_digit = (10 - (sum % 10)) % 10;
-        check_digit == digits[12]
-    }
-}
-
-// services/scanner_service.rs (Enhanced for dual barcode support)
-pub struct ScannerService {
-    volume_repo: Arc<dyn VolumeRepository>,
-    title_repo: Arc<dyn TitleRepository>,
-    barcode_generator: Arc<dyn BarcodeGenerator>,
-    external_api: Arc<dyn ExternalMetadataService>,
-}
-
-impl ScannerService {
-    pub async fn scan_barcode(&self, barcode: &str) -> Result<ScanResult, ServiceError> {
-        // Determine barcode type and handle accordingly
-        if self.barcode_generator.validate_volume_barcode(barcode) {
-            self.scan_volume_barcode(barcode).await
-        } else if self.barcode_generator.validate_isbn_barcode(barcode) {
-            self.scan_isbn_barcode(barcode).await
-        } else {
-            Err(ServiceError::InvalidBarcode)
-        }
-    }
-    
-    async fn scan_volume_barcode(&self, barcode: &str) -> Result<ScanResult, ServiceError> {
-        let volume_with_context = self.volume_repo
-            .find_with_title_context(barcode)
-            .await?
-            .ok_or(ServiceError::VolumeNotFound)?;
-        
-        Ok(ScanResult::Volume(volume_with_context))
-    }
-    
-    async fn scan_isbn_barcode(&self, isbn: &str) -> Result<ScanResult, ServiceError> {
-        // First check if we have this title in our collection
-        if let Some(title) = self.title_repo.find_by_isbn(isbn).await? {
-            let volumes = self.volume_repo.find_by_title_id(title.id).await?;
-            Ok(ScanResult::ExistingTitle(TitleWithVolumes {
-                title,
-                volumes: volumes.clone(),
-                authors: vec![], // Would be populated in real implementation
-                total_volumes: volumes.len() as i32,
-                available_volumes: volumes.iter()
-                    .filter(|v| v.loan_status == LoanStatus::Available)
-                    .count() as i32,
-            }))
-        } else {
-            // Try to fetch metadata from external API
-            match self.external_api.get_metadata_by_isbn(isbn).await {
-                Ok(metadata) => Ok(ScanResult::NewTitleMetadata(metadata)),
-                Err(_) => Ok(ScanResult::UnknownIsbn(isbn.to_string())),
-            }
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum ScanResult {
-    Volume(VolumeWithTitleContext),
-    ExistingTitle(TitleWithVolumes),
-    NewTitleMetadata(ExternalMetadata),
-    UnknownIsbn(String),
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct VolumeWithTitleContext {
-    pub volume: Volume,
-    pub title: Title,
-    pub other_copies: Vec<Volume>,
-    pub authors: Vec<Author>,
-}
-```
-
-## 6. Data Management
-
-### 6.1 Multi-DBMS abstraction
-```rust
-// repositories/database_factory.rs
-#[derive(Debug)]
-pub enum DatabaseType {
-    PostgreSQL(PgPool),
-    MySQL(MySqlPool),
-    MariaDB(MySqlPool), // MariaDB uses MySQL driver
-}
-
-pub struct DatabaseFactory;
-
-impl DatabaseFactory {
-    pub async fn create_volume_repository(
-        config: &DatabaseConfig,
-    ) -> Result<Box<dyn VolumeRepository>, DatabaseError> {
-        match config.database_type.as_str() {
-            "postgresql" => {
-                let pool = PgPoolOptions::new()
-                    .max_connections(config.max_connections)
-                    .connect(&config.connection_string())
-                    .await?;
-                Ok(Box::new(PostgresVolumeRepository::new(pool)))
-            }
-            "mysql" | "mariadb" => {
-                let pool = MySqlPoolOptions::new()
-                    .max_connections(config.max_connections)
-                    .connect(&config.connection_string())
-                    .await?;
-                Ok(Box::new(MySqlVolumeRepository::new(pool)))
-            }
-            _ => Err(DatabaseError::UnsupportedDatabase),
-        }
-    }
-}
-```
-
-### 6.2 Simplified Repositories for Personal Use
-```rust
-// repositories/title_repository.rs
-#[async_trait]
-pub trait TitleRepository: Send + Sync {
-    async fn create(&self, title: CreateTitleRequest) -> Result<Title, RepoError>;
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Title>, RepoError>;
-    async fn find_by_isbn(&self, isbn: &str) -> Result<Option<Title>, RepoError>;
-    async fn find_similar_titles(&self, title: &str, authors: &[String]) -> Result<Vec<Title>, RepoError>;
-    async fn search(&self, criteria: TitleSearchCriteria) -> Result<Vec<Title>, RepoError>;
-    async fn update(&self, id: Uuid, title: UpdateTitleRequest) -> Result<Title, RepoError>;
-    async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
-    async fn find_wishlist(&self) -> Result<Vec<Title>, RepoError>;
-    async fn get_titles_with_volumes(&self, params: TitleQueryParams) -> Result<PaginatedResponse<TitleWithVolumes>, RepoError>;
-    // For duplicate management
-    async fn move_volumes_to_title(&self, from_title_id: Uuid, to_title_id: Uuid) -> Result<(), RepoError>;
-    async fn renumber_volumes(&self, title_id: Uuid) -> Result<(), RepoError>;
-    async fn get_volumes_for_title(&self, title_id: Uuid) -> Result<Vec<Volume>, RepoError>;
-    async fn get_authors_for_title(&self, title_id: Uuid) -> Result<Vec<Author>, RepoError>;
-}
-
-// repositories/volume_repository.rs
-#[async_trait]
-pub trait VolumeRepository: Send + Sync {
-    async fn create(&self, volume: CreateVolumeRequest) -> Result<Volume, RepoError>;
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Volume>, RepoError>;
-    async fn find_by_barcode(&self, barcode: &str) -> Result<Option<Volume>, RepoError>;
-    async fn find_by_title_id(&self, title_id: Uuid) -> Result<Vec<Volume>, RepoError>;
-    async fn find_available_by_title_id(&self, title_id: Uuid) -> Result<Vec<Volume>, RepoError>;
-    async fn get_next_copy_number(&self, title_id: Uuid) -> Result<i32, RepoError>;
-    async fn update_loan_status(&self, id: Uuid, status: LoanStatus) -> Result<(), RepoError>;
-    async fn search(&self, criteria: VolumeSearchCriteria) -> Result<Vec<Volume>, RepoError>;
-    async fn update(&self, id: Uuid, volume: UpdateVolumeRequest) -> Result<Volume, RepoError>;
-    async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
-    // Enhanced scanner support
-    async fn find_with_title_context(&self, barcode: &str) -> Result<Option<VolumeWithTitleContext>, RepoError>;
-}
-
-// repositories/borrower_repository.rs (Simplified)
-#[async_trait]
-pub trait BorrowerRepository: Send + Sync {
-    async fn create(&self, borrower: CreateBorrowerRequest) -> Result<Borrower, RepoError>;
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Borrower>, RepoError>;
-    async fn find_by_email(&self, email: &str) -> Result<Option<Borrower>, RepoError>;
-    async fn search(&self, query: &str) -> Result<Vec<Borrower>, RepoError>;
-    async fn update(&self, id: Uuid, borrower: UpdateBorrowerRequest) -> Result<Borrower, RepoError>;
-    async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
-}
-
-// repositories/wishlist_repository.rs (Simple wishlist instead of reservations)
-#[async_trait]
-pub trait WishlistRepository: Send + Sync {
-    async fn create(&self, item: WishlistItem) -> Result<WishlistItem, RepoError>;
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<WishlistItem>, RepoError>;
-    async fn find_by_borrower_id(&self, borrower_id: Uuid) -> Result<Vec<WishlistItem>, RepoError>;
-    async fn find_by_title_id(&self, title_id: Uuid) -> Result<Vec<WishlistItem>, RepoError>;
-    async fn find_by_borrower_with_titles(&self, borrower_id: Uuid) -> Result<Vec<WishlistItemWithTitle>, RepoError>;
-    async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
-}
-
-// repositories/duplicate_repository.rs (New for duplicate management)
-#[async_trait]
-pub trait DuplicateRepository: Send + Sync {
-    async fn create(&self, candidate: DuplicateCandidate) -> Result<DuplicateCandidate, RepoError>;
-    async fn find_pending(&self) -> Result<Vec<DuplicateCandidate>, RepoError>;
-    async fn find_by_title_id(&self, title_id: Uuid) -> Result<Vec<DuplicateCandidate>, RepoError>;
-    async fn update_status(&self, id: Uuid, status: DuplicateStatus) -> Result<(), RepoError>;
-    async fn mark_as_merged(&self, primary_id: Uuid, secondary_id: Uuid) -> Result<(), RepoError>;
-    async fn mark_as_ignored(&self, id: Uuid) -> Result<(), RepoError>;
-    async fn delete(&self, id: Uuid) -> Result<(), RepoError>;
-}
-
-// repositories/loan_repository.rs (Simplified)
-#[async_trait]
-pub trait LoanRepository: Send + Sync {
-    async fn create(&self, loan: CreateLoanRequest) -> Result<Loan, RepoError>;
-    async fn find_by_id(&self, id: Uuid) -> Result<Option<Loan>, RepoError>;
-    async fn find_active(&self) -> Result<Vec<Loan>, RepoError>;
-    async fn find_overdue(&self) -> Result<Vec<Loan>, RepoError>;
-    async fn find_by_borrower_id(&self, borrower_id: Uuid) -> Result<Vec<Loan>, RepoError>;
-    async fn find_by_volume_id(&self, volume_id: Uuid) -> Result<Option<Loan>, RepoError>;
-    async fn return_loan(&self, id: Uuid) -> Result<Loan, RepoError>;
-    async fn extend_loan(&self, id: Uuid, new_due_date: DateTime<Utc>) -> Result<Loan, RepoError>;
-}
-```
-
-// PostgreSQL implementation
-pub struct PostgresVolumeRepository {
-    pool: PgPool,
-}
-
-impl VolumeRepository for PostgresVolumeRepository {
-    async fn create(&self, request: CreateVolumeRequest) -> Result<Volume, RepoError> {
-        let volume = sqlx::query_as!(
-            Volume,
-            r#"
-            INSERT INTO volumes (id, title, isbn, publisher, barcode, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-            RETURNING *
-            "#,
-            Uuid::new_v4(),
-            request.title,
-            request.isbn,
-            request.publisher,
-            request.barcode,
-        )
-        .fetch_one(&self.pool)
-        .await?;
-        
-        Ok(volume)
-    }
-}
-
-// MySQL/MariaDB implementation
-pub struct MySqlVolumeRepository {
-    pool: MySqlPool,
-}
-
-impl VolumeRepository for MySqlVolumeRepository {
-    async fn create(&self, request: CreateVolumeRequest) -> Result<Volume, RepoError> {
-        let id = Uuid::new_v4();
-        let now = Utc::now();
-        
-        sqlx::query!(
-            r#"
-            INSERT INTO volumes (id, title, isbn, publisher, barcode, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            "#,
-            id.to_string(),
-            request.title,
-            request.isbn,
-            request.publisher,
-            request.barcode,
-            now,
-            now,
-        )
-        .execute(&self.pool)
-        .await?;
-        
-        // Fetch created volume
-        let volume = sqlx::query_as!(
-            Volume,
-            "SELECT * FROM volumes WHERE id = ?",
-            id.to_string()
-        )
-        .fetch_one(&self.pool)
-        .await?;
-        
-        Ok(volume)
     }
 }
 ```
 
 ### 6.3 Multi-DBMS migrations
+
 ```rust
 // migrations/migration_runner.rs
 pub struct MigrationRunner {
@@ -1505,6 +732,7 @@ CREATE FULLTEXT INDEX idx_volumes_title ON volumes(title);
 ## 7. Authentication and Security
 
 ### 7.1 JWT and middleware
+
 ```rust
 // middleware/auth.rs
 pub async fn auth_middleware(
@@ -1528,6 +756,7 @@ pub struct Claims {
 ```
 
 ### 7.2 Data validation
+
 ```rust
 // utils/validation.rs
 use validator::{Validate, ValidationError};
@@ -1552,6 +781,7 @@ fn validate_isbn(isbn: &str) -> Result<(), ValidationError> {
 ## 8. Internationalization
 
 ### 8.1 Backend - i18n structure
+
 ```rust
 // services/i18n_service.rs
 pub struct I18nService {
@@ -1570,6 +800,7 @@ impl I18nService {
 ```
 
 ### 8.2 Backend - Locale management
+
 ```rust
 // middleware/locale.rs
 pub async fn locale_middleware(
@@ -1585,6 +816,7 @@ pub async fn locale_middleware(
 ```
 
 ### 8.3 Frontend - API Client service
+
 ```rust
 // frontend/src/services/api_client.rs
 use reqwest::Client;
@@ -1637,6 +869,7 @@ impl ApiClient {
 ```
 
 ### 8.4 Frontend - Simplified Global State for Personal Use
+
 ```rust
 // frontend/src/services/state.rs
 use leptos::*;
@@ -1739,6 +972,7 @@ pub fn use_app_state() -> AppState {
 ## 9. Configuration and Deployment
 
 ### 9.1 Configuration
+
 ```rust
 // config/mod.rs
 #[derive(Debug, Deserialize)]
@@ -1789,6 +1023,7 @@ impl DatabaseConfig {
 ### 9.2 Docker
 
 #### Backend Dockerfile
+
 ```dockerfile
 # backend/Dockerfile
 FROM rust:1.75 as builder
@@ -1805,6 +1040,7 @@ CMD ["library-manager"]
 ```
 
 #### Frontend Dockerfile
+
 ```dockerfile
 # frontend/Dockerfile
 FROM rust:1.75 as builder
@@ -1829,6 +1065,7 @@ CMD ["nginx", "-g", "daemon off;"]
 ```
 
 ### 9.3 Multi-DBMS Docker Compose
+
 ```yaml
 # docker-compose.yml
 version: '3.8'
@@ -1904,6 +1141,7 @@ volumes:
 ### 9.4 Cargo.toml configuration
 
 #### Backend Cargo.toml
+
 ```toml
 [package]
 name = "library-manager-backend"
@@ -1927,6 +1165,7 @@ optional-features = ["postgres", "mysql"]
 ```
 
 #### Frontend Cargo.toml
+
 ```toml
 [package]
 name = "library-manager-frontend"
@@ -1982,6 +1221,7 @@ features = [
 ```
 
 #### Frontend Trunk.toml
+
 ```toml
 [build]
 target = "index.html"
@@ -2003,6 +1243,7 @@ command_arguments = ["-i", "./input.css", "-o", "./style.css", "--watch"]
 ```
 
 ### 9.5 Deployment scripts
+
 ```bash
 # scripts/deploy-postgres.sh
 export DATABASE_TYPE=postgresql
@@ -2023,316 +1264,62 @@ docker-compose --profile mariadb up -d
 ## 10. Testing and Quality
 
 ### 10.1 Test structure
+
+Integration tests are located in `backend/tests` and use the standard Actix Web testing utilities.
+
 ```rust
-// tests/integration/volumes_test.rs
+// tests/health_check.rs
 #[tokio::test]
-async fn test_create_volume() {
-    let app = create_test_app().await;
-    let client = TestClient::new(app);
-    
-    let volume_data = json!({
-        "title": "Test Book",
-        "isbn": "9781234567890"
-    });
-    
+async fn health_check_works() {
+    let app = spawn_app().await;
+    let client = reqwest::Client::new();
+
     let response = client
-        .post("/api/v1/volumes")
-        .json(&volume_data)
+        .get(&format!("{}/health_check", &app.address))
         .send()
-        .await;
-    
-    assert_eq!(response.status(), StatusCode::CREATED);
+        .await
+        .expect("Failed to execute request.");
+
+    assert!(response.status().is_success());
+    assert_eq!(Some(0), response.content_length());
 }
 ```
 
 ### 10.2 Quality tools
-- **Unit tests**: cargo test
-- **Integration tests**: TestClient with test database
-- **Linting**: clippy
-- **Formatting**: rustfmt
-- **Coverage**: tarpaulin
-- **Security**: cargo audit
+
+- **Unit tests**: `cargo test` in both frontend and backend
+- **Integration tests**: `cargo test` in backend (uses `sqlx` test database)
+- **Linting**: `clippy` for Rust best practices
+- **Formatting**: `rustfmt` for consistent code style
+- **Audit**: `cargo audit` to check for security vulnerabilities in dependencies
 
 ## 11. Performance and Monitoring
 
 ### 11.1 Optimizations
-- **Connection pooling**: Configured SQLx pool
-- **Redis cache**: for frequent queries
-- **Pagination**: default limit on lists
-- **Database indexes**: on search columns
-- **Compression**: gzip on API responses
+
+- **Connection pooling**: `sqlx` connection pool for efficient database access
+- **Async I/O**: Tokio runtime for non-blocking operations in connection handling
+- **Native UI**: Slint provides a lightweight, compiled native UI (no heavy browser DOM)
+- **Database indexes**: Optimized for common search queries
+- **Resource Management**: Minimal memory footprint compared to Electron-based apps
 
 ### 11.2 Monitoring
+
+Basic logging is implemented using `tracing` and `tracing-subscriber`.
+
 ```rust
-// middleware/metrics.rs
-pub async fn metrics_middleware(
-    req: Request,
-    next: Next,
-) -> Response {
-    let start = Instant::now();
-    let method = req.method().clone();
-    let path = req.uri().path().to_string();
-    
-    let response = next.run(req).await;
-    
-    let duration = start.elapsed();
-    tracing::info!(
-        method = %method,
-        path = %path,
-        status = %response.status(),
-        duration_ms = duration.as_millis(),
-        "HTTP request completed"
-    );
-    
-    response
-}
+// backend/src/main.rs (setup)
+let subscriber = get_subscriber("rbibli", "info", std::io::stdout);
+init_subscriber(subscriber);
 ```
 
-### 11.3 Enhanced Scan Page with Dual Barcode Support
-```rust
-// frontend/src/pages/scan.rs
-use leptos::*;
-use web_sys::HtmlInputElement;
+### 11.3 Scanners and Hardware Support
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum ScanResult {
-    Volume(VolumeWithTitleContext),
-    ExistingTitle(TitleWithVolumes),
-    NewTitleMetadata(ExternalMetadata),
-    UnknownIsbn(String),
-}
+The input system relies on standard HID (Human Interface Device) support, making it compatible with most USB and Bluetooth barcode scanners.
 
-#[component]
-pub fn ScanPage() -> impl IntoView {
-    let (barcode, set_barcode) = create_signal(String::new());
-    let (scan_result, set_scan_result) = create_signal(None::<ScanResult>);
-    let (loading, set_loading) = create_signal(false);
-    let app_state = use_app_state();
-    let api_client = use_context::<ApiClient>().expect("ApiClient not provided");
+- **Frontend Handling**: Slint's `FocusScope` and `TextInput` components capture scanner input (typically followed by an Enter keycode).
+- **Dual Support**: The system differentiates between:
+  - **ISBN (EAN-13)**: For cataloging and adding new items.
+  - **Volume Barcodes (Code 128 - VOL-XXXXXX)**: For loan and return operations.
 
-    let scan_action = create_action(move |barcode: &String| {
-        let barcode = barcode.clone();
-        let api_client = api_client.clone();
-        async move {
-            set_loading.set(true);
-            match api_client.scan_barcode(&barcode).await {
-                Ok(result) => {
-                    set_scan_result.set(Some(result));
-                    match &result {
-                        ScanResult::Volume(_) => app_state.add_notification(
-                            "Volume found!".to_string(), 
-                            NotificationLevel::Success
-                        ),
-                        ScanResult::ExistingTitle(_) => app_state.add_notification(
-                            "Title found in collection!".to_string(), 
-                            NotificationLevel::Success
-                        ),
-                        ScanResult::NewTitleMetadata(_) => app_state.add_notification(
-                            "New title metadata retrieved!".to_string(), 
-                            NotificationLevel::Info
-                        ),
-                        ScanResult::UnknownIsbn(_) => app_state.add_notification(
-                            "Unknown ISBN - you can add it manually".to_string(), 
-                            NotificationLevel::Warning
-                        ),
-                    }
-                }
-                Err(e) => {
-                    app_state.add_notification(
-                        format!("Scan error: {}", e), 
-                        NotificationLevel::Error
-                    );
-                }
-            }
-            set_loading.set(false);
-        }
-    });
-
-    let on_scan = move |ev: web_sys::KeyboardEvent| {
-        if ev.key() == "Enter" {
-            let barcode_value = barcode.get();
-            if !barcode_value.is_empty() {
-                scan_action.dispatch(barcode_value);
-                set_barcode.set(String::new());
-            }
-        }
-    };
-
-    view! {
-        <div class="max-w-4xl mx-auto">
-            <h1 class="text-2xl font-bold mb-6">"Barcode Scanner"</h1>
-            
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        "Barcode (Volume or ISBN)"
-                    </label>
-                    <input
-                        type="text"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Scan volume barcode (VOL-XXXXXX) or ISBN (13 digits)..."
-                        prop:value=barcode
-                        on:input=move |ev| set_barcode.set(event_target_value(&ev))
-                        on:keydown=on_scan
-                        autofocus
-                    />
-                    <p class="text-xs text-gray-500 mt-1">
-                        "Volume barcodes (Code 128) for loan/return operations, ISBN barcodes (EAN-13) for title lookup/add"
-                    </p>
-                </div>
-
-                <Show when=move || loading.get()>
-                    <div class="flex items-center justify-center py-4">
-                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <span class="ml-2">"Searching..."</span>
-                    </div>
-                </Show>
-
-                <Show when=move || scan_result.get().is_some()>
-                    {move || scan_result.get().map(|result| match result {
-                        ScanResult::Volume(volume_context) => view! {
-                            <VolumeResultDisplay volume_context=volume_context />
-                        }.into_view(),
-                        ScanResult::ExistingTitle(title_with_volumes) => view! {
-                            <ExistingTitleDisplay title_with_volumes=title_with_volumes />
-                        }.into_view(),
-                        ScanResult::NewTitleMetadata(metadata) => view! {
-                            <NewTitleDisplay metadata=metadata />
-                        }.into_view(),
-                        ScanResult::UnknownIsbn(isbn) => view! {
-                            <UnknownIsbnDisplay isbn=isbn />
-                        }.into_view(),
-                    })}
-                </Show>
-            </div>
-        </div>
-    }
-}
-
-#[component]
-fn VolumeResultDisplay(volume_context: VolumeWithTitleContext) -> impl IntoView {
-    view! {
-        <div class="mt-6 space-y-6">
-            // Title context
-            <div class="p-4 bg-blue-50 border border-blue-200 rounded-md">
-                <h3 class="text-lg font-semibold text-blue-800 mb-2">
-                    {format!("Volume {}/{} of \"{}\"", 
-                        volume_context.volume.copy_number,
-                        volume_context.other_copies.len() + 1,
-                        volume_context.title.title
-                    )}
-                </h3>
-                // ... rest of volume display
-            </div>
-            
-            // Actions for volume
-            <div class="flex space-x-4">
-                <Show when=move || volume_context.volume.loan_status == LoanStatus::Available>
-                    <button class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
-                        "Loan This Volume"
-                    </button>
-                </Show>
-                <Show when=move || volume_context.volume.loan_status == LoanStatus::Loaned>
-                    <button class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
-                        "Return This Volume"
-                    </button>
-                </Show>
-            </div>
-        </div>
-    }
-}
-
-#[component]
-fn ExistingTitleDisplay(title_with_volumes: TitleWithVolumes) -> impl IntoView {
-    view! {
-        <div class="mt-6 space-y-6">
-            <div class="p-4 bg-green-50 border border-green-200 rounded-md">
-                <h3 class="text-lg font-semibold text-green-800 mb-2">
-                    {format!("\"{}\" - Found in Collection", title_with_volumes.title.title)}
-                </h3>
-                <p class="text-sm text-gray-600">
-                    {format!("{} copies total, {} available", 
-                        title_with_volumes.total_volumes,
-                        title_with_volumes.available_volumes
-                    )}
-                </p>
-            </div>
-            
-            // Actions for existing title
-            <div class="flex space-x-4">
-                <button class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
-                    "View Title Details"
-                </button>
-                <Show when=move || title_with_volumes.available_volumes > 0>
-                    <button class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
-                        "Loan Available Copy"
-                    </button>
-                </Show>
-                <button class="px-6 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 font-medium">
-                    "Add Another Copy"
-                </button>
-            </div>
-        </div>
-    }
-}
-
-#[component]
-fn NewTitleDisplay(metadata: ExternalMetadata) -> impl IntoView {
-    view! {
-        <div class="mt-6 space-y-6">
-            <div class="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                <h3 class="text-lg font-semibold text-yellow-800 mb-2">
-                    {format!("New Title: \"{}\"", metadata.title)}
-                </h3>
-                <p class="text-sm text-gray-600 mb-2">
-                    {format!("Author: {}", metadata.authors.join(", "))}
-                </p>
-                <p class="text-sm text-gray-600">
-                    {format!("Publisher: {} ({})", 
-                        metadata.publisher.unwrap_or_else(|| "Unknown".to_string()),
-                        metadata.publication_year.map(|y| y.to_string()).unwrap_or_else(|| "Unknown".to_string())
-                    )}
-                </p>
-            </div>
-            
-            // Actions for new title
-            <div class="flex space-x-4">
-                <button class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-medium">
-                    "Add to Collection"
-                </button>
-                <button class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
-                    "Add to Wishlist"
-                </button>
-            </div>
-        </div>
-    }
-}
-
-#[component]
-fn UnknownIsbnDisplay(isbn: String) -> impl IntoView {
-    view! {
-        <div class="mt-6 space-y-6">
-            <div class="p-4 bg-gray-50 border border-gray-200 rounded-md">
-                <h3 class="text-lg font-semibold text-gray-800 mb-2">
-                    "Unknown ISBN"
-                </h3>
-                <p class="text-sm text-gray-600 mb-2">
-                    {format!("ISBN: {}", isbn)}
-                </p>
-                <p class="text-sm text-gray-600">
-                    "This ISBN was not found in external databases. You can add it manually."
-                </p>
-            </div>
-            
-            // Actions for unknown ISBN
-            <div class="flex space-x-4">
-                <button class="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium">
-                    "Add Manually"
-                </button>
-            </div>
-        </div>
-    }
-}
-```
-
-This full-Rust architecture ensures complete technological consistency, excellent performance through WebAssembly, and a unified development experience for your personal library manager.
+This architecture ensures high performance and reliability for a personal library management system, leveraging the safety and speed of Rust across the entire stack.

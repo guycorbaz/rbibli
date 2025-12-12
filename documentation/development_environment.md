@@ -5,16 +5,19 @@ To develop rbibli, certain tools need to be set up.
 ## Rust
 
 We assume that Rust is already installed. The project uses:
+
 - **Rust**: 1.91.0 or later (stable channel)
 - **Cargo**: 1.91.0 or later
 
 To check your Rust version:
+
 ```bash
 rustc --version
 cargo --version
 ```
 
 To update Rust:
+
 ```bash
 rustup update
 ```
@@ -56,6 +59,7 @@ Slint is the UI framework used for the web interface, compiled to WebAssembly. S
 ### Slint Components
 
 The project uses two main Slint crates:
+
 - `slint = "1.14.1"` - Runtime library for Slint UI (WASM target)
 - `slint-build = "1.14.1"` - Build-time compilation of `.slint` files to WASM
 - `wasm-bindgen = "*"` - JavaScript/WASM interop layer
@@ -69,6 +73,7 @@ UI components are defined in `.slint` files located in the `ui/` directory. Thes
 ### Slint Documentation
 
 For more information about Slint:
+
 - [Slint Documentation](https://slint.dev/docs)
 - [Slint Rust API](https://slint.dev/docs/rust/)
 - [Slint Language Reference](https://slint.dev/docs/slint/)
@@ -83,10 +88,12 @@ The application uses a custom `ResizeObserver` in `index.html` and a 100% width/
 ### VS Code (Recommended)
 
 For VS Code, install the following extensions:
+
 - **rust-analyzer**: Rust language support
 - **Slint**: Syntax highlighting and preview for `.slint` files
 
 The Slint extension provides:
+
 - Syntax highlighting for `.slint` files
 - Live preview of UI components
 - Code completion and validation
@@ -94,6 +101,7 @@ The Slint extension provides:
 ### Other IDEs
 
 For other editors, you can use:
+
 - rust-analyzer for Rust support (available for many editors)
 - Basic syntax highlighting for `.slint` files
 
@@ -127,6 +135,7 @@ trunk serve
 ```
 
 This will:
+
 1. Build the application.
 2. Serve it at `http://localhost:8080`.
 3. Watch for file changes and auto-reload.
@@ -221,6 +230,7 @@ The project includes a special configuration for Windows in `.cargo/config.toml`
 ### Linux
 
 Make sure you have standard development tools installed:
+
 ```bash
 # Debian/Ubuntu
 sudo apt install build-essential
@@ -232,6 +242,7 @@ sudo dnf groupinstall "Development Tools"
 ### macOS
 
 Xcode Command Line Tools should be installed:
+
 ```bash
 xcode-select --install
 ```
@@ -239,6 +250,7 @@ xcode-select --install
 ### Browser Requirements
 
 The web application requires a modern browser with WebAssembly support:
+
 - **Chrome/Chromium**: 57+
 - **Firefox**: 52+
 - **Safari**: 11+
@@ -253,6 +265,7 @@ The project uses **MariaDB** for data persistence.
 ### Installing MariaDB
 
 #### Linux (Debian/Ubuntu)
+
 ```bash
 sudo apt update
 sudo apt install mariadb-server mariadb-client
@@ -264,6 +277,7 @@ sudo mysql_secure_installation
 ```
 
 #### Linux (Fedora/RHEL)
+
 ```bash
 sudo dnf install mariadb-server
 sudo systemctl start mariadb
@@ -272,6 +286,7 @@ sudo mysql_secure_installation
 ```
 
 #### macOS
+
 ```bash
 brew install mariadb
 brew services start mariadb
@@ -279,7 +294,8 @@ mysql_secure_installation
 ```
 
 #### Windows
-- Download MariaDB installer from https://mariadb.org/download/
+
+- Download MariaDB installer from <https://mariadb.org/download/>
 - Run installer and follow setup wizard
 - Start MariaDB service from Services panel
 
@@ -318,15 +334,17 @@ cargo install sqlx-cli --no-default-features --features mysql
 Set database URL environment variable:
 
 ```bash
-```bash
+
 # Add to your .env file or export (REQUIRED for sqlx compilation)
 export DATABASE_URL="mysql://rbibli_user:your_secure_password@localhost/rbibli"
 ```
 
 ### Application Configuration
+
 The application is configured using environment variables or a `.env` file in the project root.
 
 Create a `.env` file:
+
 ```env
 DATABASE_URL=mysql://rbibli_user:your_secure_password@localhost/rbibli
 HOST=127.0.0.1
@@ -369,15 +387,16 @@ let pool = MySqlPoolOptions::new()
 ### Development Tools
 
 Recommended database management tools:
+
 - **DBeaver** (cross-platform, free)
 - **MySQL Workbench** (MySQL/MariaDB specific)
 - **HeidiSQL** (Windows)
 - **Sequel Ace** (macOS)
 - **phpMyAdmin** (web-based)
 
-## Internationalization (Planned)
+## Internationalization
 
-The project is designed to support French and English languages. Translation files will be located in the `lang/` directory. Slint's built-in `@tr()` macro is used for translatable strings in the UI.
+The project supports French and English languages. Translation files are located in the `frontend/ui/lang/` directory. Slint's built-in `@tr()` macro is used for translatable strings in the UI, and language switching is handled at runtime.
 
 ## Debugging WASM
 
@@ -407,6 +426,7 @@ Or use the `console_log` crate for more convenient logging.
 ### Performance Profiling
 
 Use browser performance tools to profile WASM execution:
+
 - Chrome DevTools > Performance tab
 - Firefox Developer Tools > Performance tab
 
@@ -415,6 +435,7 @@ Use browser performance tools to profile WASM execution:
 ### WASM Build Fails
 
 If `wasm-pack build` fails:
+
 1. Ensure `wasm32-unknown-unknown` target is installed: `rustup target add wasm32-unknown-unknown`
 2. Update wasm-pack: `cargo install wasm-pack --force`
 3. Clean build artifacts: `cargo clean`
@@ -433,5 +454,6 @@ let cors = Cors::permissive(); // For development only
 ### Browser Cache
 
 If changes don't appear, clear browser cache or use hard refresh:
+
 - Chrome/Firefox: Ctrl+Shift+R (Cmd+Shift+R on Mac)
 - Or open DevTools and disable cache

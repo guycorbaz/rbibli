@@ -35,18 +35,21 @@ A modern, full-featured personal library management system built entirely in Rus
 ## 🛠️ Technology Stack
 
 ### Frontend
+
 - **[Slint 1.14.1](https://slint.dev/)** - Declarative UI framework for native and web
 - **Rust** - Type-safe, memory-safe systems programming language
 - **Reqwest** - HTTP client for API communication
 - **WASM Optimization** - Configured for minimal binary size (~55MB -> optimized)
 
 ### Backend
+
 - **[Actix-web 4.11.0](https://actix.rs/)** - High-performance web framework
 - **[Tokio 1.47.1](https://tokio.rs/)** - Async runtime
 - **[SQLx](https://github.com/launchbadge/sqlx)** - Compile-time verified SQL queries
 - **MariaDB** - Production-grade relational database
 
 ### Development Approach
+
 - **Native-first** - Develop as desktop app for faster iteration
 - **WASM-ready** - Same codebase will compile to WebAssembly for browser deployment
 - **Client-Server** - REST API backend with native/web frontend options
@@ -58,6 +61,7 @@ A modern, full-featured personal library management system built entirely in Rus
 - **Rust** (latest stable) - [Install from rustup.rs](https://rustup.rs/)
 - **MariaDB/MySQL** - [Installation guide](documentation/sqlx_installation.md)
 - **SQLx CLI** - For database migrations:
+
   ```bash
   cargo install sqlx-cli --no-default-features --features mysql
   ```
@@ -68,6 +72,7 @@ You can run rbibli using Docker. Official images are available on Docker Hub:
 [https://hub.docker.com/r/gcorbaz/rbibli](https://hub.docker.com/r/gcorbaz/rbibli)
 
 Example `docker-compose.yml`:
+
 ```yaml
 services:
   rbibli:
@@ -89,6 +94,7 @@ services:
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/rbibli.git
    cd rbibli
@@ -98,6 +104,7 @@ services:
 
    **a. Configuration**
    Create a `.env` file in the project root:
+
    ```env
    DATABASE_URL=mysql://rbibli:your_password@127.0.0.1:3306/rbibli
    HOST=127.0.0.1
@@ -105,6 +112,7 @@ services:
    ```
 
 3. **Run database migrations**
+
    ```bash
    cd backend
    sqlx database create
@@ -112,25 +120,30 @@ services:
    ```
 
 4. **Start the application**
-   
+
    **Option A: Docker (Recommended)**
+
    ```bash
    docker compose up --build
    ```
+
    The application will be available at `http://localhost:8080`.
 
    **Option B: Manual (Development)**
    Start the backend:
+
    ```bash
    cd backend
    cargo run --release
    ```
-   
+
    Start the frontend (in a new terminal):
+
    ```bash
    cd frontend
    trunk serve --release
    ```
+
    The frontend will be available at `http://localhost:8080`.
    *Note: `trunk serve` is configured to proxy API requests to the backend at `http://127.0.0.1:8000`.*
 
@@ -200,13 +213,13 @@ Comprehensive documentation is available in the [`documentation/`](documentation
 - **[API Documentation](documentation/api.md)** - REST API endpoints
 - **[Development Setup](documentation/development_environment.md)** - Detailed setup instructions
 - **[Planning](documentation/planning.md)** - Development roadmap
-- **[CLAUDE.md](documentation/CLAUDE.md)** - Claude Code integration guide
 
 ## 🎯 Development Status
 
 **Current Phase: Late Phase 3 (88% Complete)**
 
 ### ✅ Completed
+
 - Database integration with 15 migrations
 - Full CRUD for titles, authors, publishers, genres, series, locations
 - Volume management with barcode support
@@ -218,10 +231,12 @@ Comprehensive documentation is available in the [`documentation/`](documentation
 - Cover image upload API
 
 ### 🔄 In Progress
+
 - Title-Author relationship management
 - WASM compilation support (Async UI refactoring complete)
 
 ### ⏳ Planned (Phase 4)
+
 - Barcode generation (Code 128)
 - Import/export functionality (CSV, JSON)
 - Duplicate detection algorithms
@@ -233,10 +248,12 @@ Comprehensive documentation is available in the [`documentation/`](documentation
 ### Title vs Volume
 
 The system makes a crucial distinction:
+
 - **Title** - Abstract book metadata (ISBN, authors, genre, summary)
 - **Volume** - Physical copy with unique barcode, condition, location
 
 This allows:
+
 - Wishlist functionality (titles with 0 volumes)
 - Multiple copies tracking
 - Individual volume notes and locations
