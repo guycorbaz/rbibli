@@ -10,6 +10,8 @@ description: >-
 remote_theme: pages-themes/slate@v0.2.0
 plugins:
   - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-sitemap
 
 # Repository Information (update with your GitHub username)
 github:
@@ -34,8 +36,8 @@ exclude:
   - .DS_Store
 
 # Site URL (will be set automatically by GitHub Pages)
-# url: "https://yourusername.github.io"
-# baseurl: "/rbibli"
+url: "https://guycorbaz.github.io"
+baseurl: "/rbibli"
 
 # Additional Settings
 show_downloads: true
@@ -46,3 +48,8 @@ show_downloads: true
 
 # SEO
 lang: en-US
+author:
+  name: Guy Corbaz
+  twitter: guycorbaz
+twitter:
+  username: guycorbaz

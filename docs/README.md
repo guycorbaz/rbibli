@@ -1,6 +1,15 @@
+---
+layout: default
+title: rbibli - Personal Library Manager
+description: A modern, open-source personal library management system built with Rust and Slint. Catalog books, track loans, and manage your collection.
+keywords: rust, library manager, personal library, book catalog, slint, open source, mariadb
+permalink: /
+---
+
+
 # rbibli
 
-### Personal Library Management System
+## Personal Library Management System
 
 A modern, elegant solution for managing your personal book collection. Built entirely in Rust with a beautiful native interface using Slint.
 
@@ -46,6 +55,7 @@ A modern, elegant solution for managing your personal book collection. Built ent
 ## 🚀 Key Features
 
 ### 📚 Complete Library Management
+
 - Full book metadata (title, subtitle, ISBN, pages, language, summary)
 - Author and publisher information
 - Genre and Series categorization
@@ -53,17 +63,20 @@ A modern, elegant solution for managing your personal book collection. Built ent
 - Cover image storage
 
 ### 📖 Multiple Physical Copies
+
 - Track multiple volumes of the same title
 - Individual condition tracking (excellent → damaged)
 - Unique barcode for each physical copy
 - Location assignment per volume
 
 ### 📍 Hierarchical Storage
+
 - Organize by room, bookshelf, and shelf
 - Full path display ("Office > Bookshelf A > Shelf 3")
 - Easy navigation of your physical space
 
 ### 👥 Smart Loan Management
+
 - Simple borrower management
 - Borrower groups with custom loan policies
 - Automatic due date calculation
@@ -71,12 +84,14 @@ A modern, elegant solution for managing your personal book collection. Built ent
 - Barcode-based checkout/return
 
 ### 📊 Insightful Analytics
+
 - Library overview (total books, active loans, overdue items)
 - Volumes per genre with bar charts
 - Volumes per location
 - Loan activity tracking
 
 ### 🔍 Advanced Organization
+
 - ISBN metadata lookup via Google Books API
 - Complete Dewey Decimal Classification system
 
@@ -107,6 +122,7 @@ You can run rbibli using Docker. Official images are available on Docker Hub:
 [https://hub.docker.com/r/gcorbaz/rbibli](https://hub.docker.com/r/gcorbaz/rbibli)
 
 Example `docker-compose.yml`:
+
 ```yaml
 services:
   rbibli:
@@ -124,6 +140,7 @@ services:
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/guycorbaz/rbibli.git
    cd rbibli
@@ -132,6 +149,7 @@ services:
 2. **Set up the database**
    **a. Configuration**
    Create a `.env` file in the project root:
+
    ```env
    DATABASE_URL=mysql://rbibli:your_password@127.0.0.1:3306/rbibli
    HOST=127.0.0.1
@@ -139,6 +157,7 @@ services:
    ```
 
 3. **Run migrations**
+
    ```bash
    cd backend
    sqlx database create
@@ -146,8 +165,9 @@ services:
    ```
 
 4. **Run the application**
-   
+
    **Option A: Docker**
+
    ```bash
    docker compose up --build
    ```
@@ -165,6 +185,7 @@ services:
 **Current Status: Phase 3 (88% Complete)**
 
 ### ✅ Available Now
+
 - Complete library cataloging
 - Volume tracking with barcodes
 - Loan management system
@@ -174,6 +195,7 @@ services:
 - Series management
 
 ### 🔄 In Progress / Coming Soon
+
 - Web-based access (WASM)
 - Advanced search and filters
 - Import/export (CSV, JSON)
@@ -207,12 +229,8 @@ rbibli is free and open-source software licensed under the MIT License.
 
 ---
 
-<div style="text-align: center;">
-
-**Built for book lovers**
+### Built for book lovers
 
 Made with [Rust](https://www.rust-lang.org/) and [Slint](https://slint.dev/)
 
 [⭐ Star on GitHub](https://github.com/guycorbaz/rbibli)
-
-</div>

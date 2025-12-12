@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://guycorbaz.github.io/rbibli/sitemap.xml
