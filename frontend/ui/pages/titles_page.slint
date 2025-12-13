@@ -1917,137 +1917,107 @@ export component TitlesPage inherits Page {
                     border-radius: 4px;
                     background: title.is-duplicate ? #fffaef : (Math.mod(index, 2) == 0 ? #fafafa : white);
 
-                    HorizontalLayout {
-                        padding: 8px;
-                        spacing: 10px;
+                    // Text Area
+                    VerticalLayout {
+                        x: 8px;
+                        y: 4px;
+                        width: parent.width - 200px;
+                        height: parent.height - 8px;
+                        alignment: start;
+                        spacing: 4px;
 
-                        VerticalLayout {
-                            alignment: start;
-                            spacing: 4px;
+                        HorizontalBox {
+                            spacing: 8px;
 
-                            HorizontalBox {
-                                spacing: 8px;
-
-                                Text {
-                                    text: title.title;
-                                    font-size: 15px;
-                                    font-weight: 600;
-                                    overflow: elide;
-                                }
-
-                                // Duplicate badge
-                                if title.is-duplicate: Rectangle {
-                                    width: 65px;
-                                    height: 20px;
-                                    border-radius: 10px;
-                                    background: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
-
-                                    Text {
-                                        text: "⚠ " + (title.duplicate-confidence == "High" ? @tr("HIGH") : title.duplicate-confidence == "Medium" ? @tr("MED") : @tr("LOW"));
-                                        font-size: 10px;
-                                        font-weight: 700;
-                                        color: white;
-                                        horizontal-alignment: center;
-                                        vertical-alignment: center;
-                                    }
-                                }
-
-                                // Primary/Secondary indicator
-                                if title.is-duplicate: Rectangle {
-                                    width: 55px;
-                                    height: 20px;
-                                    border-radius: 10px;
-                                    background: title.is-duplicate-primary ? #00aa00 : #888888;
-
-                                    Text {
-                                        text: title.is-duplicate-primary ? @tr("PRIMARY") : @tr("SECOND");
-                                        font-size: 9px;
-                                        font-weight: 700;
-                                        color: white;
-                                        horizontal-alignment: center;
-                                        vertical-alignment: center;
-                                    }
-                                }
-                            }
-
-                            if title.subtitle != "": Text {
-                                text: title.subtitle;
-                                font-size: 13px;
-                                color: #666;
+                            Text {
+                                text: title.title;
+                                font-size: 15px;
+                                font-weight: 600;
                                 overflow: elide;
                             }
 
-                            HorizontalBox {
-                                spacing: 15px;
-
-                                if title.isbn != "": Text {
-                                    text: @tr("ISBN:") + " " + title.isbn;
-                                    font-size: 11px;
-                                    color: #888;
-                                }
-
-                                if title.publisher != "": Text {
-                                    text: title.publisher;
-                                    font-size: 11px;
-                                    color: #888;
-                                    overflow: elide;
-                                }
-
-                                if title.series-name != "": Text {
-                                    text: title.series-name;
-                                    font-size: 11px;
-                                    color: #8800cc;
-                                    font-weight: 600;
-                                    overflow: elide;
-                                }
+                            // Duplicate badge
+                            if title.is-duplicate: Rectangle {
+                                width: 65px;
+                                height: 20px;
+                                border-radius: 10px;
+                                background: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
 
                                 Text {
-                                    text: @tr("Volumes:") + " " + title.volume-count;
-                                    font-size: 11px;
-                                    color: #0066cc;
-                                    font-weight: 600;
-                                }
-
-                                Text {
-                                    text: title.language;
-                                    font-size: 11px;
-                                    color: #888;
-                                }
-
-                                // Duplicate similarity score
-                                if title.is-duplicate: Text {
-                                    text: @tr("Similarity:") + " " + Math.round(title.duplicate-similarity) + "%";
-                                    font-size: 11px;
-                                    color: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
+                                    text: "⚠ " + (title.duplicate-confidence == "High" ? @tr("HIGH") : title.duplicate-confidence == "Medium" ? @tr("MED") : @tr("LOW"));
+                                    font-size: 10px;
                                     font-weight: 700;
+                                    color: white;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
                                 }
                             }
 
-                            // Match reasons (shown on second line for duplicates)
-                            if title.is-duplicate && title.duplicate-match-reasons != "": HorizontalBox {
-                                spacing: 8px;
+                            // Primary/Secondary indicator
+                            if title.is-duplicate: Rectangle {
+                                width: 55px;
+                                height: 20px;
+                                border-radius: 10px;
+                                background: title.is-duplicate-primary ? #00aa00 : #888888;
 
                                 Text {
-                                    text: @tr("Match:") + " " + title.duplicate-match-reasons;
-                                    font-size: 10px;
-                                    color: #666;
-                                    overflow: elide;
+                                    text: title.is-duplicate-primary ? @tr("PRIMARY") : @tr("SECOND");
+                                    font-size: 9px;
+                                    font-weight: 700;
+                                    color: white;
+                                    horizontal-alignment: center;
+                                    vertical-alignment: center;
                                 }
                             }
                         }
 
+                        if title.subtitle != "": Text {
+                            text: title.subtitle;
+                            font-size: 13px;
+                            color: #666;
+                            overflow: elide;
+                        }
+
+                        HorizontalBox {
+                            spacing: 15px;
+
+                            // Duplicate similarity score
+                            if title.is-duplicate: Text {
+                                text: @tr("Similarity:") + " " + Math.round(title.duplicate-similarity) + "%";
+                                font-size: 11px;
+                                color: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
+                                font-weight: 700;
+                            }
+                        }
+
+                        // Match reasons (shown on second line for duplicates)
+                        if title.is-duplicate && title.duplicate-match-reasons != "": HorizontalBox {
+                            spacing: 8px;
+
+                            Text {
+                                text: @tr("Match:") + " " + title.duplicate-match-reasons;
+                                font-size: 10px;
+                                color: #666;
+                                overflow: elide;
+                            }
+                        }
+                    }
+
+                    // Button Area
+                    Rectangle {
+                        x: parent.width - 190px;
+                        width: 180px;
+                        height: parent.height;
                         VerticalLayout {
+                            width: 100%;
                             alignment: center;
                             spacing: 5px;
-                            width: 180px;
 
                             HorizontalBox {
                                 spacing: 5px;
 
                                 Button {
                                     text: @tr("Edit");
-                                    //min-width: 80px;
-                                    //height: 32px;
                                     width: Styles.small_button_width;
                                     height: Styles.small_button_height;
                                     clicked => {
@@ -2062,11 +2032,8 @@ export component TitlesPage inherits Page {
                                         root.edit-genre-id = title.genre-id;
                                         root.edit-publisher-id = title.publisher-id;
                                         root.edit-series-id = title.series-id;
-                                        // Find the genre index for this genre_id
                                         root.edit-genre-index = root.find-genre-index(title.genre-id);
-                                        // Find the publisher index for this publisher_id
                                         root.edit-publisher-index = root.find-publisher-index(title.publisher-id);
-                                        // Find the series index for this series_id
                                         root.edit-series-index = root.find-series-index(title.series-id);
                                         root.edit-dewey-code = title.dewey-code;
                                         root.edit-summary = title.summary;
@@ -2076,8 +2043,6 @@ export component TitlesPage inherits Page {
 
                                 Button {
                                     text: @tr("Delete");
-                                    //min-width: 80px;
-                                    //height: 32px;
                                     width: Styles.small_button_width;
                                     height: Styles.small_button_height;
                                     enabled: title.volume-count == 0;
@@ -2123,7 +2088,6 @@ export component TitlesPage inherits Page {
                                 min-width: 170px;
                                 height: 32px;
                                 clicked => {
-                                    // Merge: keep this (primary), delete the paired one (secondary)
                                     root.merge-titles(title.id, title.duplicate-pair-id);
                                 }
                             }
