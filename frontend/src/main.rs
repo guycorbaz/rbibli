@@ -2163,10 +2163,15 @@ async fn run() -> Result<(), Box<dyn Error>> {
                         // Reload volumes for this title
                         if let Some(ui) = ui_weak.upgrade() {
                             ui.invoke_load_volumes(title_id);
+                            ui.set_show_volume_create_dialog(false);
+                            ui.set_volume_create_error("".into());
                         }
                     }
                     Err(e) => {
                         eprintln!("Failed to create volume: {}", e);
+                         if let Some(ui) = ui_weak.upgrade() {
+                            ui.set_volume_create_error(format!("Error: {}", e).into());
+                        }
                     }
                 }
             }).unwrap();

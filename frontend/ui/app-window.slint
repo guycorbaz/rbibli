@@ -31,7 +31,7 @@ import {
     VerticalBox,
     ScrollView,
     StyleMetrics,
-    ScrollView,
+    Palette,
 } from "std-widgets.slint";
 import { SideBar } from "side_bar.slint";
 import {
@@ -202,6 +202,8 @@ export component AppWindow inherits Window {
     in-out property <string> edit-language: "";
     in-out property <string> edit-dewey-code: "";
     in-out property <string> edit-summary: "";
+    in-out property <string> volume-create-error: "";
+    in-out property <bool> show-volume-create-dialog: false;
 
     // ========================================================================
     // Callbacks - Title Operations
@@ -636,6 +638,8 @@ export component AppWindow inherits Window {
                 edit-language <=> root.edit-language;
                 edit-dewey-code <=> root.edit-dewey-code;
                 edit-summary <=> root.edit-summary;
+                volume-create-error <=> root.volume-create-error;
+                show-volume-create-dialog <=> root.show-volume-create-dialog;
                 load-titles => {
                     root.load-titles();
                 }
@@ -862,6 +866,52 @@ export component AppWindow inherits Window {
                 debug-log <=> root.debug-log;
                 change-language(lang) => {
                     root.change-language(lang);
+                }
+            }
+        }
+    }
+    
+    // Global Error Popup Dialog for Volume Creation
+    if root.volume-create-error != "": Rectangle {
+        background: #00000088; // Semi-transparent overlay
+        TouchArea { } // Block interactions with background
+    
+        Rectangle {
+            background: Palette.background;
+            border-width: 2px;
+            border-color: #cc0000;
+            border-radius: 8px;
+            width: 400px;
+            height: 200px;
+            VerticalBox {
+                padding: 20px;
+                spacing: 20px;
+                alignment: center;
+
+                Text {
+                    text: @tr("Error");
+                    font-size: 20px;
+                    font-weight: 800; // Match AboutPage title
+                    color: #cc0000;
+                    horizontal-alignment: center;
+                }
+
+                Text {
+                    text: root.volume-create-error;
+                    font-size: 14px;
+                    color: Palette.foreground;
+                    wrap: word-wrap;
+                    horizontal-alignment: center;
+                }
+
+                Button {
+                    text: @tr("OK");
+                    primary: true;
+                    width: 100px;
+                    height: 35px;
+                    clicked => {
+                        root.volume-create-error = "";
+                    }
                 }
             }
         }
