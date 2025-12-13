@@ -190,6 +190,7 @@ export component TitlesPage inherits Page {
     in-out property <string> volume-notes: "";
     in-out property <string> delete-volume-id: "";
     in-out property <string> delete-volume-barcode: "";
+    in-out property <string> volume-create-error: "";
 
     // Volume edit dialog properties
     in-out property <bool> show-volume-edit-dialog: false;
@@ -1556,6 +1557,7 @@ export component TitlesPage inherits Page {
                         height: 35px;
                         clicked => {
                             root.show-volume-create-dialog = false;
+                            root.volume-create-error = "";
                         }
                     }
 
@@ -1566,6 +1568,7 @@ export component TitlesPage inherits Page {
                         height: 35px;
                         enabled: root.volume-barcode != "";
                         clicked => {
+                            root.volume-create-error = "";
                             // Convert location index to location ID
                             // Index 0 = "(No location)" so we subtract 1 for actual locations
                             root.create-volume(
@@ -1574,7 +1577,8 @@ export component TitlesPage inherits Page {
                                 root.volume-condition,
                                 root.volume-location-index > 0 ? root.locations[root.volume-location-index - 1].id : "",
                                 root.volume-notes);
-                            root.show-volume-create-dialog = false;
+                            // Do not close dialog immediately - wait for success
+                            // root.show-volume-create-dialog = false;
                         }
                     }
                 }
