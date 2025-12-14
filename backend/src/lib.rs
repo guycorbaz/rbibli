@@ -214,17 +214,44 @@ pub async fn run(listener: TcpListener, db_pool: Pool) -> Result<Server, std::io
             .route("/api/v1/statistics/genres", web::get().to(handlers::statistics::get_volumes_per_genre))
             .route("/api/v1/statistics/locations", web::get().to(handlers::statistics::get_volumes_per_location))
             .route("/api/v1/statistics/loans", web::get().to(handlers::statistics::get_loan_statistics))
-            // Serve static files for the frontend
-            .service(actix_files::Files::new("/", {
-                if std::path::Path::new("./static").exists() {
-                    "./static"
-                } else if std::path::Path::new("./backend/static").exists() {
-                    "./backend/static"
-                } else {
-                    "./static" // Fallback, will likely fail if neither exists but better than panic before server start? 
-                               // Actually actix_files panics if path doesn't exist.
-                }
-            }).index_file("index.html"))
+            // Serve static files
+            .service(
+                actix_files::Files::new("/", {
+                    let path = if std::path::Path::new("./static").exists() {
+                        "./static"
+                    } else if std::path::Path::new("./backend/static").exists() {
+                        "./backend/static"
+                    } else {
+                        "./static"
+                    };
+                    info!("Serving static files from: {}", path);
+                    path
+                })
+                .index_file("index.html")
+                .default_handler(|req: actix_web::dev::ServiceRequest| {
+                    let (http_req, _payload) = req.into_parts();
+                    async {
+                        let response = actix_files::NamedFile::open_async("./static/index.html").await;
+                        match response {
+                            Ok(file) => {
+                                let res = file.into_response(&http_req);
+                                Ok(actix_web::dev::ServiceResponse::new(http_req, res))
+                            },
+                            Err(_) => {
+                                // Try backend/static if ./static fails
+                                let response = actix_files::NamedFile::open_async("./backend/static/index.html").await;
+                                match response {
+                                    Ok(file) => {
+                                        let res = file.into_response(&http_req);
+                                        Ok(actix_web::dev::ServiceResponse::new(http_req, res))
+                                    },
+                                    Err(e) => Ok(actix_web::dev::ServiceResponse::new(http_req, HttpResponse::NotFound().body(format!("index.html not found: {}", e))))
+                                }
+                            }
+                        }
+                    }
+                })
+            )
     })
     .listen(listener)?
     .run();
