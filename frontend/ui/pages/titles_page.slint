@@ -118,6 +118,221 @@ export struct AuthorItem {
     name: string,  // Full name (first + last)
 }
 
+component TitleForm {
+    in-out property <string> title-text <=> title-input.text;
+    in-out property <string> subtitle-text <=> subtitle-input.text;
+    in-out property <string> isbn-text <=> isbn-input.text;
+    in-out property <int> publisher-index <=> publisher-combo.current-index;
+    in-out property <[string]> publisher-names;
+    in-out property <string> publication-year <=> year-input.text;
+    in-out property <string> pages <=> pages-input.text;
+    in-out property <string> language <=> language-input.text;
+    in-out property <int> genre-index <=> genre-combo.current-index;
+    in-out property <[string]> genre-names;
+    in-out property <int> series-index <=> series-combo.current-index;
+    in-out property <[string]> series-names;
+    in-out property <string> dewey-code <=> dewey-input.text;
+    in-out property <string> summary <=> summary-input.text;
+    in-out property <string> cover-url <=> cover-input.text;
+    callback fetch-isbn(string);
+
+    VerticalBox {
+        spacing: 8px;
+
+        HorizontalBox {
+            spacing: 10px;
+            Text {
+                text: @tr("Title:");
+                width: 120px;
+                vertical-alignment: center;
+            }
+
+            title-input := LineEdit {
+                placeholder-text: @tr("Title (required)");
+            }
+        }
+
+        HorizontalBox {
+            spacing: 10px;
+            Text {
+                text: @tr("Subtitle:");
+                width: 120px;
+                vertical-alignment: center;
+            }
+
+            subtitle-input := LineEdit {
+                placeholder-text: @tr("Subtitle (optional)");
+            }
+        }
+
+        HorizontalBox {
+            spacing: 20px;
+            
+            // ISBN
+            HorizontalBox {
+                spacing: 10px;
+                horizontal-stretch: 1.5;
+                Text {
+                    text: @tr("ISBN:");
+                    width: 45px;
+                    vertical-alignment: center;
+                }
+
+                isbn-input := LineEdit {
+                    placeholder-text: @tr("ISBN");
+                }
+
+                Button {
+                    text: @tr("Fetch");
+                    enabled: root.isbn-text != "";
+                    clicked => {
+                        root.fetch-isbn(root.isbn-text);
+                    }
+                }
+            }
+
+            // Language
+            HorizontalBox {
+                spacing: 10px;
+                horizontal-stretch: 0.8;
+                Text {
+                    text: @tr("Lang:");
+                    width: 45px;
+                    vertical-alignment: center;
+                }
+
+                language-input := LineEdit {
+                    placeholder-text: @tr("e.g. fr");
+                }
+            }
+
+            // Publisher
+            HorizontalBox {
+                spacing: 10px;
+                horizontal-stretch: 2;
+                Text {
+                    text: @tr("Pub:");
+                    width: 40px;
+                    vertical-alignment: center;
+                }
+
+                publisher-combo := ComboBox {
+                    model: root.publisher-names;
+                }
+            }
+        }
+
+        HorizontalBox {
+            spacing: 20px;
+
+            // Pub Year
+            HorizontalBox {
+                spacing: 10px;
+                horizontal-stretch: 1;
+                Text {
+                    text: @tr("Year:");
+                    width: 40px;
+                    vertical-alignment: center;
+                }
+
+                year-input := LineEdit {
+                    placeholder-text: @tr("2024");
+                }
+            }
+
+            // Pages
+            HorizontalBox {
+                spacing: 10px;
+                horizontal-stretch: 1;
+                Text {
+                    text: @tr("Pages:");
+                    width: 50px;
+                    vertical-alignment: center;
+                }
+
+                pages-input := LineEdit {
+                    placeholder-text: @tr("123");
+                }
+            }
+
+            // Dewey
+            HorizontalBox {
+                spacing: 10px;
+                horizontal-stretch: 1.2;
+                Text {
+                    text: @tr("Dewey:");
+                    width: 55px;
+                    vertical-alignment: center;
+                }
+
+                dewey-input := LineEdit {
+                    placeholder-text: @tr("635");
+                }
+            }
+        }
+
+        HorizontalBox {
+            spacing: 20px;
+            
+            // Genre
+            HorizontalBox {
+                spacing: 10px;
+                horizontal-stretch: 1;
+                Text {
+                    text: @tr("Genre:");
+                    width: 50px;
+                    vertical-alignment: center;
+                }
+
+                genre-combo := ComboBox {
+                    model: root.genre-names;
+                }
+            }
+
+            // Series
+            HorizontalBox {
+                spacing: 10px;
+                horizontal-stretch: 1;
+                Text {
+                    text: @tr("Series:");
+                    width: 50px;
+                    vertical-alignment: center;
+                }
+
+                series-combo := ComboBox {
+                    model: root.series-names;
+                }
+            }
+        }
+
+        HorizontalBox {
+            spacing: 10px;
+            Text {
+                text: @tr("Summary:");
+                width: 120px;
+                vertical-alignment: top;
+            }
+
+            summary-input := TextEdit {
+                height: 100px;
+            }
+        }
+
+        HorizontalBox {
+            spacing: 10px;
+            Text {
+                text: @tr("Cover URL:");
+                width: 120px;
+                vertical-alignment: center;
+            }
+
+            cover-input := LineEdit {
+                placeholder-text: @tr("https://example.com/cover.jpg");
+            }
+        }
+    }
+}
+
 export component TitlesPage inherits Page {
     title: @tr("Titles");
     description: @tr("Manage your book titles and volumes");
@@ -932,7 +1147,7 @@ export component TitlesPage inherits Page {
 
             VerticalBox {
                 padding: 20px;
-                spacing: 12px;
+                spacing: 8px;
 
                 Text {
                     text: @tr("Create New Title");
@@ -940,181 +1155,24 @@ export component TitlesPage inherits Page {
                     font-weight: 600;
                 }
 
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Title:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.new-title;
-                        placeholder-text: @tr("Title (required)");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Subtitle:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.new-subtitle;
-                        placeholder-text: @tr("Subtitle (optional)");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("ISBN:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.new-isbn;
-                        placeholder-text: @tr("ISBN-13 or ISBN-10");
-                    }
-
-                    Button {
-                        text: @tr("Fetch from ISBN");
-                        enabled: root.new-isbn != "";
-                        clicked => {
-                            root.fetch-from-isbn(root.new-isbn);
-                        }
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Publisher:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    ComboBox {
-                        model: root.publisher-names;
-                        current-index <=> root.new-publisher-index;
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Pub. Year:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.new-publication-year;
-                        placeholder-text: @tr("E.g., 2024");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Pages:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.new-pages;
-                        placeholder-text: @tr("Number of pages");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Language:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.new-language;
-                        placeholder-text: @tr("E.g., fr, en, es");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Genre:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    ComboBox {
-                        model: root.genre-names;
-                        current-index <=> root.new-genre-index;
-                    }
-                }
-
-                // Series selection
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Series:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    ComboBox {
-                        model: root.series-names;
-                        current-index <=> root.new-series-index;
-                    }
-                }
-
-                // Dewey Classification
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Dewey Code:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.new-dewey-code;
-                        placeholder-text: @tr("E.g., 635.048");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Summary:");
-                        width: 120px;
-                        vertical-alignment: top;
-                    }
-
-                    TextEdit {
-                        text <=> root.new-summary;
-                        height: 100px;
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Cover URL:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.new-cover-url;
-                        placeholder-text: @tr("https://example.com/cover.jpg");
+                TitleForm {
+                    title-text <=> root.new-title;
+                    subtitle-text <=> root.new-subtitle;
+                    isbn-text <=> root.new-isbn;
+                    publisher-index <=> root.new-publisher-index;
+                    publisher-names: root.publisher-names;
+                    publication-year <=> root.new-publication-year;
+                    pages <=> root.new-pages;
+                    language <=> root.new-language;
+                    genre-index <=> root.new-genre-index;
+                    genre-names: root.genre-names;
+                    series-index <=> root.new-series-index;
+                    series-names: root.series-names;
+                    dewey-code <=> root.new-dewey-code;
+                    summary <=> root.new-summary;
+                    cover-url <=> root.new-cover-url;
+                    fetch-isbn(isbn) => {
+                        root.fetch-from-isbn(isbn);
                     }
                 }
 
@@ -1176,7 +1234,7 @@ export component TitlesPage inherits Page {
 
             VerticalBox {
                 padding: 20px;
-                spacing: 12px;
+                spacing: 8px;
 
                 Text {
                     text: @tr("Edit Title");
@@ -1184,181 +1242,24 @@ export component TitlesPage inherits Page {
                     font-weight: 600;
                 }
 
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Title:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.edit-title;
-                        placeholder-text: @tr("Title (required)");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Subtitle:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.edit-subtitle;
-                        placeholder-text: @tr("Subtitle (optional)");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("ISBN:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.edit-isbn;
-                        placeholder-text: @tr("ISBN-13 or ISBN-10");
-                    }
-
-                    Button {
-                        text: @tr("Fetch from ISBN");
-                        enabled: root.edit-isbn != "";
-                        clicked => {
-                            root.fetch-from-isbn-edit(root.edit-isbn);
-                        }
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Publisher:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    ComboBox {
-                        model: root.publisher-names;
-                        current-index <=> root.edit-publisher-index;
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Pub. Year:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.edit-publication-year;
-                        placeholder-text: @tr("E.g., 2024");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Pages:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.edit-pages;
-                        placeholder-text: @tr("Number of pages");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Language:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.edit-language;
-                        placeholder-text: @tr("E.g., fr, en, es");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Genre:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    ComboBox {
-                        model: root.genre-names;
-                        current-index <=> root.edit-genre-index;
-                    }
-                }
-
-                // Series selection (Edit)
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Series:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    ComboBox {
-                        model: root.series-names;
-                        current-index <=> root.edit-series-index;
-                    }
-                }
-
-                // Dewey Classification (Edit)
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Dewey Code:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.edit-dewey-code;
-                        placeholder-text: @tr("E.g., 635.048");
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Summary:");
-                        width: 120px;
-                        vertical-alignment: top;
-                    }
-
-                    TextEdit {
-                        text <=> root.edit-summary;
-                        height: 100px;
-                    }
-                }
-
-                HorizontalBox {
-                    spacing: 10px;
-                    Text {
-                        text: @tr("Cover URL:");
-                        width: 120px;
-                        vertical-alignment: center;
-                    }
-
-                    LineEdit {
-                        text <=> root.edit-cover-url;
-                        placeholder-text: @tr("https://example.com/cover.jpg");
+                TitleForm {
+                    title-text <=> root.edit-title;
+                    subtitle-text <=> root.edit-subtitle;
+                    isbn-text <=> root.edit-isbn;
+                    publisher-index <=> root.edit-publisher-index;
+                    publisher-names: root.publisher-names;
+                    publication-year <=> root.edit-publication-year;
+                    pages <=> root.edit-pages;
+                    language <=> root.edit-language;
+                    genre-index <=> root.edit-genre-index;
+                    genre-names: root.genre-names;
+                    series-index <=> root.edit-series-index;
+                    series-names: root.series-names;
+                    dewey-code <=> root.edit-dewey-code;
+                    summary <=> root.edit-summary;
+                    cover-url <=> root.edit-cover-url;
+                    fetch-isbn(isbn) => {
+                        root.fetch-from-isbn-edit(isbn);
                     }
                 }
 
