@@ -366,10 +366,45 @@ async fn run() -> Result<(), Box<dyn Error>> {
                             .collect();
 
                         // Update the UI with the titles
+                        // Update the UI with the titles
                         if let Some(ui) = ui_weak.upgrade() {
+                            // Check if we need to auto-scroll to a pending ID
+                            let pending_id = ui.get_pending_expand_id();
+                            let mut target_scroll_y = 0.0;
+                            let mut should_scroll = false;
+
+                            if !pending_id.is_empty() {
+                                if let Some(index) = slint_titles.iter().position(|t| t.id == pending_id) {
+                                    println!("Found new title at index {}, scrolling...", index);
+                                    let item_height = 80.0; // Fixed collapsed height
+                                    target_scroll_y = - (index as f32 * item_height);
+                                    should_scroll = true;
+                                }
+                            }
+
                             let model = Rc::new(slint::VecModel::from(slint_titles));
                             ui.set_titles(model.into());
                             println!("UI updated with titles");
+
+                            // Check if a title should be auto-expanded (e.g., after creation)
+                            if !pending_id.is_empty() {
+                                println!("Auto-expanding new title: {}", pending_id);
+                                
+                                if should_scroll {
+                                    ui.set_list_viewport_y(target_scroll_y);
+                                }
+
+                                ui.set_expanded_title_id(pending_id);
+                                ui.set_pending_expand_id("".into());
+                                // Also trigger volume load for this title
+                                // We can't easily call the callback here, but setting expanded_title_id
+                                // might trigger UI bindings if handled there? 
+                                // Actually, the UI button click calls load_volumes. Setting the property manually
+                                // might just show the container but empty.
+                                // We should probably also clear the volumes list to be safe, or trigger load.
+                                // But since it's a new title, it has no volumes anyway.
+                                ui.set_volumes(Rc::new(slint::VecModel::from(vec![])).into());
+                            }
                         }
                     }
                     Err(e) => {
@@ -1801,6 +1836,7 @@ async fn run() -> Result<(), Box<dyn Error>> {
         let load_titles = load_titles.clone();
         let api_client = api_client.clone();
         ui.on_create_title(move |title, subtitle, isbn, publisher, publisher_id, publication_year, pages, language, genre_id, series_id, series_number, summary, cover_url, dewey_code| {
+            let ui_weak = ui_weak.clone();
             let load_titles = load_titles.clone();
             let api_client = api_client.clone();
             let title = title.clone();
@@ -1889,6 +1925,9 @@ async fn run() -> Result<(), Box<dyn Error>> {
                 match api_client.create_title(request).await {
                     Ok(id) => {
                         println!("Successfully created title with ID: {}", id);
+                        if let Some(ui) = ui_weak.upgrade() {
+                            ui.set_pending_expand_id(id.clone().into());
+                        }
                         load_titles();
                     }
                     Err(e) => {

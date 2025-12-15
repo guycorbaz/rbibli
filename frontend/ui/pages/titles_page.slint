@@ -237,6 +237,16 @@ export component TitlesPage inherits Page {
     in-out property <string> duplicate-primary-id: "";  // Selected primary title for merge
     in-out property <string> duplicate-secondary-id: "";  // Selected secondary title for merge
     in-out property <string> duplicate-status-message: "";  // Status message for duplicate operations
+    
+    // Auto-expand newly created titles
+    in-out property <string> pending-expand-id: "";
+
+    // List scroll position (dummy for now)
+    in-out property <length> list-viewport-y: 0px;
+
+    // Duplicate filter properties
+
+    // Duplicate filter properties
 
     // Duplicate filter properties
     in-out property <bool> filter-show-only-duplicates: false;  // Show only duplicate titles
@@ -1909,347 +1919,351 @@ export component TitlesPage inherits Page {
             color: #888;
         }
 
-        if titles.length > 0: ListView {
-            for title[index] in titles: VerticalBox {
-                spacing: 0px;
+        if titles.length > 0: ScrollView {
+            viewport-y <=> root.list-viewport-y;
+            VerticalLayout {
+                alignment: start;
+                for title[index] in titles: VerticalBox {
+                    spacing: 0px;
 
-                // Title row
+                    // Title row
                 Rectangle {
-                    height: 80px;
-                    border-width: title.is-duplicate ? 3px : 1px;
-                    border-color: title.is-duplicate ? (title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc) : #ddd;
-                    border-radius: 4px;
-                    background: title.is-duplicate ? #fffaef : (Math.mod(index, 2) == 0 ? #fafafa : white);
+                        height: 80px;
+                        border-width: title.is-duplicate ? 3px : 1px;
+                        border-color: title.is-duplicate ? (title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc) : #ddd;
+                        border-radius: 4px;
+                        background: title.is-duplicate ? #fffaef : (Math.mod(index, 2) == 0 ? #fafafa : white);
 
-                    // Text Area
+                        // Text Area
                     VerticalLayout {
-                        x: 8px;
-                        y: 4px;
-                        width: parent.width - 200px;
-                        height: parent.height - 8px;
-                        alignment: start;
-                        spacing: 4px;
+                            x: 8px;
+                            y: 4px;
+                            width: parent.width - 200px;
+                            height: parent.height - 8px;
+                            alignment: start;
+                            spacing: 4px;
 
-                        HorizontalBox {
-                            spacing: 8px;
-
-                            Text {
-                                text: title.title;
-                                font-size: 15px;
-                                font-weight: 600;
-                                overflow: elide;
-                            }
-
-                            // Duplicate badge
-                            if title.is-duplicate: Rectangle {
-                                width: 65px;
-                                height: 20px;
-                                border-radius: 10px;
-                                background: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
+                            HorizontalBox {
+                                spacing: 8px;
 
                                 Text {
-                                    text: "⚠ " + (title.duplicate-confidence == "High" ? @tr("HIGH") : title.duplicate-confidence == "Medium" ? @tr("MED") : @tr("LOW"));
-                                    font-size: 10px;
-                                    font-weight: 700;
-                                    color: white;
-                                    horizontal-alignment: center;
-                                    vertical-alignment: center;
+                                    text: title.title;
+                                    font-size: 15px;
+                                    font-weight: 600;
+                                    overflow: elide;
+                                }
+
+                                // Duplicate badge
+                            if title.is-duplicate: Rectangle {
+                                    width: 65px;
+                                    height: 20px;
+                                    border-radius: 10px;
+                                    background: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
+
+                                    Text {
+                                        text: "⚠ " + (title.duplicate-confidence == "High" ? @tr("HIGH") : title.duplicate-confidence == "Medium" ? @tr("MED") : @tr("LOW"));
+                                        font-size: 10px;
+                                        font-weight: 700;
+                                        color: white;
+                                        horizontal-alignment: center;
+                                        vertical-alignment: center;
+                                    }
+                                }
+
+                                // Primary/Secondary indicator
+                            if title.is-duplicate: Rectangle {
+                                    width: 55px;
+                                    height: 20px;
+                                    border-radius: 10px;
+                                    background: title.is-duplicate-primary ? #00aa00 : #888888;
+
+                                    Text {
+                                        text: title.is-duplicate-primary ? @tr("PRIMARY") : @tr("SECOND");
+                                        font-size: 9px;
+                                        font-weight: 700;
+                                        color: white;
+                                        horizontal-alignment: center;
+                                        vertical-alignment: center;
+                                    }
                                 }
                             }
 
-                            // Primary/Secondary indicator
-                            if title.is-duplicate: Rectangle {
-                                width: 55px;
-                                height: 20px;
-                                border-radius: 10px;
-                                background: title.is-duplicate-primary ? #00aa00 : #888888;
-
-                                Text {
-                                    text: title.is-duplicate-primary ? @tr("PRIMARY") : @tr("SECOND");
-                                    font-size: 9px;
-                                    font-weight: 700;
-                                    color: white;
-                                    horizontal-alignment: center;
-                                    vertical-alignment: center;
-                                }
-                            }
-                        }
-
-                        if title.subtitle != "": Text {
-                            text: title.subtitle;
-                            font-size: 13px;
-                            color: #666;
-                            overflow: elide;
-                        }
-
-                        HorizontalBox {
-                            spacing: 15px;
-
-                            // Duplicate similarity score
-                            if title.is-duplicate: Text {
-                                text: @tr("Similarity:") + " " + Math.round(title.duplicate-similarity) + "%";
-                                font-size: 11px;
-                                color: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
-                                font-weight: 700;
-                            }
-                        }
-
-                        // Match reasons (shown on second line for duplicates)
-                        if title.is-duplicate && title.duplicate-match-reasons != "": HorizontalBox {
-                            spacing: 8px;
-
-                            Text {
-                                text: @tr("Match:") + " " + title.duplicate-match-reasons;
-                                font-size: 10px;
+                            if title.subtitle != "": Text {
+                                text: title.subtitle;
+                                font-size: 13px;
                                 color: #666;
                                 overflow: elide;
                             }
-                        }
-                    }
-
-                    // Button Area
-                    Rectangle {
-                        x: parent.width - 190px;
-                        width: 180px;
-                        height: parent.height;
-                        VerticalLayout {
-                            width: 100%;
-                            alignment: center;
-                            spacing: 5px;
 
                             HorizontalBox {
+                                spacing: 15px;
+
+                                // Duplicate similarity score
+                            if title.is-duplicate: Text {
+                                    text: @tr("Similarity:") + " " + Math.round(title.duplicate-similarity) + "%";
+                                    font-size: 11px;
+                                    color: title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc;
+                                    font-weight: 700;
+                                }
+                            }
+
+                            // Match reasons (shown on second line for duplicates)
+                        if title.is-duplicate && title.duplicate-match-reasons != "": HorizontalBox {
+                                spacing: 8px;
+
+                                Text {
+                                    text: @tr("Match:") + " " + title.duplicate-match-reasons;
+                                    font-size: 10px;
+                                    color: #666;
+                                    overflow: elide;
+                                }
+                            }
+                        }
+
+                        // Button Area
+                    Rectangle {
+                            x: parent.width - 190px;
+                            width: 180px;
+                            height: parent.height;
+                            VerticalLayout {
+                                width: 100%;
+                                alignment: center;
                                 spacing: 5px;
 
-                                Button {
-                                    text: @tr("Edit");
-                                    width: Styles.small_button_width;
-                                    height: Styles.small_button_height;
-                                    clicked => {
-                                        root.edit-id = title.id;
-                                        root.edit-title = title.title;
-                                        root.edit-subtitle = title.subtitle;
-                                        root.edit-isbn = title.isbn;
-                                        root.edit-publisher = title.publisher;
-                                        root.edit-publication-year = title.publication-year;
-                                        root.edit-pages = title.pages;
-                                        root.edit-language = title.language;
-                                        root.edit-genre-id = title.genre-id;
-                                        root.edit-publisher-id = title.publisher-id;
-                                        root.edit-series-id = title.series-id;
-                                        root.edit-genre-index = root.find-genre-index(title.genre-id);
-                                        root.edit-publisher-index = root.find-publisher-index(title.publisher-id);
-                                        root.edit-series-index = root.find-series-index(title.series-id);
-                                        root.edit-dewey-code = title.dewey-code;
-                                        root.edit-summary = title.summary;
-                                        root.show-edit-dialog = true;
+                                HorizontalBox {
+                                    spacing: 5px;
+
+                                    Button {
+                                        text: @tr("Edit");
+                                        width: Styles.small_button_width;
+                                        height: Styles.small_button_height;
+                                        clicked => {
+                                            root.edit-id = title.id;
+                                            root.edit-title = title.title;
+                                            root.edit-subtitle = title.subtitle;
+                                            root.edit-isbn = title.isbn;
+                                            root.edit-publisher = title.publisher;
+                                            root.edit-publication-year = title.publication-year;
+                                            root.edit-pages = title.pages;
+                                            root.edit-language = title.language;
+                                            root.edit-genre-id = title.genre-id;
+                                            root.edit-publisher-id = title.publisher-id;
+                                            root.edit-series-id = title.series-id;
+                                            root.edit-genre-index = root.find-genre-index(title.genre-id);
+                                            root.edit-publisher-index = root.find-publisher-index(title.publisher-id);
+                                            root.edit-series-index = root.find-series-index(title.series-id);
+                                            root.edit-dewey-code = title.dewey-code;
+                                            root.edit-summary = title.summary;
+                                            root.show-edit-dialog = true;
+                                        }
+                                    }
+
+                                    Button {
+                                        text: @tr("Delete");
+                                        width: Styles.small_button_width;
+                                        height: Styles.small_button_height;
+                                        enabled: title.volume-count == 0;
+                                        clicked => {
+                                            root.delete-title-id = title.id;
+                                            root.delete-title-name = title.title;
+                                            root.show-delete-confirmation = true;
+                                        }
                                     }
                                 }
 
                                 Button {
-                                    text: @tr("Delete");
-                                    width: Styles.small_button_width;
-                                    height: Styles.small_button_height;
-                                    enabled: title.volume-count == 0;
+                                    text: root.expanded-title-id == title.id ? @tr("▲ Hide Volumes") : @tr("▼ Show Volumes");
+                                    min-width: 170px;
+                                    height: 32px;
                                     clicked => {
-                                        root.delete-title-id = title.id;
-                                        root.delete-title-name = title.title;
-                                        root.show-delete-confirmation = true;
+                                        if (root.expanded-title-id == title.id) {
+                                            root.expanded-title-id = "";
+                                            root.volumes = [];
+                                        } else {
+                                            root.expanded-title-id = title.id;
+                                            root.load-volumes(title.id);
+                                        }
                                     }
                                 }
-                            }
 
-                            Button {
-                                text: root.expanded-title-id == title.id ? @tr("▲ Hide Volumes") : @tr("▼ Show Volumes");
-                                min-width: 170px;
-                                height: 32px;
-                                clicked => {
-                                    if (root.expanded-title-id == title.id) {
-                                        root.expanded-title-id = "";
-                                        root.volumes = [];
-                                    } else {
-                                        root.expanded-title-id = title.id;
-                                        root.load-volumes(title.id);
+                                Button {
+                                    text: @tr("Authors");
+                                    min-width: 170px;
+                                    height: 32px;
+                                    clicked => {
+                                        root.managing-authors-title-id = title.id;
+                                        root.load-title-authors(title.id);
+                                        root.load-all-authors();
+                                        root.show-authors-dialog = true;
                                     }
                                 }
-                            }
 
-                            Button {
-                                text: @tr("Authors");
-                                min-width: 170px;
-                                height: 32px;
-                                clicked => {
-                                    root.managing-authors-title-id = title.id;
-                                    root.load-title-authors(title.id);
-                                    root.load-all-authors();
-                                    root.show-authors-dialog = true;
-                                }
-                            }
-
-                            // Duplicate action buttons (only shown for duplicates)
+                                // Duplicate action buttons (only shown for duplicates)
                             if title.is-duplicate && title.is-duplicate-primary: Button {
-                                text: @tr("🔀 Merge");
-                                primary: true;
-                                min-width: 170px;
-                                height: 32px;
-                                clicked => {
-                                    root.merge-titles(title.id, title.duplicate-pair-id);
+                                    text: @tr("🔀 Merge");
+                                    primary: true;
+                                    min-width: 170px;
+                                    height: 32px;
+                                    clicked => {
+                                        root.merge-titles(title.id, title.duplicate-pair-id);
+                                    }
                                 }
-                            }
 
-                            if title.is-duplicate: Button {
-                                text: @tr("✖ Not Duplicate");
-                                min-width: 170px;
-                                height: 28px;
-                                clicked => {
-                                    root.dismiss-duplicate(title.id, title.duplicate-pair-id);
+                                if title.is-duplicate: Button {
+                                    text: @tr("✖ Not Duplicate");
+                                    min-width: 170px;
+                                    height: 28px;
+                                    clicked => {
+                                        root.dismiss-duplicate(title.id, title.duplicate-pair-id);
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                // Expanded volumes section
+                    // Expanded volumes section
                 if root.expanded-title-id == title.id: Rectangle {
-                    border-width: 1px;
-                    border-color: #ccc;
-                    background: #f5f5f5;
+                        border-width: 1px;
+                        border-color: #ccc;
+                        background: #f5f5f5;
 
-                    VerticalBox {
-                        padding: 10px;
-                        spacing: 8px;
+                        VerticalBox {
+                            padding: 10px;
+                            spacing: 8px;
 
-                        HorizontalBox {
-                            spacing: 10px;
-                            alignment: space-between;
+                            HorizontalBox {
+                                spacing: 10px;
+                                alignment: space-between;
 
-                            Text {
-                                text: @tr("Volumes for this title:");
-                                font-size: 13px;
-                                font-weight: 600;
-                            }
+                                Text {
+                                    text: @tr("Volumes for this title:");
+                                    font-size: 13px;
+                                    font-weight: 600;
+                                }
 
-                            Button {
-                                text: @tr("+ Add Volume");
-                                primary: true;
-                                min-width: 120px;
-                                height: 30px;
-                                clicked => {
-                                    root.volume-create-title-id = title.id;
-                                    root.volume-barcode = "";
-                                    root.volume-condition = "Good";
-                                    root.volume-location-index = 0;  // Default to "(No location)"
+                                Button {
+                                    text: @tr("+ Add Volume");
+                                    primary: true;
+                                    min-width: 120px;
+                                    height: 30px;
+                                    clicked => {
+                                        root.volume-create-title-id = title.id;
+                                        root.volume-barcode = "";
+                                        root.volume-condition = "Good";
+                                        root.volume-location-index = 0;  // Default to "(No location)"
                                     root.volume-location-id = "";
-                                    root.volume-notes = "";
-                                    root.show-volume-create-dialog = true;
+                                        root.volume-notes = "";
+                                        root.show-volume-create-dialog = true;
+                                    }
                                 }
                             }
-                        }
 
-                        if root.volumes.length == 0: Text {
-                            text: @tr("No volumes found for this title.");
-                            font-size: 12px;
-                            color: #888;
-                        }
+                            if root.volumes.length == 0: Text {
+                                text: @tr("No volumes found for this title.");
+                                font-size: 12px;
+                                color: #888;
+                            }
 
-                        if root.volumes.length > 0: VerticalBox {
-                            spacing: 5px;
+                            if root.volumes.length > 0: VerticalBox {
+                                spacing: 5px;
 
-                            for volume in root.volumes: Rectangle {
-                                height: 80px;
-                                background: white;
-                                border-width: 1px;
-                                border-color: #ddd;
-                                border-radius: 3px;
+                                for volume in root.volumes: Rectangle {
+                                    height: 80px;
+                                    background: white;
+                                    border-width: 1px;
+                                    border-color: #ddd;
+                                    border-radius: 3px;
 
-                                HorizontalLayout {
-                                    padding: 8px;
-                                    spacing: 10px;
+                                    HorizontalLayout {
+                                        padding: 8px;
+                                        spacing: 10px;
 
-                                    VerticalLayout {
-                                        alignment: start;
-                                        spacing: 3px;
+                                        VerticalLayout {
+                                            alignment: start;
+                                            spacing: 3px;
 
-                                        HorizontalBox {
-                                            spacing: 15px;
+                                            HorizontalBox {
+                                                spacing: 15px;
 
-                                            Text {
-                                                text: @tr("Copy #") + volume.copy-number;
-                                                font-size: 13px;
-                                                font-weight: 600;
+                                                Text {
+                                                    text: @tr("Copy #") + volume.copy-number;
+                                                    font-size: 13px;
+                                                    font-weight: 600;
+                                                }
+
+                                                Text {
+                                                    text: @tr("Barcode:") + " " + volume.barcode;
+                                                    font-size: 12px;
+                                                    color: #444;
+                                                }
+
+                                                Text {
+                                                    text: @tr("Condition:") + " " + volume.condition;
+                                                    font-size: 12px;
+                                                    color: #666;
+                                                }
+
+                                                Text {
+                                                    text: @tr("Status:") + " " + volume.loan-status;
+                                                    font-size: 12px;
+                                                    color: volume.loan-status == "Available" ? #008800 : #cc0000;
+                                                    font-weight: 600;
+                                                }
                                             }
 
-                                            Text {
-                                                text: @tr("Barcode:") + " " + volume.barcode;
-                                                font-size: 12px;
-                                                color: #444;
+                                            HorizontalBox {
+                                                spacing: 15px;
+
+                                                if volume.location-name != "": Text {
+                                                    text: "📍 " + volume.location-name;
+                                                    font-size: 12px;
+                                                    color: #0066cc;
+                                                }
                                             }
 
-                                            Text {
-                                                text: @tr("Condition:") + " " + volume.condition;
-                                                font-size: 12px;
+                                            if volume.individual-notes != "": Text {
+                                                text: @tr("Notes: ") + volume.individual-notes;
+                                                font-size: 11px;
                                                 color: #666;
-                                            }
-
-                                            Text {
-                                                text: @tr("Status:") + " " + volume.loan-status;
-                                                font-size: 12px;
-                                                color: volume.loan-status == "Available" ? #008800 : #cc0000;
-                                                font-weight: 600;
+                                                overflow: elide;
                                             }
                                         }
 
-                                        HorizontalBox {
-                                            spacing: 15px;
+                                        VerticalLayout {
+                                            alignment: center;
+                                            width: 90px;
+                                            spacing: 5px;
 
-                                            if volume.location-name != "": Text {
-                                                text: "📍 " + volume.location-name;
-                                                font-size: 12px;
-                                                color: #0066cc;
-                                            }
-                                        }
-
-                                        if volume.individual-notes != "": Text {
-                                            text: @tr("Notes: ") + volume.individual-notes;
-                                            font-size: 11px;
-                                            color: #666;
-                                            overflow: elide;
-                                        }
-                                    }
-
-                                    VerticalLayout {
-                                        alignment: center;
-                                        width: 90px;
-                                        spacing: 5px;
-
-                                        Button {
-                                            text: @tr("Edit");
-                                            width: Styles.small_button_width;
-                                            height: Styles.small_button_height;
-                                            enabled: volume.loan-status != "Loaned" && volume.loan-status != "Overdue";
-                                            clicked => {
+                                            Button {
+                                                text: @tr("Edit");
+                                                width: Styles.small_button_width;
+                                                height: Styles.small_button_height;
+                                                enabled: volume.loan-status != "Loaned" && volume.loan-status != "Overdue";
+                                                clicked => {
                                                 // Pre-fill edit form with current volume data
                                                 root.edit-volume-id = volume.id;
-                                                root.edit-volume-barcode = volume.barcode;
-                                                root.edit-volume-condition = volume.condition;
-                                                root.edit-volume-notes = volume.individual-notes;
-                                                root.edit-volume-location-id = volume.location-id;
+                                                    root.edit-volume-barcode = volume.barcode;
+                                                    root.edit-volume-condition = volume.condition;
+                                                    root.edit-volume-notes = volume.individual-notes;
+                                                    root.edit-volume-location-id = volume.location-id;
 
                                                 // Find the location index for this location_id
                                                 root.edit-volume-location-index = root.find-location-index(volume.location-id);
 
-                                                root.show-volume-edit-dialog = true;
+                                                    root.show-volume-edit-dialog = true;
+                                                }
                                             }
-                                        }
 
-                                        Button {
-                                            text: @tr("Delete");
-                                            width: Styles.small_button_width;
-                                            height: Styles.small_button_height;
-                                            enabled: volume.loan-status != "Loaned" && volume.loan-status != "Overdue";
-                                            clicked => {
-                                                root.delete-volume-id = volume.id;
-                                                root.delete-volume-barcode = volume.barcode;
-                                                root.show-volume-delete-confirmation = true;
+                                            Button {
+                                                text: @tr("Delete");
+                                                width: Styles.small_button_width;
+                                                height: Styles.small_button_height;
+                                                enabled: volume.loan-status != "Loaned" && volume.loan-status != "Overdue";
+                                                clicked => {
+                                                    root.delete-volume-id = volume.id;
+                                                    root.delete-volume-barcode = volume.barcode;
+                                                    root.show-volume-delete-confirmation = true;
+                                                }
                                             }
                                         }
                                     }
