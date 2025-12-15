@@ -1829,7 +1829,7 @@ export component TitlesPage inherits Page {
 
                     // Title row
                 Rectangle {
-                        height: 80px;
+                        min-height: 80px;
                         border-width: title.is-duplicate ? 3px : 1px;
                         border-color: title.is-duplicate ? (title.duplicate-confidence == "High" ? #cc0000 : title.duplicate-confidence == "Medium" ? #ff8800 : #0088cc) : #ddd;
                         border-radius: 4px;
@@ -1984,18 +1984,6 @@ export component TitlesPage inherits Page {
                                             root.expanded-title-id = title.id;
                                             root.load-volumes(title.id);
                                         }
-                                    }
-                                }
-
-                                Button {
-                                    text: @tr("Authors");
-                                    min-width: 170px;
-                                    height: 32px;
-                                    clicked => {
-                                        root.managing-authors-title-id = title.id;
-                                        root.load-title-authors(title.id);
-                                        root.load-all-authors();
-                                        root.show-authors-dialog = true;
                                     }
                                 }
 
