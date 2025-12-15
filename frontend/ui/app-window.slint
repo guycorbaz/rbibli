@@ -173,6 +173,14 @@ export component AppWindow inherits Window {
     // ID of the title whose volumes are currently expanded
     in-out property <string> expanded-title-id: "";
 
+    // ID of the title pending auto-expansion
+    in-out property <string> pending-expand-id: "";
+
+    // List scroll position
+    in-out property <length> list-viewport-y;
+
+    // Author-related properties for title-author management
+
     // Author-related properties for title-author management
     in-out property <[AuthorWithRoleData]> title-authors: [];
     in-out property <[AuthorItem]> all-authors: [];
@@ -612,6 +620,8 @@ export component AppWindow inherits Window {
                 location-names: root.location-names;
                 volumes <=> root.volumes;
                 expanded-title-id <=> root.expanded-title-id;
+                pending-expand-id <=> root.pending-expand-id;
+                list-viewport-y <=> root.list-viewport-y;
             // Bind author-related properties
             title-authors <=> root.title-authors;
                 all-authors <=> root.all-authors;
