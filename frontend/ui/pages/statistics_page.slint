@@ -14,7 +14,12 @@
 // ============================================================================
 
 import { Page } from "page.slint";
-import { ListView, VerticalBox, HorizontalBox, Button } from "std-widgets.slint";
+import {
+    ListView,
+    VerticalBox,
+    HorizontalBox,
+    Button,
+} from "std-widgets.slint";
 
 // GenreStatistic - Volume and title count per genre
 export struct GenreStatistic {
@@ -73,22 +78,22 @@ export component StatisticsPage inherits Page {
 
     // Color palette for genre visualization
     property <[color]> colors: [
-        #1976d2, #7b1fa2, #f57c00, #388e3c, #c62828,
-        #0097a7, #5d4037, #fbc02d, #e91e63, #00796b,
-        #303f9f, #c2185b, #689f38, #f57f17, #455a64
+        #1976d2,
+        #7b1fa2,
+        #f57c00,
+        #388e3c,
+        #c62828,
+        #0097a7,
+        #5d4037,
+        #fbc02d,
+        #e91e63,
+        #00796b,
+        #303f9f,
+        #c2185b,
+        #689f38,
+        #f57f17,
+        #455a64
     ];
-
-    // Calculate total volumes for pie chart (up to 10 genres)
-    property <int> genre-total-volumes: (genre-stats.length > 0 ? genre-stats[0].volume-count : 0) +
-                                         (genre-stats.length > 1 ? genre-stats[1].volume-count : 0) +
-                                         (genre-stats.length > 2 ? genre-stats[2].volume-count : 0) +
-                                         (genre-stats.length > 3 ? genre-stats[3].volume-count : 0) +
-                                         (genre-stats.length > 4 ? genre-stats[4].volume-count : 0) +
-                                         (genre-stats.length > 5 ? genre-stats[5].volume-count : 0) +
-                                         (genre-stats.length > 6 ? genre-stats[6].volume-count : 0) +
-                                         (genre-stats.length > 7 ? genre-stats[7].volume-count : 0) +
-                                         (genre-stats.length > 8 ? genre-stats[8].volume-count : 0) +
-                                         (genre-stats.length > 9 ? genre-stats[9].volume-count : 0);
 
     // Callbacks
     callback load-statistics();
@@ -149,6 +154,7 @@ export component StatisticsPage inherits Page {
                         color: #1976d2;
                         horizontal-alignment: center;
                     }
+
                     Text {
                         text: @tr("Titles");
                         font-size: 13px;
@@ -177,6 +183,7 @@ export component StatisticsPage inherits Page {
                         color: #7b1fa2;
                         horizontal-alignment: center;
                     }
+
                     Text {
                         text: @tr("Volumes");
                         font-size: 13px;
@@ -205,6 +212,7 @@ export component StatisticsPage inherits Page {
                         color: #f57c00;
                         horizontal-alignment: center;
                     }
+
                     Text {
                         text: @tr("Authors");
                         font-size: 13px;
@@ -233,6 +241,7 @@ export component StatisticsPage inherits Page {
                         color: #388e3c;
                         horizontal-alignment: center;
                     }
+
                     Text {
                         text: @tr("Genres");
                         font-size: 13px;
@@ -265,6 +274,7 @@ export component StatisticsPage inherits Page {
                         color: #f57f17;
                         horizontal-alignment: center;
                     }
+
                     Text {
                         text: @tr("Active Loans");
                         font-size: 13px;
@@ -293,6 +303,7 @@ export component StatisticsPage inherits Page {
                         color: library-stats.overdue-loans > 0 ? #c62828 : #666;
                         horizontal-alignment: center;
                     }
+
                     Text {
                         text: @tr("Overdue");
                         font-size: 13px;
@@ -321,6 +332,7 @@ export component StatisticsPage inherits Page {
                         color: #c2185b;
                         horizontal-alignment: center;
                     }
+
                     Text {
                         text: @tr("Borrowers");
                         font-size: 13px;
@@ -349,6 +361,7 @@ export component StatisticsPage inherits Page {
                         color: #00796b;
                         horizontal-alignment: center;
                     }
+
                     Text {
                         text: @tr("Locations");
                         font-size: 13px;
@@ -393,89 +406,92 @@ export component StatisticsPage inherits Page {
                     property <float> center-x: 175.0;
                     property <float> center-y: 175.0;
                     property <float> radius: 135.0;
-                    property <float> pi: 3.14159265359;
-                    property <int> total: Math.max(1, root.genre-total-volumes);
+                    property <int> total: Math.max(1, root.library-stats.total-volumes);
+
+                    // Pre-calculate values to ensure stable rendering
+                    property <int> v0: genre-stats.length > 0 ? genre-stats[0].volume-count : 0;
+                    property <int> v1: genre-stats.length > 1 ? genre-stats[1].volume-count : 0;
+                    property <int> v2: genre-stats.length > 2 ? genre-stats[2].volume-count : 0;
+                    property <int> v3: genre-stats.length > 3 ? genre-stats[3].volume-count : 0;
+                    property <int> v4: genre-stats.length > 4 ? genre-stats[4].volume-count : 0;
+
+                    property <int> acc0: 0;
+                    property <int> acc1: v0;
+                    property <int> acc2: v0 + v1;
+                    property <int> acc3: v0 + v1 + v2;
+                    property <int> acc4: v0 + v1 + v2 + v3;
 
                     // Draw pie slices for each genre (up to 5 genres shown)
-                    if genre-stats.length > 0: Path {
-                        property <float> angle: 360.0 * genre-stats[0].volume-count / total;
-                        property <float> start-angle: 0;
+                    if v0 > 0: Path {
+                        width: 100%;
+                        height: 100%;
+                        property <float> val: v0;
+                        property <float> start-val: acc0;
+                        property <float> angle: 360.0 * val / total;
+                        property <float> start-angle: 360.0 * start-val / total;
                         property <float> end-angle: start-angle + angle;
-                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
-                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
 
-                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
-                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
-                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
-                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y + " L " + (center-x + radius * Math.cos((start-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((start-angle - 90) * 1deg)) + " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " + (center-x + radius * Math.cos((end-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((end-angle - 90) * 1deg)) + " Z M 0 0 M 350 350") : "";
                         fill: root.colors[0];
                         stroke: white;
                         stroke-width: 2px;
                     }
 
-                    if genre-stats.length > 1: Path {
-                        property <float> prev-angle: 360.0 * genre-stats[0].volume-count / total;
-                        property <float> angle: 360.0 * genre-stats[1].volume-count / total;
-                        property <float> start-angle: prev-angle;
+                    if v1 > 0: Path {
+                        width: 100%;
+                        height: 100%;
+                        property <float> val: v1;
+                        property <float> start-val: acc1;
+                        property <float> angle: 360.0 * val / total;
+                        property <float> start-angle: 360.0 * start-val / total;
                         property <float> end-angle: start-angle + angle;
-                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
-                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
 
-                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
-                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
-                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
-                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y + " L " + (center-x + radius * Math.cos((start-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((start-angle - 90) * 1deg)) + " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " + (center-x + radius * Math.cos((end-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((end-angle - 90) * 1deg)) + " Z M 0 0 M 350 350") : "";
                         fill: root.colors[1];
                         stroke: white;
                         stroke-width: 2px;
                     }
 
-                    if genre-stats.length > 2: Path {
-                        property <float> prev-angles: 360.0 * (genre-stats[0].volume-count + genre-stats[1].volume-count) / total;
-                        property <float> angle: 360.0 * genre-stats[2].volume-count / total;
-                        property <float> start-angle: prev-angles;
+                    if v2 > 0: Path {
+                        width: 100%;
+                        height: 100%;
+                        property <float> val: v2;
+                        property <float> start-val: acc2;
+                        property <float> angle: 360.0 * val / total;
+                        property <float> start-angle: 360.0 * start-val / total;
                         property <float> end-angle: start-angle + angle;
-                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
-                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
 
-                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
-                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
-                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
-                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y + " L " + (center-x + radius * Math.cos((start-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((start-angle - 90) * 1deg)) + " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " + (center-x + radius * Math.cos((end-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((end-angle - 90) * 1deg)) + " Z M 0 0 M 350 350") : "";
                         fill: root.colors[2];
                         stroke: white;
                         stroke-width: 2px;
                     }
 
-                    if genre-stats.length > 3: Path {
-                        property <float> prev-angles: 360.0 * (genre-stats[0].volume-count + genre-stats[1].volume-count + genre-stats[2].volume-count) / total;
-                        property <float> angle: 360.0 * genre-stats[3].volume-count / total;
-                        property <float> start-angle: prev-angles;
+                    if v3 > 0: Path {
+                        width: 100%;
+                        height: 100%;
+                        property <float> val: v3;
+                        property <float> start-val: acc3;
+                        property <float> angle: 360.0 * val / total;
+                        property <float> start-angle: 360.0 * start-val / total;
                         property <float> end-angle: start-angle + angle;
-                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
-                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
 
-                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
-                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
-                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
-                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y + " L " + (center-x + radius * Math.cos((start-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((start-angle - 90) * 1deg)) + " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " + (center-x + radius * Math.cos((end-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((end-angle - 90) * 1deg)) + " Z M 0 0 M 350 350") : "";
                         fill: root.colors[3];
                         stroke: white;
                         stroke-width: 2px;
                     }
 
-                    if genre-stats.length > 4: Path {
-                        property <float> prev-angles: 360.0 * (genre-stats[0].volume-count + genre-stats[1].volume-count + genre-stats[2].volume-count + genre-stats[3].volume-count) / total;
-                        property <float> angle: 360.0 * genre-stats[4].volume-count / total;
-                        property <float> start-angle: prev-angles;
+                    if v4 > 0: Path {
+                        width: 100%;
+                        height: 100%;
+                        property <float> val: v4;
+                        property <float> start-val: acc4;
+                        property <float> angle: 360.0 * val / total;
+                        property <float> start-angle: 360.0 * start-val / total;
                         property <float> end-angle: start-angle + angle;
-                        property <float> start-rad: (start-angle - 90.0) * pi / 180.0;
-                        property <float> end-rad: (end-angle - 90.0) * pi / 180.0;
 
-                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y +
-                                  " L " + (center-x + radius * Math.cos(start-rad * 1rad)) + " " + (center-y + radius * Math.sin(start-rad * 1rad)) +
-                                  " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " +
-                                  (center-x + radius * Math.cos(end-rad * 1rad)) + " " + (center-y + radius * Math.sin(end-rad * 1rad)) + " Z") : "";
+                        commands: angle > 0.1 ? ("M " + center-x + " " + center-y + " L " + (center-x + radius * Math.cos((start-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((start-angle - 90) * 1deg)) + " A " + radius + " " + radius + " 0 " + (angle > 180.0 ? "1" : "0") + " 1 " + (center-x + radius * Math.cos((end-angle - 90) * 1deg)) + " " + (center-y + radius * Math.sin((end-angle - 90) * 1deg)) + " Z M 0 0 M 350 350") : "";
                         fill: root.colors[4];
                         stroke: white;
                         stroke-width: 2px;
@@ -500,6 +516,7 @@ export component StatisticsPage inherits Page {
                                 color: #333;
                                 horizontal-alignment: center;
                             }
+
                             Text {
                                 text: @tr("Total Volumes");
                                 font-size: 13px;
@@ -513,7 +530,7 @@ export component StatisticsPage inherits Page {
                 // Legend
                 VerticalBox {
                     spacing: 10px;
-                    alignment: start;
+                    // alignment: start; // Allow stretching to fill height
 
                     Text {
                         text: @tr("Legend");
@@ -523,6 +540,7 @@ export component StatisticsPage inherits Page {
                     }
 
                     ListView {
+                        min-height: 500px; // Force larger vertical area for legend items
                         for stat[index] in genre-stats: HorizontalBox {
                             height: 32px;
                             spacing: 12px;
@@ -546,9 +564,9 @@ export component StatisticsPage inherits Page {
                                     font-weight: 600;
                                     overflow: elide;
                                 }
+
                                 Text {
-                                    text: stat.volume-count + " " + @tr("volumes") + " (" +
-                                          Math.round(100.0 * stat.volume-count / Math.max(1, root.genre-total-volumes)) + "%)";
+                                    text: stat.volume-count + " " + @tr("volumes") + " (" + Math.round(100.0 * stat.volume-count / Math.max(1, root.library-stats.total-volumes)) + "%)";
                                     font-size: 11px;
                                     color: #666;
                                 }
@@ -580,6 +598,7 @@ export component StatisticsPage inherits Page {
             border-radius: 8px;
 
             ListView {
+                min-height: 300px; // Force list to expand to show all locations
                 for stat[index] in location-stats: Rectangle {
                     height: 50px;
                     border-width: 1px;
